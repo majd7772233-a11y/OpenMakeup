@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Open Makeup</string>
-    <string name="app_description">Real-time virtual makeup and face reshaping powered by MediaPipe and WebGL.</string>
+    <string name="app_description">استوديو تجميل افتراضي مباشر مع المكياج وتعديل ملامح الوجه باستخدام MediaPipe وWebGL.</string>
 </resources>
