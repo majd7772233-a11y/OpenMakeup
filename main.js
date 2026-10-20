@@ -3,12 +3,13 @@ import { OpenMakeup, MORPH_CONTROLS } from './src/index.js';
 const status = document.getElementById('status');
 const $ = (id) => document.getElementById(id);
 
-const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619';
+// All runtime files are bundled with the app for offline startup.
+const MP = './mediapipe/face_mesh';
 
 const mk = new OpenMakeup({
-  video:        $('video'),
+  video: $('video'),
   renderCanvas: $('renderCanvas'),
-  assetsBaseUrl: '/assets',
+  assetsBaseUrl: './assets',
   mediapipeBaseUrl: MP,
   aiColor: async () => '#c21f4d',
 });
@@ -27,23 +28,22 @@ try {
 }
 
 // ── makeup ──
-$('lipstick').onclick   = () => mk.apply('lipstick',  { finish: 'glossy' });
-$('eyeshadow').onclick  = () => mk.apply('eyeshadow', { color: '#7a3b9d', pattern: 1, finish: 'glitter' });
-$('eyeline').onclick    = () => mk.apply('eyeline',   { pattern: 1 });
-$('blush').onclick      = () => mk.apply('blush',     { color: '#e26d7a' });
-$('foundation').onclick = () => mk.apply('foundation',{ color: '#d9b89c', finish: 'matte' });
-$('mascara').onclick    = () => mk.apply('mascara',   {});
-$('clear').onclick      = () => mk.clearAll();
+$('lipstick').onclick = () => mk.apply('lipstick', { finish: 'glossy' });
+$('eyeshadow').onclick = () => mk.apply('eyeshadow', { color: '#7a3b9d', pattern: 1, finish: 'glitter' });
+$('eyeline').onclick = () => mk.apply('eyeline', { pattern: 1 });
+$('blush').onclick = () => mk.apply('blush', { color: '#e26d7a' });
+$('foundation').onclick = () => mk.apply('foundation', { color: '#d9b89c', finish: 'matte' });
+$('mascara').onclick = () => mk.apply('mascara', {});
+$('clear').onclick = () => mk.clearAll();
 
 // ── morph sliders (built from the SDK's own control list) ──
-
 function makeSlider(name, about) {
   const row = document.createElement('label');
   row.className = 'slider';
   row.innerHTML =
     `<span>${name}${about ? ` — <i>${about}</i>` : ''}</span>` +
-    `<input type="range" min="-1" max="1.5" step="0.05" value="0">` +
-    `<output>0.00</output>`;
+    '<input type="range" min="-1" max="1.5" step="0.05" value="0">' +
+    '<output>0.00</output>';
   const input = row.querySelector('input');
   const out = row.querySelector('output');
   input.addEventListener('input', () => {
@@ -55,34 +55,35 @@ function makeSlider(name, about) {
 }
 
 function buildMorphSliders() {
-  // friendly label lookup: raw glb target -> { name, about }
   const friendly = {};
   for (const [name, cfg] of Object.entries(MORPH_CONTROLS || {})) {
     friendly[cfg.target] = { name, about: cfg.about };
   }
 
-  // build one slider per ACTUAL morph target in the loaded model
   const targets = mk.getMorphTargets();
   console.log('morph targets in model (' + targets.length + '):', targets);
 
   if (targets.length) {
-    for (const t of targets) {
-      const f = friendly[t];
-      makeSlider(f ? f.name : t, f ? f.about : `raw target (${t})`);
+    for (const target of targets) {
+      const item = friendly[target];
+      makeSlider(item ? item.name : target, item ? item.about : `raw target (${target})`);
     }
   } else {
-    // fallback: static control list
-    for (const [name, cfg] of Object.entries(MORPH_CONTROLS || {})) makeSlider(name, cfg.about);
+    for (const [name, cfg] of Object.entries(MORPH_CONTROLS || {})) {
+      makeSlider(name, cfg.about);
+    }
   }
   console.log('morph sliders built:', sliders.length);
 }
 
 $('reset-morph').onclick = () => {
   mk.resetMorph();
-  for (const s of sliders) { s.input.value = 0; s.out.textContent = '0.00'; }
+  for (const slider of sliders) {
+    slider.input.value = 0;
+    slider.out.textContent = '0.00';
+  }
 };
-
-$('wireframe').onchange = (e) => mk.setWireframe(e.target.checked);
-$('blur').onchange = (e) => mk.setBlur(e.target.checked);
+$('wireframe').onchange = (event) => mk.setWireframe(event.target.checked);
+$('blur').onchange = (event) => mk.setBlur(event.target.checked);
 
 window.mk = mk;
