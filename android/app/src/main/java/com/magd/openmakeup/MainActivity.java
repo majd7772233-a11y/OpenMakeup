@@ -1,8 +1,10 @@
-package com.majd.openmakeup;
+package com.magd.openmakeup;
 
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
@@ -24,6 +26,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         webView = new WebView(this);
+        webView.setBackgroundColor(0xFF111018);
         setContentView(webView);
 
         WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
@@ -37,6 +40,23 @@ public class MainActivity extends Activity {
         webView.getSettings().setAllowContentAccess(false);
         webView.setWebViewClient(new WebViewClient() {
             @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                String scheme = uri.getScheme();
+                if ("mailto".equalsIgnoreCase(scheme)) {
+                    openExternal(uri);
+                    return true;
+                }
+                if ("https".equalsIgnoreCase(scheme)
+                        && "github.com".equalsIgnoreCase(uri.getHost())) {
+                    openExternal(uri);
+                    return true;
+                }
+                return !"https".equalsIgnoreCase(scheme)
+                        || !APP_ORIGIN.equals(uri.getScheme() + "://" + uri.getHost());
+            }
+
+            @Override
             public android.webkit.WebResourceResponse shouldInterceptRequest(
                     WebView view, WebResourceRequest request) {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
@@ -49,11 +69,15 @@ public class MainActivity extends Activity {
             }
         });
 
-        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
-        }
-
         webView.loadUrl(APP_ORIGIN + "/assets/www/index.html");
+    }
+
+    private void openExternal(Uri uri) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, uri));
+        } catch (Exception exception) {
+            // Keep the app usable even if no browser or email app is installed.
+        }
     }
 
     private void handleWebPermission(PermissionRequest request) {
@@ -64,31 +88,42 @@ public class MainActivity extends Activity {
             request.deny();
             return;
         }
-        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            for (String resource : request.getResources()) {
-                if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {
-                    request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
-                    return;
-                }
+
+        boolean asksForCamera = false;
+        for (String resource : request.getResources()) {
+            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {
+                asksForCamera = true;
+                break;
             }
+        }
+        if (!asksForCamera) {
             request.deny();
             return;
         }
-        pendingWebPermission = request;
-        requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
+
+        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
+        } else {
+            pendingWebPermission = request;
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
+        }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode != CAMERA_REQUEST || pendingWebPermission == null) return;
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            pendingWebPermission.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
-        } else {
-            pendingWebPermission.deny();
-        }
+        if (requestCode != CAMERA_REQUEST) return;
+
+        PermissionRequest pending = pendingWebPermission;
         pendingWebPermission = null;
+        if (pending == null) return;
+
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            pending.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
+        } else {
+            pending.deny();
+        }
     }
 
     @Override
@@ -107,6 +142,7 @@ public class MainActivity extends Activity {
             pendingWebPermission = null;
         }
         if (webView != null) {
+            webView.stopLoading();
             webView.destroy();
             webView = null;
         }
