@@ -128,7 +128,9 @@ function makeSlider(name, about) {
   input.setAttribute('aria-label', name);
   const output = document.createElement('output');
   output.textContent = '0.00';
-  row.append(title, input, output);
+  row.appendChild(title);
+  row.appendChild(input);
+  row.appendChild(output);
   input.addEventListener('input', () => {
     output.textContent = Number(input.value).toFixed(2);
     try {
@@ -143,7 +145,7 @@ function makeSlider(name, about) {
 
 function buildMorphSliders() {
   const panel = $('morph-panel');
-  panel.replaceChildren();
+  while (panel.firstChild) panel.removeChild(panel.firstChild);
   const friendly = {};
   for (const [name, cfg] of Object.entries(MORPH_CONTROLS || {})) {
     friendly[cfg.target] = { name, about: cfg.about };
