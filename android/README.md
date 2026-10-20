@@ -3,7 +3,7 @@
 **Display name:** Open Makeup  
 **Application ID:** `com.magd.openmakeup`  
 **Minimum Android:** Android 6.0 (API 23)  
-**Version:** 1.1.0
+**Version:** 1.2.0
 
 The app keeps the existing OpenMakeup JavaScript/Three.js/MediaPipe engine and hosts it locally in Android WebView. This avoids a costly native rewrite and keeps the web demo and Android app on the same engine.
 
@@ -11,7 +11,10 @@ The app keeps the existing OpenMakeup JavaScript/Three.js/MediaPipe engine and h
 
 - Real-time virtual makeup and face sculpt controls from the existing SDK.
 - One-tap Rose, Berry, and Nude looks.
-- A custom About screen matching the site's dark, glass-inspired visual style.
+- Arabic-first interface with a persistent Arabic/English language switch and RTL/LTR layouts.
+- Mobile-first responsive controls and an animated About screen matching the site's dark, glass-inspired visual style.
+- Full-screen camera preview with an exit control and Android Back handling.
+- Camera pause/resume recovery when the app moves to the background and returns.
 - Camera permission is requested at runtime and WebView camera access is restricted to the local app origin.
 - Bundled model, shader, pattern, MediaPipe Face Mesh, and camera utility files for offline startup.
 - Clearer startup and action errors when the face engine or device graphics support is unavailable.
