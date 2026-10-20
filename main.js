@@ -11,6 +11,7 @@ let currentLanguage = 'ar';
 let isFullscreenPreview = false;
 let resumeInProgress = false;
 let hiddenAt = 0;
+let lastStatusKey = 'statusLoading';
 
 const dictionaries = {
   ar: {
@@ -97,13 +98,14 @@ const mk = new OpenMakeup({
 function t(key) { return dictionaries[currentLanguage][key] || dictionaries.en[key] || key; }
 
 function setStatus(message, kind = 'info') {
+  if (message !== t(lastStatusKey)) lastStatusKey = null;
   statusText.textContent = message;
   statusBox.classList.toggle('status-error', kind === 'error');
   statusBox.classList.toggle('status-success', kind === 'success');
   statusIcon.textContent = kind === 'error' ? '⚠' : kind === 'success' ? '✓' : '✦';
 }
 
-function setStatusKey(key, kind = 'info') { setStatus(t(key), kind); }
+function setStatusKey(key, kind = 'info') { lastStatusKey = key; setStatus(t(key), kind); }
 
 function applyLanguage(language) {
   currentLanguage = language === 'en' ? 'en' : 'ar';
@@ -124,6 +126,7 @@ function applyLanguage(language) {
   $('fullscreen-preview').setAttribute('aria-label', t(isFullscreenPreview ? 'fullscreenExit' : 'fullscreenTitle'));
   $('fullscreen-preview').title = t(isFullscreenPreview ? 'fullscreenExit' : 'fullscreenTitle');
   renderMorphLabels();
+  if (lastStatusKey) setStatus(t(lastStatusKey), statusBox.classList.contains('status-error') ? 'error' : statusBox.classList.contains('status-success') ? 'success' : 'info');
   try { localStorage.setItem('openMakeupLanguage', currentLanguage); } catch (_) {}
 }
 
@@ -259,6 +262,7 @@ const morphNames = {
 function localizedMorphName(name, about) {
   const keys = morphNames[name];
   if (keys) return t(keys[about ? 1 : 0]);
+  if (/^facemesh/i.test(name)) return about ? t('advancedControl') : (currentLanguage === 'ar' ? 'تعديل إضافي للوجه' : 'Extra face control');
   return about ? t('advancedControl') : name;
 }
 function renderMorphLabels() {
@@ -362,9 +366,15 @@ document.addEventListener('visibilitychange', async () => {
       video.srcObject = null;
     }
     mk.start();
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    let cameraReady = false;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const stream = video.srcObject;
+      const activeTracks = stream && stream.getVideoTracks ? stream.getVideoTracks().some((track) => track.readyState === 'live' && track.enabled) : false;
+      if (stream && activeTracks && video.readyState >= 2) { cameraReady = true; break; }
+    }
+    if (!cameraReady) throw new Error('Camera stream did not resume');
     if (video.paused) await video.play();
-    if (!video.srcObject || video.readyState < 2) throw new Error('Camera stream did not resume');
     setStatusKey('statusReady', 'success');
     if (mk.engine && mk.engine._sizeToVideoBox) mk.engine._sizeToVideoBox();
   } catch (error) {
