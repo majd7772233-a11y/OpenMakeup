@@ -2,8 +2,8 @@ package com.magd.openmakeup;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.pm.PackageManager;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.PermissionRequest;
@@ -26,7 +26,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         webView = new WebView(this);
-        webView.setBackgroundColor(0xFF111018);
+        webView.setBackgroundColor(0xFF100D18);
         setContentView(webView);
 
         WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
@@ -127,12 +127,44 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
+    protected void onPause() {
+        if (webView != null) {
+            webView.onPause();
         }
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.onResume();
+            webView.postDelayed(() -> {
+                if (webView != null) {
+                    webView.evaluateJavascript(
+                            "if(window.handleOpenMakeupResume){window.handleOpenMakeupResume();}", null);
+                }
+            }, 250);
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView == null) {
+            super.onBackPressed();
+            return;
+        }
+        webView.evaluateJavascript(
+                "(function(){return !!(window.handleAndroidBack && window.handleAndroidBack());})()",
+                value -> {
+                    if (!"true".equals(value)) {
+                        if (webView != null && webView.canGoBack()) {
+                            webView.goBack();
+                        } else {
+                            MainActivity.super.onBackPressed();
+                        }
+                    }
+                });
     }
 
     @Override
@@ -143,6 +175,7 @@ public class MainActivity extends Activity {
         }
         if (webView != null) {
             webView.stopLoading();
+            webView.onPause();
             webView.destroy();
             webView = null;
         }
