@@ -398,7 +398,14 @@ window.addEventListener('beforeunload', () => {
 
 window.mk = mk;
 window.handleOpenMakeupResume = () => {
-  if (!document.hidden && engineReady) document.dispatchEvent(new Event('visibilitychange'));
+  if (document.hidden || !engineReady || resumeInProgress) return;
+  const video = $('video');
+  const stream = video.srcObject;
+  const activeTracks = stream && stream.getVideoTracks ? stream.getVideoTracks().some((track) => track.readyState === 'live' && track.enabled) : false;
+  if (!activeTracks || video.readyState < 2) {
+    hiddenAt = hiddenAt || Date.now();
+    document.dispatchEvent(new Event('visibilitychange'));
+  }
 };
 applyLanguage(currentLanguage);
 startEngine();
