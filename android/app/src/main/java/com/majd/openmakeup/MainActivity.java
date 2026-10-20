@@ -1,6 +1,7 @@
 package com.majd.openmakeup;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.webkit.PermissionRequest;
@@ -10,12 +11,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.webkit.WebViewAssetLoader;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
     private static final int CAMERA_REQUEST = 41;
     private static final String APP_ORIGIN = "https://appassets.androidplatform.net";
     private WebView webView;
@@ -51,10 +49,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
+        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
         }
 
         webView.loadUrl(APP_ORIGIN + "/assets/www/index.html");
@@ -68,18 +64,18 @@ public class MainActivity extends AppCompatActivity {
             request.deny();
             return;
         }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED) {
+        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             for (String resource : request.getResources()) {
                 if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {
                     request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
                     return;
                 }
             }
+            request.deny();
+            return;
         }
         pendingWebPermission = request;
-        ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
+        requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
     }
 
     @Override
