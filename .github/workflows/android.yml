@@ -23,11 +23,8 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install locked web dependencies
-        run: npm ci
-
-      - name: Install MediaPipe camera helper
-        run: npm install --no-save --package-lock=false @mediapipe/camera_utils@0.3.1675466862
+      - name: Install web dependencies and synchronize the existing lockfile
+        run: npm install
 
       - name: Type-check SDK
         run: npm run typecheck
