@@ -3,6 +3,8 @@ package com.magd.openmakeup;
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
@@ -38,6 +40,23 @@ public class MainActivity extends Activity {
         webView.getSettings().setAllowContentAccess(false);
         webView.setWebViewClient(new WebViewClient() {
             @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                String scheme = uri.getScheme();
+                if ("mailto".equalsIgnoreCase(scheme)) {
+                    openExternal(uri);
+                    return true;
+                }
+                if ("https".equalsIgnoreCase(scheme)
+                        && "github.com".equalsIgnoreCase(uri.getHost())) {
+                    openExternal(uri);
+                    return true;
+                }
+                return !"https".equalsIgnoreCase(scheme)
+                        || !APP_ORIGIN.equals(uri.getScheme() + "://" + uri.getHost());
+            }
+
+            @Override
             public android.webkit.WebResourceResponse shouldInterceptRequest(
                     WebView view, WebResourceRequest request) {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
@@ -51,6 +70,14 @@ public class MainActivity extends Activity {
         });
 
         webView.loadUrl(APP_ORIGIN + "/assets/www/index.html");
+    }
+
+    private void openExternal(Uri uri) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, uri));
+        } catch (Exception exception) {
+            // Keep the app usable even if no browser or email app is installed.
+        }
     }
 
     private void handleWebPermission(PermissionRequest request) {
