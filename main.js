@@ -126,7 +126,9 @@ function applyLanguage(language) {
   $('fullscreen-preview').setAttribute('aria-label', t(isFullscreenPreview ? 'fullscreenExit' : 'fullscreenTitle'));
   $('fullscreen-preview').title = t(isFullscreenPreview ? 'fullscreenExit' : 'fullscreenTitle');
   renderMorphLabels();
-  if (lastStatusKey) setStatus(t(lastStatusKey), statusBox.classList.contains('status-error') ? 'error' : statusBox.classList.contains('status-success') ? 'success' : 'info');
+  const statusKind = statusBox.classList.contains('status-error') ? 'error' : statusBox.classList.contains('status-success') ? 'success' : 'info';
+  if (lastStatusKey) setStatus(t(lastStatusKey), statusKind);
+  else setStatus(t(statusKind === 'error' ? 'statusActionError' : statusKind === 'success' ? 'statusReady' : 'statusLoading'), statusKind);
   try { localStorage.setItem('openMakeupLanguage', currentLanguage); } catch (_) {}
 }
 
