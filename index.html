@@ -2,65 +2,75 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OpenMakeupSDK — local test</title>
-  <!-- MediaPipe as global scripts (sets window.Camera / window.FaceMesh) -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111018" />
+  <title>OpenMakeup</title>
+  <script src="./mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="./mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
   <style>
-    body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; color:#222;
-           display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
-    #left { flex: 0 0 auto; }
-    #stage { position: relative; width: 640px; height: 480px; max-width: 100%;
-             background:#111; overflow:hidden; border-radius:12px; }
-    #video { width:100%; height:100%; object-fit:cover; transform: scaleX(-1); }
-    #renderCanvas { transform: scaleX(-1); }
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, sans-serif; background:#111018; color:#f8f4fa; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:clamp(12px,3vw,24px); display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;
+      background:radial-gradient(ellipse at top left,#392036 0%,#17131f 42%,#101018 100%); min-height:100vh; }
+    #left { flex:1 1 420px; min-width:0; }
+    #stage { position:relative; width:100%; max-width:760px; aspect-ratio:4/3; background:#08080c; overflow:hidden;
+      border:1px solid #ffffff26; border-radius:22px; box-shadow:0 20px 60px #0008; }
+    #video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+    #renderCanvas { position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); }
+    #right { flex:1 1 300px; min-width:0; padding:18px; border:1px solid #ffffff20; border-radius:22px;
+      background:#ffffff0b; box-shadow:0 18px 45px #0005; backdrop-filter:blur(18px); }
+    h2 { margin:0 0 14px; font-size:clamp(22px,4vw,32px); letter-spacing:-.04em; }
+    h3 { margin:0 0 12px; font-size:16px; }
     .controls { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
-    button { padding:8px 12px; border-radius:8px; border:1px solid #ccc;
-             background:#fafafa; cursor:pointer; }
-    button:hover { background:#f0f0f0; }
-    #status { margin-top:10px; color:#666; font-size:14px; }
-
-    #right { flex: 1 1 300px; min-width: 280px; }
-    h3 { margin: 0 0 8px; font-size:15px; }
-    #morph-panel { display:flex; flex-direction:column; gap:10px; }
-    label.slider { display:grid; grid-template-columns: 1fr 160px 48px; align-items:center; gap:8px;
-                   font-size:13px; }
-    label.slider span i { color:#888; font-weight:400; }
-    label.slider input[type=range] { width:160px; }
-    label.slider output { text-align:right; font-variant-numeric: tabular-nums; color:#555; }
-    .sep { margin-top:6px; font-size:12px; color:#999; text-transform:uppercase; letter-spacing:.05em; }
+    button { padding:10px 13px; border-radius:999px; border:1px solid #ffffff25; background:#ffffff12; color:#fff;
+      cursor:pointer; font:inherit; font-size:13px; transition:background .18s, transform .18s; }
+    button:hover { background:#d94c8540; transform:translateY(-1px); }
+    #status { margin-top:12px; padding:10px 13px; border-radius:12px; background:#ffffff0b; color:#e5cbd9; font-size:13px; }
+    #morph-panel { display:flex; flex-direction:column; gap:12px; }
+    label.slider { display:grid; grid-template-columns:minmax(90px,1fr) minmax(90px,1.3fr) 42px; align-items:center; gap:8px; font-size:12px; }
+    label.slider span { overflow-wrap:anywhere; }
+    label.slider span i { color:#a99ba9; font-weight:400; }
+    label.slider input[type=range] { width:100%; accent-color:#e66b9d; }
+    label.slider output { text-align:right; font-variant-numeric:tabular-nums; color:#e7c8d8; }
+    .sep { margin-top:6px; font-size:12px; color:#b7a5b6; text-transform:uppercase; letter-spacing:.05em; }
+    input[type=checkbox] { accent-color:#e66b9d; }
+    @media (max-width:600px) {
+      body { padding:12px; gap:14px; }
+      #left, #right { flex-basis:100%; }
+      #right { padding:14px; }
+      .controls button { flex:1 1 calc(50% - 8px); }
+      label.slider { grid-template-columns:minmax(82px,1fr) minmax(80px,1.2fr) 38px; gap:6px; }
+    }
   </style>
 </head>
 <body>
-  <div id="left">
-    <h2>OpenMakeupSDK — local test</h2>
+  <section id="left">
+    <h2>💄 OpenMakeup</h2>
     <div id="stage">
       <video id="video" autoplay playsinline muted></video>
       <canvas id="renderCanvas"></canvas>
     </div>
     <div class="controls">
-      <button id="lipstick">Lipstick (glossy)</button>
-      <button id="eyeshadow">Eyeshadow #1 (glitter)</button>
-      <button id="eyeline">Eyeliner #1</button>
+      <button id="lipstick">Lipstick · Glossy</button>
+      <button id="eyeshadow">Eyeshadow · Glitter</button>
+      <button id="eyeline">Eyeliner</button>
       <button id="blush">Blush</button>
       <button id="foundation">Foundation</button>
       <button id="mascara">Mascara</button>
       <button id="clear">Clear makeup</button>
     </div>
-    <div id="status">Booting…</div>
-  </div>
+    <div id="status">Loading face engine…</div>
+  </section>
 
-  <div id="right">
-    <h3>Face reshape (morph)</h3>
+  <section id="right">
+    <h3>Face reshape</h3>
     <div id="morph-panel"></div>
     <div class="controls">
       <button id="reset-morph">Reset shape</button>
       <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="wireframe"> Wireframe</label>
       <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="blur"> Blur layer</label>
     </div>
-  </div>
-
+  </section>
   <script type="module" src="./main.js"></script>
 </body>
 </html>
