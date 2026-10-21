@@ -359,7 +359,7 @@ test('morph API rejects unknown names/non-finite weights and drives valid model 
   engine._morphInfluences = new Float32Array(targetNames.length);
   engine._pendingMorph = {};
   engine.setMorph('noseSlim', 0.65);
-  assert.equal(engine._morphInfluences[engine._morphDict[MORPH_CONTROLS.noseSlim.target]], 0.65);
+  assert.ok(Math.abs(engine._morphInfluences[engine._morphDict[MORPH_CONTROLS.noseSlim.target]] - 0.65) < 1e-6);
   engine.setMorph('facemesh10.001', 0.25);
   assert.equal(engine._morphInfluences[engine._morphDict['facemesh10.001']], 0.25);
   assert.throws(() => engine.setMorph('faceSlimMagic', 0.5), /unknown face morph/);
