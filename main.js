@@ -588,12 +588,20 @@ window.addEventListener('beforeunload', () => {
 });
 
 window.mk = mk;
-window.handleOpenMakeupResume = () => {
-  if (document.hidden || !engineReady || resumeInProgress) return;
-  const video = $('video');
-  if (hiddenAt || !hasLiveCameraTrack(video) || video.readyState < 2) {
+let resumeCheckInProgress = false;
+window.handleOpenMakeupResume = async () => {
+  if (document.hidden || !engineReady || resumeInProgress || resumeCheckInProgress) return;
+  resumeCheckInProgress = true;
+  try {
+    // Native Activity resume may occur without a reliable DOM visibilitychange.
+    // Confirm fresh frames even when the browser still reports a live track.
+    await waitForCameraFrames($('video'), { timeoutMs: 1800, pollIntervalMs: 150 });
+  } catch (error) {
+    console.warn('Camera frame progression check failed after native resume:', error);
     if (!hiddenAt) hiddenAt = Date.now();
-    recoverCamera();
+    await recoverCamera();
+  } finally {
+    resumeCheckInProgress = false;
   }
 };
 applyLanguage(currentLanguage);
