@@ -40,6 +40,24 @@ test('camera readiness rejects a live track that produces no frames', async () =
   }), /new video frames are not arriving/);
 });
 
+test('camera readiness rejects a single new frame followed by a freeze', async () => {
+  const video = makeVideo();
+  let clock = 0;
+  let emitted = false;
+  await assert.rejects(waitForCameraFrames(video, {
+    timeoutMs: 220,
+    pollIntervalMs: 40,
+    now: () => clock,
+    sleep: async (ms) => {
+      clock += ms;
+      if (clock >= 80 && !emitted) {
+        video.currentTime += 0.04;
+        emitted = true;
+      }
+    },
+  }), /new video frames are not arriving/);
+});
+
 test('camera readiness rejects when the track ends during startup', async () => {
   const video = makeVideo();
   let clock = 0;

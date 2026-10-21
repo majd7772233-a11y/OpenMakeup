@@ -563,16 +563,27 @@ async function recoverCamera() {
   }
 }
 
+function pauseCameraForBackground() {
+  // Do not interrupt an in-flight first permission/startup flow. Once the
+  // studio is usable, release its camera promptly when the host backgrounds it.
+  if (!engineReady) return;
+  hiddenAt = Date.now();
+  if (mk) {
+    try { mk.stop(); } catch (error) { console.warn('Camera pause failed:', error); }
+    stopAndDetachCamera();
+  }
+}
+
+window.handleOpenMakeupPause = () => {
+  pauseCameraForBackground();
+};
+
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    hiddenAt = Date.now();
-    if (mk) {
-      try { mk.stop(); } catch (error) { console.warn('Camera pause failed:', error); }
-      stopAndDetachCamera();
-    }
+    pauseCameraForBackground();
     return;
   }
-  if (hiddenAt) recoverCamera();
+  if (hiddenAt && engineReady) recoverCamera();
 });
 
 

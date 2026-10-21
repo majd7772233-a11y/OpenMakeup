@@ -129,6 +129,10 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         if (webView != null) {
+            // Let the web runtime stop an already-running camera before WebView
+            // timers are paused. The JavaScript handler ignores incomplete startup.
+            webView.evaluateJavascript(
+                    "if(window.handleOpenMakeupPause){window.handleOpenMakeupPause();}", null);
             webView.onPause();
         }
         super.onPause();
