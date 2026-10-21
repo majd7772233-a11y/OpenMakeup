@@ -42,7 +42,20 @@ function hexToVector4(hex) {
     const r = parseInt(cleanHex.slice(0, 2), 16);
     const g = parseInt(cleanHex.slice(2, 4), 16);
     const b = parseInt(cleanHex.slice(4, 6), 16);
+    if (![r, g, b].every(Number.isFinite)) throw new Error('Invalid color value: ' + hex);
     return new Vector4(r / 255, g / 255, b / 255, 1);
+}
+
+function withTimeout(promise, timeoutMs, message) {
+    let timer = null;
+    return Promise.race([
+        Promise.resolve(promise),
+        new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+        }),
+    ]).finally(() => {
+        if (timer !== null) clearTimeout(timer);
+    });
 }
 
 /**
@@ -136,6 +149,14 @@ export class MakeupEngine {
         this._camera = null;
         this._faceMesh = null;
         this._ready = false;
+        this._initPromise = null;
+        this._cameraStartPromise = null;
+        this._cameraRunning = false;
+        this._activeLayers = new Set();
+        this._faceVisible = false;
+        this._noFaceFrames = 0;
+        this._wireframeEnabled = false;
+        this._blurEnabled = false;
 
         // face reshape (morph) state
         this.faceVideoMesh = null;     // camera video projected onto the morphable face mesh
@@ -152,28 +173,45 @@ export class MakeupEngine {
 
     /** Set up the scene, load the face model + materials, start tracking. */
     async init(onReady) {
-        this._resolveMediaPipeClasses();
+        if (this._ready) return this;
+        if (this._initPromise) return this._initPromise;
 
-        this._setupScene();
-        this._sizeToVideoBox();
-        window.addEventListener('resize', this._sizeToVideoBox);
-        this.video.addEventListener('loadedmetadata', this._sizeToVideoBox);
-        if (this.overlayCanvas) {
-            this._resizeOverlay();
-            window.addEventListener('resize', this._resizeOverlay);
-        }
+        this._initPromise = (async () => {
+            try {
+                this._resolveMediaPipeClasses();
+                this._setupScene();
+                this._sizeToVideoBox();
+                window.addEventListener('resize', this._sizeToVideoBox);
+                this.video.addEventListener('loadedmetadata', this._sizeToVideoBox);
+                if (this.overlayCanvas) {
+                    this._resizeOverlay();
+                    window.addEventListener('resize', this._resizeOverlay);
+                }
 
-        await this._loadFaceAndMaterials();
-
-        this._setupFaceMesh();
-        this._setupCamera();
-
-        this._animate();
-        this._camera.start();
-
-        this._ready = true;
-        if (onReady) onReady(this);
-        return this;
+                await this._loadFaceAndMaterials();
+                this._setupFaceMesh();
+                this._setupCamera();
+                await withTimeout(
+                    this.start(),
+                    12000,
+                    'Camera startup timed out. Check camera permission and try again.',
+                );
+                this._ready = true;
+                if (onReady) {
+                    try { onReady(this); } catch (callbackError) {
+                        console.warn('OpenMakeupSDK: onReady callback failed:', callbackError);
+                    }
+                }
+                return this;
+            } catch (error) {
+                this._ready = false;
+                this.dispose();
+                throw error;
+            } finally {
+                this._initPromise = null;
+            }
+        })();
+        return this._initPromise;
     }
 
     _resolveMediaPipeClasses() {
@@ -282,124 +320,119 @@ export class MakeupEngine {
             this.sceneSize,
             this.scene,
         );
+        // Model loading is explicit and awaited exactly once.
+        const mesh = await this.faceModel.loadModel();
+        this.faceObject3D = new Group();
+        mesh.visible = false;
+        this.faceObject3D.add(mesh);
+        this.scene.add(this.faceObject3D);
+        this._ensureMorphBuffers();
 
-        await new Promise((resolve) => {
-            this.faceModel.loadModel((mesh) => {
-                this.faceObject3D = new Group();
-                mesh.visible = false;
-                this.faceObject3D.add(mesh);
-                this.scene.add(this.faceObject3D);
+        const refractUniforms = {
+            tScene: { value: this.videoTexture },
+            transmission: { value: 1.0 },
+            roughTransmission: { value: 0.4 },
+            resolution: { value: new Vector2(window.innerWidth, window.innerHeight) },
+            strength: { value: 1.0 },
+            ior: { value: 1.0 },
+        };
 
-                // morph buffers (shared geometry) + the camera-on-face warp mesh
-                this._ensureMorphBuffers();
-                loadFaceWarpMat(this.assets, this.videoTexture).then((mat) => {
-                    this.faceVideoMesh = new Mesh(mesh.geometry, mat);
-                    this.faceVideoMesh.renderOrder = 1; // above the background plane + blur, below makeup colors
-                    this.faceVideoMesh.position.setZ(0.5);
-                    this.faceVideoMesh.frustumCulled = false;
-                    this.faceObject3D.add(this.faceVideoMesh);
-                });
+        // Material loaders reject when a required shader or texture is absent;
+        // the UI must not be told that an incompletely loaded engine is ready.
+        const [faceWarpMat, blurMat, blushMat, lipsMat, eyeShadowMat, foundationMat, eyeLineMat, mascaraMat] =
+            await Promise.all([
+                loadFaceWarpMat(this.assets, this.videoTexture),
+                loadBlurMat(this.assets, refractUniforms),
+                loadBlushMat(this.assets),
+                loadLipMats(this.assets),
+                loadEyeShadowMat(this.assets),
+                loadFoundationMat(this.assets),
+                loadEyeLineMat(this.assets),
+                loadMascaraMat(this.assets),
+            ]);
 
-                // debug wireframe of the (CPU-morphed) shared geometry — toggle with setWireframe()
-                const wireMat = new MeshBasicMaterial({
-                    color: 0x00ff88, wireframe: true,
-                    transparent: true, opacity: 0.9,
-                    depthTest: false, depthWrite: false,
-                });
-                this.wireMesh = new Mesh(mesh.geometry, wireMat);
-                this.wireMesh.renderOrder = 999;
-                this.wireMesh.frustumCulled = false;
-                this.wireMesh.visible = false;
-                this.faceObject3D.add(this.wireMesh);
+        this.blurMat = blurMat;
+        this.blushMat = blushMat;
+        this.lipsMat = lipsMat;
+        this.eyeShadowMat = eyeShadowMat;
+        this.foundationMat = foundationMat;
+        this.eyeLineMat = eyeLineMat;
+        this.mascaraMat = mascaraMat;
 
-                const refractUniforms = {
-                    tScene: { value: this.videoTexture },
-                    transmission: { value: 1.0 },
-                    roughTransmission: { value: 0.4 },
-                    resolution: { value: new Vector2(window.innerWidth, window.innerHeight) },
-                    strength: { value: 1.0 },
-                    ior: { value: 1.0 },
-                };
-                loadBlurMat(this.assets, refractUniforms).then((material) => {
-                    this.blureMesh = new Mesh(mesh.geometry, material);
-                    this.blureMesh.renderOrder = 0;
-                    this.blureMesh.position.setZ(0);
-                    this.blureMesh.visible = false; // off by default — it was covering the warp/face
-                    this.faceObject3D.add(this.blureMesh);
-                });
+        this.faceVideoMesh = new Mesh(mesh.geometry, faceWarpMat);
+        this.faceVideoMesh.renderOrder = 1;
+        this.faceVideoMesh.position.setZ(0.5);
+        this.faceVideoMesh.frustumCulled = false;
+        this.faceVideoMesh.visible = false;
+        this.faceObject3D.add(this.faceVideoMesh);
 
-                loadBlushMat(this.assets).then((material) => {
-                    this.blushMat = material;
-                    this.blushMat.needsUpdate = true;
-                    this.blushMesh = new Mesh(mesh.geometry, this.blushMat);
-                    this.blushMesh.renderOrder = 2;
-                    this.blushMesh.position.setZ(2);
-                    this.blushMesh.visible = false;
-                    this.faceObject3D.add(this.blushMesh);
-                });
-
-                loadLipMats(this.assets).then((material) => {
-                    this.lipsMat = material;
-                    this.lipsMat.needsUpdate = true;
-                    this.lipsMesh = new Mesh(mesh.geometry, this.lipsMat);
-                    this.lipsMesh.renderOrder = 3;
-                    this.lipsMesh.position.setZ(3);
-                    this.lipsMesh.visible = false;
-                    this.faceObject3D.add(this.lipsMesh);
-                });
-
-                loadEyeShadowMat(this.assets).then((material) => {
-                    this.eyeShadowMat = material;
-                    this.eyeShadowMat.needsUpdate = true;
-                    this.eyeShadowMesh = new Mesh(mesh.geometry, this.eyeShadowMat);
-                    this.eyeShadowMesh.renderOrder = 3;
-                    this.eyeShadowMesh.position.setZ(3);
-                    this.eyeShadowMesh.visible = false;
-                    this.faceObject3D.add(this.eyeShadowMesh);
-                });
-
-                loadFoundationMat(this.assets).then((material) => {
-                    this.foundationMat = material;
-                    this.foundationMat.needsUpdate = true;
-                    this.foundationMesh = new Mesh(mesh.geometry, this.foundationMat);
-                    this.foundationMesh.renderOrder = 1;
-                    this.foundationMesh.position.setZ(1);
-                    this.foundationMesh.visible = false;
-                    this.faceObject3D.add(this.foundationMesh);
-                });
-
-                loadEyeLineMat(this.assets).then((material) => {
-                    this.eyeLineMat = material;
-                    this.eyeLineMat.needsUpdate = true;
-                    this.eyeLineLeftNurbs = createLeftEyeNurbsMesh([], this.eyeLineMat, this.sceneSize.x, this.sceneSize.y);
-                    this.eyeLineLeftNurbs.mesh.renderOrder = 14;
-                    this.eyeLineLeftNurbs.mesh.position.setZ(15);
-                    this.eyeLineLeftNurbs.mesh.visible = false;
-                    this.scene.add(this.eyeLineLeftNurbs.mesh);
-                    this.eyeLineRightNurbs = createRightEyeNurbsMesh([], this.eyeLineMat, this.sceneSize.x, this.sceneSize.y);
-                    this.eyeLineRightNurbs.mesh.renderOrder = 14;
-                    this.eyeLineRightNurbs.mesh.position.setZ(15);
-                    this.eyeLineRightNurbs.mesh.visible = false;
-                    this.scene.add(this.eyeLineRightNurbs.mesh);
-                });
-
-                loadMascaraMat(this.assets).then((material) => {
-                    this.mascaraMat = material;
-                    this.mascaraMat.needsUpdate = true;
-                    this.mascaraLeftNurbs = createLeftEyeNurbsMesh([], this.mascaraMat, this.sceneSize.x, this.sceneSize.y);
-                    this.mascaraLeftNurbs.mesh.renderOrder = 15;
-                    this.mascaraLeftNurbs.mesh.position.setZ(50);
-                    this.mascaraLeftNurbs.mesh.visible = false;
-                    this.scene.add(this.mascaraLeftNurbs.mesh);
-                    this.mascaraRightNurbs = createRightEyeNurbsMesh([], this.mascaraMat, this.sceneSize.x, this.sceneSize.y);
-                    this.mascaraRightNurbs.mesh.renderOrder = 15;
-                    this.mascaraRightNurbs.mesh.visible = false;
-                    this.scene.add(this.mascaraRightNurbs.mesh);
-                });
-
-                resolve();
-            });
+        const wireMat = new MeshBasicMaterial({
+            color: 0x00ff88,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.9,
+            depthTest: false,
+            depthWrite: false,
         });
+        this.wireMesh = new Mesh(mesh.geometry, wireMat);
+        this.wireMesh.renderOrder = 999;
+        this.wireMesh.frustumCulled = false;
+        this.wireMesh.visible = false;
+        this.faceObject3D.add(this.wireMesh);
+
+        this.blureMesh = new Mesh(mesh.geometry, this.blurMat);
+        this.blureMesh.renderOrder = 0;
+        this.blureMesh.position.setZ(0);
+        this.blureMesh.visible = false;
+        this.faceObject3D.add(this.blureMesh);
+
+        this.blushMesh = new Mesh(mesh.geometry, this.blushMat);
+        this.blushMesh.renderOrder = 2;
+        this.blushMesh.position.setZ(2);
+        this.blushMesh.visible = false;
+        this.faceObject3D.add(this.blushMesh);
+
+        this.lipsMesh = new Mesh(mesh.geometry, this.lipsMat);
+        this.lipsMesh.renderOrder = 3;
+        this.lipsMesh.position.setZ(3);
+        this.lipsMesh.visible = false;
+        this.faceObject3D.add(this.lipsMesh);
+
+        this.eyeShadowMesh = new Mesh(mesh.geometry, this.eyeShadowMat);
+        this.eyeShadowMesh.renderOrder = 3;
+        this.eyeShadowMesh.position.setZ(3);
+        this.eyeShadowMesh.visible = false;
+        this.faceObject3D.add(this.eyeShadowMesh);
+
+        this.foundationMesh = new Mesh(mesh.geometry, this.foundationMat);
+        this.foundationMesh.renderOrder = 1;
+        this.foundationMesh.position.setZ(1);
+        this.foundationMesh.visible = false;
+        this.faceObject3D.add(this.foundationMesh);
+
+        this.eyeLineLeftNurbs = createLeftEyeNurbsMesh([], this.eyeLineMat, this.sceneSize.x, this.sceneSize.y);
+        this.eyeLineLeftNurbs.mesh.renderOrder = 14;
+        this.eyeLineLeftNurbs.mesh.position.setZ(15);
+        this.eyeLineLeftNurbs.mesh.visible = false;
+        this.scene.add(this.eyeLineLeftNurbs.mesh);
+
+        this.eyeLineRightNurbs = createRightEyeNurbsMesh([], this.eyeLineMat, this.sceneSize.x, this.sceneSize.y);
+        this.eyeLineRightNurbs.mesh.renderOrder = 14;
+        this.eyeLineRightNurbs.mesh.position.setZ(15);
+        this.eyeLineRightNurbs.mesh.visible = false;
+        this.scene.add(this.eyeLineRightNurbs.mesh);
+
+        this.mascaraLeftNurbs = createLeftEyeNurbsMesh([], this.mascaraMat, this.sceneSize.x, this.sceneSize.y);
+        this.mascaraLeftNurbs.mesh.renderOrder = 15;
+        this.mascaraLeftNurbs.mesh.position.setZ(50);
+        this.mascaraLeftNurbs.mesh.visible = false;
+        this.scene.add(this.mascaraLeftNurbs.mesh);
+
+        this.mascaraRightNurbs = createRightEyeNurbsMesh([], this.mascaraMat, this.sceneSize.x, this.sceneSize.y);
+        this.mascaraRightNurbs.mesh.renderOrder = 15;
+        this.mascaraRightNurbs.mesh.position.setZ(50);
+        this.mascaraRightNurbs.mesh.visible = false;
+        this.scene.add(this.mascaraRightNurbs.mesh);
     }
 
     _setupFaceMesh() {
@@ -425,23 +458,47 @@ export class MakeupEngine {
             this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
         }
 
-        if (results.multiFaceLandmarks?.length) {
-            const landmarks = results.multiFaceLandmarks[0];
-            if (!landmarks.length) return;
-
-            if (this.faceModel && this.faceModel.scene != null) {
-                this.faceModel.updateWithLandmarks(landmarks);
-                this._applyMorph();
-                if (this.lipsMat) this.faceModel.calculateLipOpen(landmarks, this.lipsMat);
-
-                if (this.eyeLineLeftNurbs) updateFaceNurbsMesh(landmarks, this.eyeLineLeftNurbs, this.sceneSize.x, this.sceneSize.y, true);
-                if (this.eyeLineRightNurbs) updateFaceNurbsMesh(landmarks, this.eyeLineRightNurbs, this.sceneSize.x, this.sceneSize.y, false);
-                if (this.mascaraLeftNurbs) updateFaceNurbsMesh(landmarks, this.mascaraLeftNurbs, this.sceneSize.x, this.sceneSize.y, true);
-                if (this.mascaraRightNurbs) updateFaceNurbsMesh(landmarks, this.mascaraRightNurbs, this.sceneSize.x, this.sceneSize.y, false);
+        const landmarks = results.multiFaceLandmarks && results.multiFaceLandmarks[0];
+        if (!landmarks || landmarks.length === 0) {
+            this._noFaceFrames += 1;
+            // Hide stale face-attached makeup after a short grace period to avoid
+            // flicker from one intermittently missed detection.
+            if (this._noFaceFrames >= 3 && this._faceVisible) {
+                this._faceVisible = false;
+                this._syncFaceLayerVisibility();
             }
-
-            this.renderer.render(this.scene, this.camera3D);
+            if (this.renderer) this.renderer.render(this.scene, this.camera3D);
+            return;
         }
+
+        this._noFaceFrames = 0;
+        this._faceVisible = true;
+        this._syncFaceLayerVisibility();
+        if (this.faceModel && this.faceModel.scene != null) {
+            this.faceModel.updateWithLandmarks(landmarks);
+            this._applyMorph();
+            if (this.lipsMat) this.faceModel.calculateLipOpen(landmarks, this.lipsMat);
+            if (this.eyeLineLeftNurbs) updateFaceNurbsMesh(landmarks, this.eyeLineLeftNurbs, this.sceneSize.x, this.sceneSize.y, true);
+            if (this.eyeLineRightNurbs) updateFaceNurbsMesh(landmarks, this.eyeLineRightNurbs, this.sceneSize.x, this.sceneSize.y, false);
+            if (this.mascaraLeftNurbs) updateFaceNurbsMesh(landmarks, this.mascaraLeftNurbs, this.sceneSize.x, this.sceneSize.y, true);
+            if (this.mascaraRightNurbs) updateFaceNurbsMesh(landmarks, this.mascaraRightNurbs, this.sceneSize.x, this.sceneSize.y, false);
+        }
+        if (this.renderer) this.renderer.render(this.scene, this.camera3D);
+    };
+
+    _syncFaceLayerVisibility() {
+        const faceVisible = this._faceVisible;
+        if (this.faceVideoMesh) this.faceVideoMesh.visible = faceVisible;
+        if (this.blushMesh) this.blushMesh.visible = faceVisible && this._activeLayers.has('blush');
+        if (this.lipsMesh) this.lipsMesh.visible = faceVisible && this._activeLayers.has('lipstick');
+        if (this.eyeShadowMesh) this.eyeShadowMesh.visible = faceVisible && this._activeLayers.has('eyeshadow');
+        if (this.foundationMesh) this.foundationMesh.visible = faceVisible && this._activeLayers.has('foundation');
+        if (this.eyeLineLeftNurbs) this.eyeLineLeftNurbs.mesh.visible = faceVisible && this._activeLayers.has('eyeline');
+        if (this.eyeLineRightNurbs) this.eyeLineRightNurbs.mesh.visible = faceVisible && this._activeLayers.has('eyeline');
+        if (this.mascaraLeftNurbs) this.mascaraLeftNurbs.mesh.visible = faceVisible && this._activeLayers.has('mascara');
+        if (this.mascaraRightNurbs) this.mascaraRightNurbs.mesh.visible = faceVisible && this._activeLayers.has('mascara');
+        if (this.blureMesh) this.blureMesh.visible = faceVisible && this._blurEnabled;
+        if (this.wireMesh) this.wireMesh.visible = faceVisible && this._wireframeEnabled;
     };
 
     _animate = () => {
@@ -453,81 +510,65 @@ export class MakeupEngine {
 
     /** Apply / update a makeup layer. (was the `setAR` event) */
     setAR(arType, colorCode, colorMode) {
-        try {
-            if (arType === 'foundation' && this.foundationMat) {
-                this.foundationMesh.visible = true;
-                this.foundationMat.uniforms._MainColor.value = hexToVector4(colorCode);
-                if (colorMode == '5') this.foundationMat.uniforms._noise.value = 1;
-                if (colorMode == '7') this.foundationMat.uniforms._noise.value = 0.7;
-                if (colorMode == '1') this.foundationMat.uniforms._noise.value = 0;
-            }
-            if (arType === 'blush' && this.blushMat) {
-                this.blushMesh.visible = true;
-                this.blushMat.uniforms._ShadowColor.value = hexToVector4(colorCode);
-                if (colorMode == '5') this.blushMat.uniforms._noise.value = 1;
-                if (colorMode == '7') this.blushMat.uniforms._noise.value = 0.7;
-                if (colorMode == '1') this.blushMat.uniforms._noise.value = 0;
-            }
-            if (arType === 'lens') {
-                // reserved
-            }
-            if (arType === 'lipstick' && this.lipsMat) {
-                this.lipsMesh.visible = true;
-                this.lipsMat.uniforms._MainColor.value = hexToVector4(colorCode);
-                if (colorMode == '5') { this.lipsMat.uniforms._shine.value = 0.3; this.lipsMat.uniforms._bright.value = 0.6; }
-                if (colorMode == '7') { this.lipsMat.uniforms._shine.value = 0.5; this.lipsMat.uniforms._bright.value = 0.0; }
-                if (colorMode == '2') { this.lipsMat.uniforms._shine.value = 0.9; this.lipsMat.uniforms._bright.value = 0.0; }
-                if (colorMode == '1') { this.lipsMat.uniforms._shine.value = 0.0; this.lipsMat.uniforms._bright.value = 0.0; }
-            }
-            if (arType === 'eyeshadow' && this.eyeShadowMat) {
-                this.eyeShadowMesh.visible = true;
-                this.eyeShadowMat.uniforms._ShadowColor.value = hexToVector4(colorCode);
-                this.eyeShadowMat.needsUpdate = true;
-                if (colorMode == '5') this.eyeShadowMat.uniforms._noise.value = 1;
-                if (colorMode == '7') this.eyeShadowMat.uniforms._noise.value = 7;
-                if (colorMode == '1') this.eyeShadowMat.uniforms._noise.value = 0;
-            }
-            if (arType === 'eyeline' && this.eyeLineMat) {
-                this.eyeLineLeftNurbs.mesh.visible = true;
-                this.eyeLineRightNurbs.mesh.visible = true;
-                this.eyeLineMat.uniforms.color.value = hexToVector4(colorCode);
-            }
-            if (arType === 'mascara' && this.mascaraMat) {
-                this.mascaraLeftNurbs.mesh.visible = true;
-                this.mascaraRightNurbs.mesh.visible = true;
-                this.mascaraMat.uniforms.color.value = hexToVector4(colorCode);
-            }
-        } catch (e) {
-            // a layer may not be loaded yet
+        const color = hexToVector4(colorCode);
+        const ready = (material, mesh, name) => {
+            if (!material || !mesh) throw new Error(`The ${name} effect is not ready. Wait for the studio to finish loading and retry.`);
+        };
+
+        if (arType === 'foundation') {
+            ready(this.foundationMat, this.foundationMesh, 'foundation');
+            this.foundationMat.uniforms._MainColor.value = color;
+            if (colorMode == '5') this.foundationMat.uniforms._noise.value = 1;
+            if (colorMode == '7') this.foundationMat.uniforms._noise.value = 0.7;
+            if (colorMode == '1') this.foundationMat.uniforms._noise.value = 0;
+        } else if (arType === 'blush') {
+            ready(this.blushMat, this.blushMesh, 'blush');
+            this.blushMat.uniforms._ShadowColor.value = color;
+            if (colorMode == '5') this.blushMat.uniforms._noise.value = 1;
+            if (colorMode == '7') this.blushMat.uniforms._noise.value = 0.7;
+            if (colorMode == '1') this.blushMat.uniforms._noise.value = 0;
+        } else if (arType === 'lipstick') {
+            ready(this.lipsMat, this.lipsMesh, 'lipstick');
+            this.lipsMat.uniforms._MainColor.value = color;
+            if (colorMode == '5') { this.lipsMat.uniforms._shine.value = 0.3; this.lipsMat.uniforms._bright.value = 0.6; }
+            if (colorMode == '7') { this.lipsMat.uniforms._shine.value = 0.5; this.lipsMat.uniforms._bright.value = 0.0; }
+            if (colorMode == '2') { this.lipsMat.uniforms._shine.value = 0.9; this.lipsMat.uniforms._bright.value = 0.0; }
+            if (colorMode == '1') { this.lipsMat.uniforms._shine.value = 0.0; this.lipsMat.uniforms._bright.value = 0.0; }
+        } else if (arType === 'eyeshadow') {
+            ready(this.eyeShadowMat, this.eyeShadowMesh, 'eyeshadow');
+            this.eyeShadowMat.uniforms._ShadowColor.value = color;
+            this.eyeShadowMat.needsUpdate = true;
+            if (colorMode == '5') this.eyeShadowMat.uniforms._noise.value = 1;
+            if (colorMode == '7') this.eyeShadowMat.uniforms._noise.value = 0.7;
+            if (colorMode == '1') this.eyeShadowMat.uniforms._noise.value = 0;
+        } else if (arType === 'eyeline') {
+            ready(this.eyeLineMat, this.eyeLineLeftNurbs && this.eyeLineLeftNurbs.mesh, 'eyeliner');
+            ready(this.eyeLineMat, this.eyeLineRightNurbs && this.eyeLineRightNurbs.mesh, 'eyeliner');
+            this.eyeLineMat.uniforms.color.value = color;
+        } else if (arType === 'mascara') {
+            ready(this.mascaraMat, this.mascaraLeftNurbs && this.mascaraLeftNurbs.mesh, 'mascara');
+            ready(this.mascaraMat, this.mascaraRightNurbs && this.mascaraRightNurbs.mesh, 'mascara');
+            this.mascaraMat.uniforms.color.value = color;
+        } else {
+            throw new Error('Unknown makeup layer: ' + arType);
         }
+
+        this._activeLayers.add(arType);
+        this._syncFaceLayerVisibility();
+        return true;
     }
 
     /** Hide every makeup layer. (was the `ClearAll` event) */
     clearAll() {
-        if (this.blushMesh) this.blushMesh.visible = false;
-        if (this.eyeShadowMesh) this.eyeShadowMesh.visible = false;
-        if (this.foundationMesh) this.foundationMesh.visible = false;
-        if (this.lipsMesh) this.lipsMesh.visible = false;
-        if (this.eyeLineLeftNurbs) this.eyeLineLeftNurbs.mesh.visible = false;
-        if (this.eyeLineRightNurbs) this.eyeLineRightNurbs.mesh.visible = false;
-        if (this.mascaraLeftNurbs) this.mascaraLeftNurbs.mesh.visible = false;
-        if (this.mascaraRightNurbs) this.mascaraRightNurbs.mesh.visible = false;
+        this._activeLayers.clear();
+        this._syncFaceLayerVisibility();
     }
 
     /** Hide one makeup layer. (was the `ClearPartOfMakeUp` event) */
     clearPart(action) {
-        if (action === 'foundation' && this.foundationMesh) this.foundationMesh.visible = false;
-        if (action === 'blush' && this.blushMesh) this.blushMesh.visible = false;
-        if (action === 'lipstick' && this.lipsMesh) this.lipsMesh.visible = false;
-        if (action === 'eyeline') {
-            if (this.eyeLineLeftNurbs) this.eyeLineLeftNurbs.mesh.visible = false;
-            if (this.eyeLineRightNurbs) this.eyeLineRightNurbs.mesh.visible = false;
-        }
-        if (action === 'mascara') {
-            if (this.mascaraLeftNurbs) this.mascaraLeftNurbs.mesh.visible = false;
-            if (this.mascaraRightNurbs) this.mascaraRightNurbs.mesh.visible = false;
-        }
-        if (action === 'eyeshadow' && this.eyeShadowMesh) this.eyeShadowMesh.visible = false;
+        if (!['foundation', 'blush', 'lipstick', 'eyeshadow', 'eyeline', 'mascara'].includes(action)) return;
+        this._activeLayers.delete(action);
+        this._syncFaceLayerVisibility();
     }
 
     /** Set the pattern texture for a makeup type. (was the `setPattern` event) */
@@ -535,18 +576,28 @@ export class MakeupEngine {
         const tex = await this._fetchPatternTexture(armode, imageId);
         if (armode === 'foundation' && this.foundationMat) {
             this.foundationMat.uniforms._Mask.value = tex;
+            return true;
         }
         if (armode === 'eyeline' && this.eyeLineMat) {
             tex.flipY = true;
             this.eyeLineMat.uniforms.map.value = tex;
+            return true;
         }
         if (armode === 'mascara' && this.mascaraMat) {
             tex.flipY = true;
             this.mascaraMat.uniforms.map.value = tex;
+            return true;
         }
         if (armode === 'eyeshadow' && this.eyeShadowMat) {
             this.eyeShadowMat.uniforms._EyeShadowTexture.value = tex;
+            return true;
         }
+        if (armode === 'blush' && this.blushMat) {
+            this.blushMat.uniforms._EyeShadowTexture.value = tex;
+            return true;
+        }
+        tex.dispose();
+        throw new Error(`Pattern support is not implemented for makeup layer "${armode}".`);
     }
 
     /** Load a pattern texture from assets/patterns/<type>/<id>.png (no hardcoded host). */
@@ -683,23 +734,52 @@ export class MakeupEngine {
 
     /** Show/hide a wireframe of the morphed face mesh (to verify morph deformation). */
     setWireframe(on) {
-        if (this.wireMesh) this.wireMesh.visible = !!on;
+        if (!this.wireMesh) throw new Error('Wireframe view is not ready.');
+        this._wireframeEnabled = !!on;
+        this._syncFaceLayerVisibility();
+        return true;
     }
 
-    /** Show/hide the blur/refraction layer (off by default — it covers the warp). */
+    /** Show/hide the blur/refraction layer (off by default). */
     setBlur(on) {
-        if (this.blureMesh) this.blureMesh.visible = !!on;
+        if (!this.blureMesh) throw new Error('Soft-focus effect is not ready.');
+        this._blurEnabled = !!on;
+        this._syncFaceLayerVisibility();
+        return true;
     }
 
     /* ───────────────────────── lifecycle ───────────────────────── */
 
-    start() {
-        if (this._camera) this._camera.start();
-        if (this._rafId == null) this._animate();
+    async start() {
+        if (!this._camera) throw new Error('Camera controller is not initialized.');
+        if (this._cameraRunning) return this;
+        if (this._cameraStartPromise) return this._cameraStartPromise;
+
+        this._cameraStartPromise = (async () => {
+            if (this._rafId == null) this._animate();
+            try {
+                await this._camera.start();
+                this._cameraRunning = true;
+                return this;
+            } catch (error) {
+                this.stop();
+                const detail = error && error.message ? error.message : String(error || 'unknown camera error');
+                throw new Error('Camera could not start: ' + detail);
+            } finally {
+                this._cameraStartPromise = null;
+            }
+        })();
+        return this._cameraStartPromise;
     }
 
     stop() {
-        if (this._camera && this._camera.stop) this._camera.stop();
+        if (this._camera && this._camera.stop) {
+            try { this._camera.stop(); } catch (error) { console.warn('OpenMakeupSDK: camera stop failed:', error); }
+        }
+        this._cameraRunning = false;
+        this._faceVisible = false;
+        this._noFaceFrames = 0;
+        this._syncFaceLayerVisibility();
         if (this._rafId != null) {
             cancelAnimationFrame(this._rafId);
             this._rafId = null;
@@ -708,10 +788,90 @@ export class MakeupEngine {
 
     dispose() {
         this.stop();
-        window.removeEventListener('resize', this._sizeToVideoBox);
-        window.removeEventListener('resize', this._resizeOverlay);
-        this.video.removeEventListener('loadedmetadata', this._sizeToVideoBox);
-        if (this._faceMesh && this._faceMesh.close) this._faceMesh.close();
-        if (this.renderer) this.renderer.dispose();
+        if (typeof window !== 'undefined') {
+            window.removeEventListener('resize', this._sizeToVideoBox);
+            window.removeEventListener('resize', this._resizeOverlay);
+        }
+        if (this.video && this._sizeToVideoBox) this.video.removeEventListener('loadedmetadata', this._sizeToVideoBox);
+        if (this.video && this.video.srcObject && this.video.srcObject.getTracks) {
+            this.video.srcObject.getTracks().forEach((track) => { try { track.stop(); } catch (_) {} });
+            this.video.srcObject = null;
+        }
+        if (this._faceMesh && this._faceMesh.close) {
+            try { this._faceMesh.close(); } catch (_) {}
+        }
+        this._faceMesh = null;
+
+        const seenGeometries = new Set();
+        const seenMaterials = new Set();
+        const seenTextures = new Set();
+        const disposeMaterial = (material) => {
+            if (!material || seenMaterials.has(material)) return;
+            seenMaterials.add(material);
+            if (material.uniforms) {
+                for (const uniform of Object.values(material.uniforms)) {
+                    const value = uniform && uniform.value;
+                    if (value && value.isTexture && !seenTextures.has(value)) {
+                        seenTextures.add(value);
+                        value.dispose();
+                    }
+                }
+            }
+            material.dispose();
+        };
+        if (this.scene) {
+            this.scene.traverse((object) => {
+                if (object.geometry && !seenGeometries.has(object.geometry)) {
+                    seenGeometries.add(object.geometry);
+                    object.geometry.dispose();
+                }
+                if (Array.isArray(object.material)) object.material.forEach(disposeMaterial);
+                else disposeMaterial(object.material);
+            });
+        }
+        if (this.videoTexture && !seenTextures.has(this.videoTexture)) {
+            seenTextures.add(this.videoTexture);
+            this.videoTexture.dispose();
+        }
+        if (this.renderer) {
+            this.renderer.dispose();
+            this.renderer = null;
+        }
+
+        this._ready = false;
+        this._camera = null;
+        this._cameraRunning = false;
+        this._activeLayers.clear();
+        this._faceVisible = false;
+        this.scene = null;
+        this.camera3D = null;
+        this.faceModel = null;
+        this.faceObject3D = null;
+        this.videoPlane = null;
+        this.videoTexture = null;
+        this.blureMesh = null;
+        this.blushMesh = null;
+        this.lipsMesh = null;
+        this.eyeShadowMesh = null;
+        this.foundationMesh = null;
+        this.faceVideoMesh = null;
+        this.wireMesh = null;
+        this.eyeLineLeftNurbs = null;
+        this.eyeLineRightNurbs = null;
+        this.mascaraLeftNurbs = null;
+        this.mascaraRightNurbs = null;
+        this.blurMat = null;
+        this.blushMat = null;
+        this.lipsMat = null;
+        this.eyeShadowMat = null;
+        this.foundationMat = null;
+        this.eyeLineMat = null;
+        this.mascaraMat = null;
+        this._morphReady = false;
+        this._morphDeltas = null;
+        this._morphDict = null;
+        this._morphInfluences = null;
+        this._basePos = null;
+        this._pendingMorph = {};
     }
 }
