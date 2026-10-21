@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#100d18" />
   <meta name="color-scheme" content="dark" />
   <title>Open Makeup — مكياجي</title>
@@ -31,6 +31,8 @@
     body.preview-fullscreen{overflow:hidden}
     #status{display:flex;align-items:flex-start;gap:9px;padding:11px 13px;border-radius:15px;background:#ffffff08;border:1px solid var(--line);color:#e7d6e5;font-size:12px;line-height:1.65;min-height:43px}
     #status-icon{flex:0 0 auto}.status-error{border-color:#ff8da744!important;color:#ffc1d0!important}.status-success{border-color:#83e5b044!important;color:#c9f7e0!important}
+    #camera-retry{flex:0 0 auto;border:1px solid #ff8da766;border-radius:12px;padding:8px 10px;background:#ff8da71a;color:#ffd4e0;font-size:11px;font-weight:750}
+    #camera-retry[hidden]{display:none}
     .panel{padding:15px;border:1px solid var(--line);border-radius:23px;background:linear-gradient(145deg,#ffffff0c,#ffffff04);box-shadow:0 14px 38px #0003;min-width:0;animation:float-in .65s ease both}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}.panel-title{font-size:17px;font-weight:800;margin:0;letter-spacing:-.03em}.panel-subtitle{font-size:11px;color:var(--muted);margin-top:4px}
     .section-label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#f2d8e8;margin:4px 2px 10px}.section-label:before{content:"";width:3px;height:15px;border-radius:5px;background:linear-gradient(var(--pink),var(--purple))}
     .looks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.look{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 5px;border-radius:15px;font-size:12px;font-weight:700;background:#ffffff08}.look:active{background:#e76ca92b}
@@ -64,7 +66,7 @@
       <section class="preview-card">
         <div class="preview-head"><div class="preview-title"><span class="live-dot"></span><span data-i18n="livePreview">المعاينة المباشرة</span></div></div>
         <div id="stage"><div class="stage-chip" data-i18n="studioChip">✦ استوديو الجمال المباشر</div><button class="secondary" id="fullscreen-preview" data-i18n-title="fullscreenTitle" title="تكبير المعاينة" aria-label="تكبير المعاينة">⛶</button><video id="video" autoplay playsinline muted></video><canvas id="renderCanvas"></canvas></div>
-        <div id="status" role="status" aria-live="polite"><span id="status-icon">✦</span><span id="status-text" data-i18n="statusLoading">جارٍ تجهيز الاستوديو...</span></div>
+        <div id="status" role="status" aria-live="polite"><span id="status-icon">✦</span><span id="status-text" data-i18n="statusLoading">جارٍ تجهيز الاستوديو...</span><button id="camera-retry" data-i18n="retryCamera" type="button" hidden>إعادة محاولة الكاميرا</button></div>
       </section>
 
       <div class="controls-column">

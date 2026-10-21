@@ -29,6 +29,9 @@ jobs:
       - name: Type-check SDK
         run: npm run typecheck
 
+      - name: Test runtime reliability and SDK error propagation
+        run: npm test
+
       - name: Bundle web engine and local runtime assets
         run: npm run build
 
