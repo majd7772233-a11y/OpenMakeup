@@ -1,7 +1,8 @@
 # Open Makeup — Project Roadmap
 
-**Last updated:** 2026-10-21  
-**Code revision validated by CI:** `0f4590431e168976c3c2605ce4c14dd09b82156e`  
+**Last updated:** 2026-10-22  
+**Stage 2 code revision validated by CI:** `a5fcc28287b2a6214d52c7c9a99a3e327c0640df`  
+**CI run:** [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245)  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
 **Related pull request:** [#3 — Arabic-first mobile UI, fullscreen preview, and camera recovery](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
 **Engineering protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
@@ -115,25 +116,51 @@ Acceptance criteria:
 8. Quick-look failure waits for all concurrent layer operations to settle before rollback.
 9. Unsupported lipstick patterns are not advertised through `getPatterns()`; attempting unsupported pattern application fails honestly.
 10. `npm test`, `npm run typecheck`, `npm run build`, Android debug APK build and artifact upload pass on the validated commit.
-11. Background/resume, permissions and rendered-effect alignment still require physical Android 6/7 testing. Since this session had no connected physical device, this is explicitly outstanding; do not describe Stage 1 as physically verified.
+11. Physical Android 6/7 background/resume, permission, and effect-alignment tests are intentionally batched into a combined regression pass after Stage 4, per user direction. Until that pass, mark hardware-specific behavior as unverified; automated CI is not a device test.
 
 ### Stage 2 — Makeup Effect and Face-Control Correctness
 
-**Dependencies:** Stage 1 runtime contract.  
-**Primary files:** `src/OpenMakeup.js`, `src/categories.js`, `src/morphs.js`, `src/core/MakeupEngine.js`, `src/core/materials.js`, shaders/model assets, `assets/patterns/patterns.json`, `docs/pattern-catalog.json`, effect tests and UI controls.
+**Status:** Implementation and automated CI complete. Real-device visual/camera validation is deliberately deferred to the combined regression pass after Stage 4, per user direction.  
+**Code revision validated by CI:** `a5fcc28287b2a6214d52c7c9a99a3e327c0640df`  
+**CI run:** [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245)
 
-Required work:
-- Audit each of the six products end-to-end: masks, UV channels, material uniforms, layer order, mirroring, occlusion, mouth/eye movement and removal.
-- Implement a correct lipstick pattern-to-shader path or permanently remove unsupported lipstick patterns from the shipped catalogue/assets; never expose nonfunctional options.
-- Validate matte, shimmer, glossy and glitter semantics against the actual shaders.
-- Give every face-shaping control a distinct user-readable name, description and sensible bounds. Hide raw/debug targets from normal users.
-- Verify individual layer clearing, clear-all, preset layering/rollback and missing texture behavior.
+#### Findings addressed
+
+1. The pattern manifest and docs catalog claimed more patterns than the renderer safely supported. Placeholder masks and nonfunctional foundation/lipstick entries are no longer advertised. The shipped catalogue contains 69 real local masks across blush, eyeshadow, eyeliner and mascara (4 blush, 49 eyeshadow, 12 eyeliner, 4 mascara).
+2. Pattern IDs are validated against the manifest. The SDK distinguishes a 1-based `pattern` position from explicit `patternId`; unsupported categories, path-like IDs, unknown IDs, malformed paths and non-bundled manifest records fail rather than silently applying another texture.
+3. Switching and clearing patterns restore defaults, dispose replaced GPU textures, and prevent stale asynchronous loads from overwriting newer selections after a race.
+4. Material code and shaders agree on finish uniforms. Foundation declares and uses `_noise`; foundation’s fragment shader adds subtle procedural finish variation; foundation, blush and eyeshadow use normalized noise levels (0 / 0.7 / 1). Lipstick modes set the actual `_shine` and `_bright` uniforms.
+5. Camera-sensitive foundation, blush and lipstick materials receive the current world-space camera position on render/results updates.
+6. Clearing one layer resets its custom pattern and disposes its active texture. Active effect selection remains separate from face-tracking visibility.
+7. The GLB audit confirmed friendly morph controls map to actual model targets. The everyday studio presents named controls rather than raw `facemeshN` names; the engine rejects unknown morphs and non-finite weights.
+8. Normal preview (`cover`) and fullscreen preview (`contain`) now share one video/canvas sizing calculation so the face effects use the same viewport rectangle.
+9. README and TypeScript documentation now describe actual pattern/parameter contracts.
+
+#### Implementation and test scope delivered
+
+- Audited `src/categories.js`, `src/morphs.js`, `src/OpenMakeup.js`, `src/index.d.ts`, `src/core/MakeupEngine.js`, `src/core/materials.js`, `src/core/FaceMeshModelController.js`, related GLSL shaders, GLB UV/morph data, UI morph controls, manifests/catalogue and README.
+- Added strict finish/color/pattern validation and explicit errors for unsupported modes instead of silent fallbacks.
+- Made pattern state consistent across apply, reapply, single-layer clear, clear-all, failed loads, racing loads and engine disposal.
+- Added `src/core/videoLayout.js` for mathematically consistent cover/contain preview sizing.
+- Added 21 tests in `tests/effect-contracts.test.js`, in addition to the 11 runtime tests in `tests/runtime-reliability.test.js`.
+
+#### Completion evidence and deferred device boundary
+
+- CI run [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245) passed **32 Node tests, 0 failures**, SDK type-check, Vite web bundle, Android asset packaging, debug APK build and artifact upload. Artifact: `Open-Makeup-debug-apk`.
+- Automated tests validate SDK/material state, bundled assets/catalogue integrity, GLB morph/UV contracts, layer mappings, finish uniforms, texture races/cleanup, invalid input handling and preview layout. They do not establish subjective shader appearance under live lighting or physical camera alignment.
+- Foundation/lipstick pattern masks remain intentionally unsupported until proper category-specific mapping and assets exist. The SDK publishes no choices for those categories and rejects attempts.
+- Physical Android 6/7 rendering, repeated resume, touch/permission workflows and performance will be checked together after Stage 4. This is intentionally deferred verification, not a claimed success.
 
 Acceptance criteria:
-- Each visible effect is visually verified on a supported device or shows a clear unsupported/failure state.
-- Public API, pattern catalogue and renderer support agree.
-- Every regular-user morph slider produces the intended documented change, and reset updates both engine and UI.
-- Regression tests cover category mappings, effect errors and selected-layer state.
+1. Every advertised pattern has a real bundled file, valid manifest ID/path and renderer mapping; unsupported foundation/lipstick patterns are not advertised.
+2. Invalid colors, finishes, categories and explicit pattern IDs fail clearly instead of being silently substituted.
+3. Custom pattern selection, switching, reset, clear-one, clear-all, asset failure, racing loads and disposal have automated coverage and correct resource ownership.
+4. All six categories map to a real engine layer; finish settings assign existing uniforms; missing uniforms and unsupported values fail explicitly.
+5. Friendly morph controls map to existing GLB targets; the regular UI hides raw target names and the API rejects unknown names/non-finite values.
+6. Normal/fullscreen camera-canvas rectangles use one shared fit calculation and preserve the mirror transform.
+7. README, TypeScript definitions, manifest and catalogue agree with runtime support.
+8. `npm test` (32 tests), `npm run typecheck`, `npm run build`, Android debug APK build and artifact upload pass at the recorded revision.
+9. Live visual appearance/camera alignment remain unverified until the combined after-Stage-4 device pass; proceed with Stage 3 and Stage 4 without repeating that physical test for each stage.
 
 ### Stage 3 — Complete Mobile UI/UX, Localization and Accessibility
 
@@ -168,16 +195,18 @@ Required work:
 - Add named custom looks with local save/load/delete and a validated versioned storage schema.
 - Add undo/redo for ordered effect and morph operations.
 - Preserve on-device processing and only share after explicit user action.
+- At the end of Stage 4, execute one consolidated physical-device regression pass covering Stages 1–4: Android 6/7 launch and permission denial, repeated camera pause/resume, all six makeup layers and presets, face-tracking loss/reacquisition, morph controls, preview/fullscreen alignment in portrait/landscape, capture/save/share if implemented, and resource/performance stability. Record device model, Android/WebView versions, steps, results and defects in both project memory files.
 
 Acceptance criteria:
 - Users can create, save, relaunch and restore custom looks accurately.
 - Captures match chosen effect state, orientation and mirror behavior.
 - Comparison doesn't mutate selected state; undo/redo reverses the intended sequence.
 - Storage/share failures are clear and do not corrupt saved looks.
+- The combined Stages 1–4 physical-device matrix is executed and documented, or the exact unavailable-device blocker is recorded without claiming a pass.
 
 ### Stage 5 — Camera Switching, Onboarding, Preset Library, Performance and Release
 
-**Dependencies:** Stages 1–4.  
+**Dependencies:** Stages 1–4 plus the consolidated physical-device regression pass scheduled at the end of Stage 4.  
 **Primary files:** Android host/manifest, camera module, UI/localization, preset/catalogue assets, workflows, README and release notes.
 
 Required work:
@@ -208,8 +237,8 @@ For every stage:
 ## 8. Current Operational State
 
 - PR #3 remains open; work remains on `feat/open-makeup-arabic-mobile-lifecycle`.
-- Source revision `0f4590431e168976c3c2605ce4c14dd09b82156e` passed GitHub Actions run [39675435438](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39675435438), including eleven runtime tests, type-check, Vite bundle, Android debug APK build and artifact upload.
-- An earlier build failure at `042651ebc59d05b797a40eefc5d70f69c6669c69` was traced to duplicate declarations for `resumeInProgress` and `hiddenAt`; fixed in `9dabba92c57100213942b8f5e49e4b1879a9ef9f`. The successful final code run is later than that fix and includes further camera/session corrections.
-- The workflow validates the build and automated helper/SDK tests, not real WebView, GPU shader output or physical camera behavior.
-- No physical Android device was run in this session. Stage 1 implementation/CI is complete, but physical device acceptance is still outstanding; do not mark the whole stage unconditionally complete.
-- Stage 2 must not begin until the target-device gate is completed or explicitly blocked for lack of a test device.
+- Stage 1 source and runtime-reliability tests passed CI; device acceptance is intentionally deferred rather than blocking further implementation.
+- Stage 2 revision `a5fcc28287b2a6214d52c7c9a99a3e327c0640df` passed GitHub Actions run [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245): 32 tests pass, zero fail, plus type-check, web bundle, Android asset packaging, debug APK build and artifact upload.
+- CI does not simulate physical camera behavior, real Android WebView or shader appearance under live lighting. Per the user's time-saving instruction, physical Android 6/7 testing for Stages 1–4 is scheduled as one combined pass after Stage 4.
+- PR #3 remains open and unmerged. The APK artifact `Open-Makeup-debug-apk` is attached to run [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245).
+- Next eligible stage: Stage 3 — Complete Mobile UI/UX, Localization and Accessibility. The roadmap contains five stages total.

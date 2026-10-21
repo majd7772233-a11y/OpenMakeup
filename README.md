@@ -187,7 +187,7 @@ Weights are typically `0..1`; negative values and values above 1 exaggerate the 
 
 ## 🗺️ Roadmap
 
-- [x] Real-time makeup engine (6 categories, finishes, 73 patterns)
+- [x] Real-time makeup engine (6 categories; 69 bundled masks in four supported pattern categories)
 - [x] Public `OpenMakeup` API with smart defaults
 - [x] Face reshape via blend shapes
 - [x] Interactive playground + hosted live demo

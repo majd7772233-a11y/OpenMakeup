@@ -1,9 +1,10 @@
 # GPT.md — Open Makeup Engineering Notebook
 
-**Last updated:** 2026-10-21  
+**Last updated:** 2026-10-22  
 **Repository:** https://github.com/majd7772233-a11y/OpenMakeup  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
-**Code revision validated by CI:** `0f4590431e168976c3c2605ce4c14dd09b82156e`  
+**Stage 2 code revision validated by CI:** `a5fcc28287b2a6214d52c7c9a99a3e327c0640df`  
+**CI run:** [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245)  
 **Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
 **Mandatory execution protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
 
@@ -43,7 +44,7 @@ The user's workflow requires complete stage execution rather than partial delive
 
 The model is loaded exactly once by `MakeupEngine._loadFaceAndMaterials()`. `FaceMeshModelController.loadModel()` returns a shared Promise and rejects for unavailable/invalid model data. Shader fetches check HTTP status. Texture/material loaders are awaited; fulfilled material resources are disposed if another required material load fails.
 
-Engine startup awaits MediaPipe configuration and camera startup with a timeout. Lifecycle generation changes invalidate camera starts that complete late after stop/disposal, and any late stream is stopped/detached. The app then confirms at least two observed advances of `video.currentTime` before enabling controls.
+Engine startup awaits MediaPipe configuration and camera startup with a timeout. Lifecycle generation changes invalidate camera starts that complete late after stop/disposal, and any late stream is stopped/detached. The app then confirms at least two observed advances of `video.currentTime` before enabling controls. For layout, `src/core/videoLayout.js` computes a shared video/canvas rectangle: cover in normal preview and contain in fullscreen, with both layers retaining the same mirror transform.
 
 The bundled `patterns.json` manifest is required for this studio build. A missing/invalid manifest fails initialization and disposes the running engine instead of leaving quick looks/pattern actions broken after a false-ready status.
 
@@ -51,7 +52,7 @@ The bundled `patterns.json` manifest is required for this studio build. A missin
 
 `OpenMakeup.apply()` requires successful initialization. It loads any requested pattern before activating the layer and propagates failures. `MakeupEngine.setAR()` validates material/mesh readiness and does not swallow errors.
 
-The engine currently maps patterns for foundation, blush, eyeshadow, eyeliner and mascara. Lipstick pattern assets exist in the repository but have no confirmed runtime shader mapping; `getPatterns('lipstick')` therefore returns an empty list, and direct unsupported application fails explicitly. Stage 2 must implement a correct lipstick mapping or formally remove unsupported lipstick pattern assets/catalogue entries.
+The SDK supports bundled masks for blush, eyeshadow, eyeliner and mascara only (69 files: 4 blush, 49 eyeshadow, 12 eyeliner, 4 mascara). Foundation and lipstick entries are empty because their placeholders lacked dependable category-specific mapping; the API returns no options and rejects direct pattern attempts for those categories. Do not restore the entries without real masks, shader/UV mapping and tests. Manifest validation enforces category support, numeric IDs, exact asset paths and `bundled: true`.
 
 ### Face tracking and layer visibility
 
@@ -107,10 +108,37 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 
 - CI run [39675435438](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39675435438) completed successfully on code revision `0f4590431e168976c3c2605ce4c14dd09b82156e`, including eleven Node tests, SDK type-check, Vite bundle, Android debug APK build and artifact upload.
 - An earlier run failed only because Vite found duplicate `resumeInProgress`/`hiddenAt` declarations; that regression was fixed and the later run above passed.
-- The eleven tests cover required manifest failure/cleanup, track state, advancing frames, fully stalled frames, single-frame-then-freeze, ended tracks, cancellation of late camera startup, SDK start-promise behavior, truthful layer activation errors, unsupported pattern listing and pattern failure propagation.
-- CI does not simulate real Android WebView, MediaPipe/GPU rendering or a physical camera. No physical Android 6/7 device was tested in this session; this remains an explicit acceptance gate.
+- The eleven Stage-1 tests cover manifest failure/cleanup, track readiness, progressing/stalled frames, single-frame-then-freeze, ended tracks, late start cancellation, SDK startup promises and truthful errors.
+- Stage 2 added 21 tests in `tests/effect-contracts.test.js` for real manifest files, GLB UV/morph mappings, finish uniforms, layer mappings, pattern resets/disposal/races, invalid inputs, morph UI/API and preview layout. CI run [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245) passed all 32 tests, type-check, Vite build, Android packaging, APK build and artifact upload on revision `a5fcc28287b2a6214d52c7c9a99a3e327c0640df`.
+- CI does not simulate real Android WebView, GPU shader appearance or a physical camera. By user request, physical Android 6/7 tests for Stages 1–4 will be run together after Stage 4, before Stage 5; until then hardware-specific behavior stays marked unverified.
 
-## 7. Build and Test Commands
+## 7. Stage-2 Effect and Face-Control Changes
+
+### Source commits
+- `068b14a320214dd3a4ddd7c0f7bcfd17e0eb29d2`: reconciled manifest, docs catalogue and README with 69 real local pattern masks; removed placeholder foundation/lipstick entries.
+- `2e4caeca317ee28650df599fc654796d102495e5`: validated finish uniforms, added camera-position synchronization, foundation finish rendering, and custom-pattern reset/disposal.
+- `41abb5f76a618ab7671e70cc7636c047cc2a3fed`: strict SDK validation for manifest/color/finish/pattern IDs; typed explicit `patternId`; everyday morph UI limited to friendly controls; initial effect tests.
+- `efe787839e7a9ee997017818efb66373ab4e8e2d`: expanded GLB, material, pattern and layer-clearing tests; float assertion corrected afterward.
+- `a7f49c77019bdc23f088c415b6ff71b484899710`: added the missing foundation `_noise` material uniform.
+- `22ef63649ca7096f829b2876033a4181c26a2a5a`: applied Float32 tolerance in morph assertions.
+- `439a09f66985c85ff6e0b9cb8ef30c432f15556d`: made async pattern changes latest-wins and disposed late superseded textures.
+- `cb6731fde8dd90668e7bdc4e2eb4534debf7fd4d`: shared cover/contain calculation for normal/fullscreen video-canvas alignment.
+- `a5fcc28287b2a6214d52c7c9a99a3e327c0640df`: strict hex validation, explicit pattern-ID tests, and SDK pattern documentation.
+
+### Current effect contracts
+- Only blush, eyeshadow, eyeliner and mascara advertise patterns. Foundation/lipstick remain unsupported until real assets and renderer mappings exist.
+- `pattern` is a 1-based visible list position; `patternId` names a specific ID returned by `getPatterns()`. Unknown IDs, path-like values, unsupported categories and invalid manifest records reject.
+- Custom textures reset on reapply/clear, replacements are disposed, and stale async loads cannot overwrite newer selections.
+- Foundation/blush/eyeshadow finish modes set `_noise` to 0, 0.7 or 1; foundation declares and consumes the uniform. Lipstick modes set `_shine`/`_bright`; unsupported finish values reject.
+- Eight friendly morph controls map to real GLB targets; raw extra targets are not exposed in the regular UI.
+- `videoLayout.js` ensures normal cover and fullscreen contain use consistent video/canvas geometry. Physical visual alignment is deferred.
+
+### Validation evidence
+- CI [run 39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245): 32 tests passed, zero failures; type-check, Vite bundle, Android packaging, debug APK and artifact upload passed.
+- Target-device camera/shader appearance/performance tests are deliberately batched until after Stage 4. Do not describe them as passed before an actual device matrix is executed.
+- Next stage: Stage 3 — Complete Mobile UI/UX, Localization and Accessibility. Total roadmap stages: **5**.
+
+## 8. Build and Test Commands
 
 - `npm install`
 - `npm test`
@@ -118,7 +146,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - `npm run build`
 - CI also packages web assets into Android and runs `gradle --no-daemon -p android assembleDebug`; the debug APK is uploaded as workflow artifact `Open-Makeup-debug-apk`.
 
-## 8. Permanent Engineering Rules
+## 9. Permanent Engineering Rules
 
 - Never store tokens/passwords/private keys in this repository or either memory file.
 - Don't claim functionality from class existence, green compilation, or a swallowed SDK error.
@@ -128,11 +156,11 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - Distinguish automated verification from physical-device verification.
 - Update both `ROADMAP.md` and `GPT.md` after implementation and test results.
 
-## 9. Exact Resume Procedure
+## 10. Exact Resume Procedure
 
 1. Read both project memory files.
 2. Fetch branch head and latest GitHub Actions run.
 3. Check `npm test`, type-check, Vite bundle, APK build and artifact upload.
-4. Fix Stage 1 regressions before reporting the stage complete.
-5. Update these files with actual head, CI status and device-validation limitations.
-6. Do not start Stage 2 while the physical Android 6/7 acceptance gate is still unresolved.
+4. Continue with Stage 3, then Stage 4, fixing in-scope regressions within each stage.
+5. At the end of Stage 4, run and document one combined physical-device regression pass for Stages 1–4.
+6. Until that pass occurs, mark hardware-specific camera/rendering/performance behavior unverified. Do not block Stages 2–4 solely because device tests are deferred.
