@@ -123,24 +123,16 @@ export class OpenMakeup {
   async apply(category, opts = {}) {
     const name = resolveCategory(category);
     if (!name) throw new Error(`OpenMakeup: unknown category "${category}"`);
+    if (!this._ready) throw new Error('OpenMakeup: await init() before applying makeup.');
     const cfg = this._categories[name];
-
     const color = await this._resolveColor(name, opts);
     const colorMode = this._resolveColorMode(name, opts);
-
-    // color + visibility
-    this.engine.setAR(cfg.engine, color, colorMode);
-
-    // pattern (only when one is requested or defaulted; otherwise the shader's
-    // built-in texture is kept)
     const patternId = this._resolvePatternId(name, opts);
-    if (patternId != null) {
-      try {
-        await this.engine.setPattern(cfg.engine, patternId);
-      } catch (e) {
-        console.warn(`OpenMakeup: could not load pattern ${patternId} for "${name}".`);
-      }
-    }
+
+    // Load a requested pattern before exposing its layer. Failures are passed to
+    // the caller so the UI cannot announce a false success.
+    if (patternId != null) await this.engine.setPattern(cfg.engine, patternId);
+    this.engine.setAR(cfg.engine, color, colorMode);
 
     return {
       category: name,
@@ -251,7 +243,6 @@ export class OpenMakeup {
     const byId = list.find((x) => x.id === p);
     if (byId) return byId.id;
 
-    console.warn(`OpenMakeup: pattern ${p} not found for "${name}" (valid: 1..${list.length}); keeping built-in.`);
-    return null;
+    throw new Error(`OpenMakeup: pattern "${p}" not found for "${name}" (valid: 1..${list.length}).`);
   }
 }
