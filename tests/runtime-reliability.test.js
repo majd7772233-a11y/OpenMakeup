@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { OpenMakeup } from '../src/OpenMakeup.js';
+import { MakeupEngine } from '../src/core/MakeupEngine.js';
 import { hasLiveCameraTrack, waitForCameraFrames } from '../src/core/cameraReadiness.js';
 
 function makeVideo({ trackState = 'live', enabled = true, currentTime = 0, readyState = 2 } = {}) {
@@ -70,6 +71,37 @@ test('camera readiness rejects when the track ends during startup', async () => 
       if (clock >= 40) video.srcObject.getVideoTracks = () => [{ readyState: 'ended', enabled: true }];
     },
   }), /No live camera video track/);
+});
+
+test('engine cancels a late camera start after stop', async () => {
+  let finishStart;
+  let stopCalls = 0;
+  const engine = Object.create(MakeupEngine.prototype);
+  Object.assign(engine, {
+    _camera: {
+      start: () => new Promise((resolve) => { finishStart = resolve; }),
+      stop: () => { stopCalls += 1; },
+    },
+    _cameraRunning: false,
+    _cameraStartPromise: null,
+    _lifecycleGeneration: 0,
+    _faceVisible: false,
+    _noFaceFrames: 0,
+    _rafId: null,
+    _activeLayers: new Set(),
+    video: { srcObject: null },
+    _animate() {},
+    _syncFaceLayerVisibility() {},
+  });
+
+  const pendingStart = engine.start();
+  assert.equal(typeof pendingStart.then, 'function');
+  engine.stop();
+  finishStart();
+
+  await assert.rejects(pendingStart, /Camera could not start: Camera startup was cancelled/);
+  assert.equal(engine._cameraRunning, false);
+  assert.ok(stopCalls >= 2);
 });
 
 test('SDK start returns a promise that settles with camera startup', async () => {
