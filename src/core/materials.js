@@ -253,6 +253,7 @@ export async function loadFoundationMat(assets) {
             _Mask: { value: maskTexture },
             _Mask_ST: { value: new Vector4(1.0, 1.0, 0.0, 0.0) },
             _shedat: { value: 0.2 },
+            _noise: { value: 0.0 },
         },
     });
 }

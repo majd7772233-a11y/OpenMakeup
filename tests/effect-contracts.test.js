@@ -332,8 +332,11 @@ test('camera uniforms referenced by shaders exist and receive runtime updates', 
   const foundationFragment = readFileSync(new URL('../assets/shaders/foundation/fragment.glsl', import.meta.url), 'utf8');
   const blushVertex = readFileSync(new URL('../assets/shaders/blush/vertex.glsl', import.meta.url), 'utf8');
   const lipFragment = readFileSync(new URL('../assets/shaders/lip/fragment.glsl', import.meta.url), 'utf8');
+  const materialLoaders = readFileSync(new URL('../src/core/materials.js', import.meta.url), 'utf8');
+  const foundationLoader = materialLoaders.match(/export async function loadFoundationMat\(assets\) \{[\s\S]*?\n\}/)?.[0] || '';
   assert.match(foundationFragment, /uniform float _noise;/);
   assert.match(foundationFragment, /uniform vec3 uCameraPosition;/);
+  assert.match(foundationLoader, /_noise: \{ value: 0\.0 \}/);
   assert.match(blushVertex, /uniform vec3 uCameraPosition;/);
   assert.match(lipFragment, /uniform vec3 cameraPosition;/);
 });
