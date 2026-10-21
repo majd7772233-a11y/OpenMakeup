@@ -163,6 +163,38 @@ test('unsupported pattern application is rejected before any file load', async (
   assert.equal(loaded, false);
 });
 
+test('the latest pattern request wins when texture loads finish out of order', async () => {
+  const engine = Object.create(MakeupEngine.prototype);
+  const defaultTexture = mockTexture();
+  const pending = [];
+  const created = [];
+  Object.assign(engine, {
+    assets: { pattern: (category, id) => `./assets/patterns/${category}/${id}.png` },
+    _texLoader: {
+      load(url, onLoad) {
+        const texture = mockTexture();
+        created.push(texture);
+        pending.push({ url, onLoad: () => onLoad(texture) });
+      },
+    },
+    _defaultPatternTextures: new Map([['blush', defaultTexture]]),
+    _activePatternTextures: new Map(),
+    _patternRequestVersions: new Map(),
+    blushMat: { uniforms: { _EyeShadowTexture: { value: defaultTexture } } },
+  });
+
+  const first = engine.setPattern('blush', 6413);
+  const second = engine.setPattern('blush', 6415);
+  assert.equal(pending.length, 2);
+  pending[1].onLoad();
+  assert.equal(await second, true);
+  pending[0].onLoad();
+  assert.equal(await first, false);
+  assert.equal(engine.blushMat.uniforms._EyeShadowTexture.value, created[1]);
+  assert.equal(created[0].disposed, true);
+  assert.equal(created[1].disposed, false);
+});
+
 test('failed pattern replacement keeps the previous texture active', async () => {
   const engine = Object.create(MakeupEngine.prototype);
   const defaultTexture = mockTexture();

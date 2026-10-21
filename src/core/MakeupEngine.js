@@ -174,6 +174,7 @@ export class MakeupEngine {
         this._blurEnabled = false;
         this._defaultPatternTextures = new Map();
         this._activePatternTextures = new Map();
+        this._patternRequestVersions = new Map();
         this._cameraWorldPosition = new Vector3();
 
         // face reshape (morph) state
@@ -676,14 +677,21 @@ export class MakeupEngine {
         const uniform = material && material.uniforms && material.uniforms[target.uniform];
         if (!uniform) throw new Error(`The ${armode} shader has no pattern uniform "${target.uniform}".`);
 
+        const requestVersion = this._nextPatternRequestVersion(armode);
         const current = this._activePatternTextures.get(armode);
         if (current && current.userData && String(current.userData.openMakeupPatternId) === String(imageId)) {
             return true;
         }
 
-        // Load the replacement completely before swapping it into the live
-        // material. If loading fails, the currently active pattern survives.
+        // Load before swapping. If a second user action or a clear/dispose
+        // happens while this texture is in flight, the older request is cancelled
+        // and its decoded texture is immediately disposed instead of winning late.
         const texture = await this._fetchPatternTexture(armode, imageId);
+        if (this._patternRequestVersions.get(armode) !== requestVersion) {
+            texture.dispose();
+            return false;
+        }
+
         texture.flipY = target.flipY;
         texture.userData = texture.userData || {};
         texture.userData.openMakeupPatternId = String(imageId);
@@ -694,9 +702,18 @@ export class MakeupEngine {
         return true;
     }
 
+    _nextPatternRequestVersion(armode) {
+        if (!this._patternRequestVersions) this._patternRequestVersions = new Map();
+        const version = (this._patternRequestVersions.get(armode) || 0) + 1;
+        this._patternRequestVersions.set(armode, version);
+        return version;
+    }
+
     _resetPattern(armode) {
         const target = PATTERN_TARGETS[armode];
         if (!target) return false;
+        // A reset or clear supersedes all outstanding loads for this category.
+        this._nextPatternRequestVersion(armode);
         const defaultTexture = this._defaultPatternTextures.get(armode);
         const material = this[target.material];
         const uniform = material && material.uniforms && material.uniforms[target.uniform];
@@ -708,6 +725,8 @@ export class MakeupEngine {
         if (previous && previous !== defaultTexture) previous.dispose();
         return true;
     }
+
+
 
     /** Load an asset from the bundled pattern folder. IDs are numeric manifest keys. */
     _fetchPatternTexture(armode, id) {
@@ -942,6 +961,9 @@ export class MakeupEngine {
 
     dispose() {
         this.stop();
+        // Invalidate async texture loads so their late callbacks cannot mutate
+        // materials after their scene has been disposed.
+        for (const category of Object.keys(PATTERN_TARGETS)) this._nextPatternRequestVersion(category);
         if (typeof window !== 'undefined') {
             window.removeEventListener('resize', this._sizeToVideoBox);
             window.removeEventListener('resize', this._resizeOverlay);

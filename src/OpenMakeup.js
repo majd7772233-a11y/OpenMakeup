@@ -6,9 +6,8 @@ import { MORPH_CONTROLS } from './morphs.js';
 // or when AI resolution fails — keeps `apply()` from ever producing no color.
 const FALLBACK_AI_COLOR = '#b4002e';
 
-// Only advertise pattern categories that currently have a corresponding
-// renderer/shader uniform. Lipstick textures exist in the asset catalogue,
-// but the current lipstick shader has no supported pattern assignment.
+// Only advertise pattern categories with a real renderer mapping and bundled
+// mask files. Foundation/lipstick placeholders are deliberately not published.
 const PATTERN_RENDER_SUPPORT = new Set([
   'blush', 'eyeshadow', 'eyeline', 'mascara',
 ]);
@@ -182,9 +181,11 @@ export class OpenMakeup {
     // Supported categories restore their built-in texture when no pattern is
     // requested. This prevents a previous pattern from sticking to a new look.
     if (patternId != null) {
-      await this.engine.setPattern(cfg.engine, patternId);
+      const applied = await this.engine.setPattern(cfg.engine, patternId);
+      if (applied === false) throw new Error(`OpenMakeup: pattern update for "${name}" was superseded by a newer selection.`);
     } else if (PATTERN_RENDER_SUPPORT.has(name)) {
-      await this.engine.setPattern(cfg.engine, null);
+      const reset = await this.engine.setPattern(cfg.engine, null);
+      if (reset === false) throw new Error(`OpenMakeup: could not restore the default pattern for "${name}".`);
     }
     this.engine.setAR(cfg.engine, color, colorMode);
 
