@@ -12,9 +12,9 @@ export class FaceMeshModelController {
         this.sceneSize = sceneSize;
         this.scene = scene;
         this.mesh = null;
-        this.loadModel();
         this._axes = null;
         this._modelIPD = null; // فاصله بین چشم‌ها در مدل (برای مقیاس‌دهی)
+        this._loadPromise = null;
     }
     normalizedToWorld(nx, ny, nz, W, H, depthScale=100){
         const px = nx * W;
@@ -62,49 +62,64 @@ export class FaceMeshModelController {
         return { position: centerEyes, rotation: quat, rotM4: rot, scale: s };
     }
     loadModel(onLoad) {
-        const loader = new GLTFLoader();
-        loader.load(this.modelPath, (gltf) => {
-            let mesh  = null;
-            gltf.scene.traverse((child) => {
-                if (child.isMesh && !mesh) mesh = child;
-            });
-            if (!mesh) {
-                console.error("❌ هیچ مشی در مدل پیدا نشد");
-                return;
-            }
-
-            const geo  = mesh.geometry;
-
-            const posAttr = geo.attributes.position;
-            if (!geo.attributes.position) {
-                console.error("❌ geometry فاقد position است");
-                return;
-            }
-            if (geo.attributes.uv) {
-                geo.setAttribute('uvLip', geo.attributes['texcoord_4']);
-                geo.setAttribute('uvEyeShadow', geo.attributes['uv3']);
-            } else {
-                console.error('No base UV found to create uvLip');
-            }
-
-
-
-            geo.computeVertexNormals();
-
-            this.mesh = mesh;
-            if (!this._axes) {
-                this._axes = new AxesHelper(50);
-                this._axes.renderOrder = 999;
-                this._axes.depthTest = false;
-                mesh.add(this._axes);
-            }
-
-            this.originalPositions = posAttr.array.slice();
-
-            // Call the callback with the loaded mesh
+        if (this.mesh) {
             if (onLoad) onLoad(this.mesh);
+            return Promise.resolve(this.mesh);
+        }
+        if (this._loadPromise) {
+            return this._loadPromise.then((mesh) => {
+                if (onLoad) onLoad(mesh);
+                return mesh;
+            });
+        }
+
+        const loader = new GLTFLoader();
+        this._loadPromise = new Promise((resolve, reject) => {
+            loader.load(this.modelPath, (gltf) => {
+                try {
+                    let mesh = null;
+                    gltf.scene.traverse((child) => {
+                        if (child.isMesh && !mesh) mesh = child;
+                    });
+                    if (!mesh) throw new Error('Face model contains no mesh.');
+                    const geo = mesh.geometry;
+                    if (!geo || !geo.attributes || !geo.attributes.position) {
+                        throw new Error('Face model geometry has no position attribute.');
+                    }
+
+                    // GLTF UV channels depend on the Blender export. Never assign
+                    // an undefined BufferAttribute to the geometry.
+                    const lipUv = geo.attributes.texcoord_4 || geo.attributes.uv4;
+                    const shadowUv = geo.attributes.uv3;
+                    if (lipUv) geo.setAttribute('uvLip', lipUv);
+                    if (shadowUv) geo.setAttribute('uvEyeShadow', shadowUv);
+                    if (!geo.attributes.uv) console.warn('OpenMakeupSDK: face model has no base UV attribute.');
+
+                    geo.computeVertexNormals();
+                    this.mesh = mesh;
+                    if (!this._axes) {
+                        this._axes = new AxesHelper(50);
+                        this._axes.renderOrder = 999;
+                        this._axes.depthTest = false;
+                        mesh.add(this._axes);
+                    }
+                    this.originalPositions = geo.attributes.position.array.slice();
+                    if (onLoad) onLoad(mesh);
+                    resolve(mesh);
+                } catch (error) {
+                    reject(error);
+                }
+            }, undefined, (error) => {
+                const detail = error && error.message ? error.message : String(error || 'unknown loader error');
+                reject(new Error('Could not load face.glb: ' + detail));
+            });
+        }).catch((error) => {
+            this._loadPromise = null;
+            throw error;
         });
+        return this._loadPromise;
     }
+
     updateWithLandmarks(landmarks) {
         if (!this.mesh) return;
 

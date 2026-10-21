@@ -2,6 +2,7 @@ import { ShaderMaterial, DoubleSide } from 'three';
 
 async function loadSrc(url) {
   const res = await fetch(url);
+  if (!res.ok) throw new Error(`Could not load face-warp shader "${url}" (HTTP ${res.status}).`);
   return res.text();
 }
 
