@@ -6,6 +6,13 @@ import { MORPH_CONTROLS } from './morphs.js';
 // or when AI resolution fails — keeps `apply()` from ever producing no color.
 const FALLBACK_AI_COLOR = '#b4002e';
 
+// Only advertise pattern categories that currently have a corresponding
+// renderer/shader uniform. Lipstick textures exist in the asset catalogue,
+// but the current lipstick shader has no supported pattern assignment.
+const PATTERN_RENDER_SUPPORT = new Set([
+  'foundation', 'blush', 'eyeshadow', 'eyeline', 'mascara',
+]);
+
 /** Normalize '#rgb' / 'rgb' / '#rrggbb' / 'rrggbb' to '#rrggbb', or null. */
 function normalizeHex(input) {
   if (typeof input !== 'string') return null;
@@ -116,7 +123,7 @@ export class OpenMakeup {
   /** List the patterns available for a category: [{ number, id, bundled }]. */
   getPatterns(category) {
     const name = resolveCategory(category);
-    if (!name) return [];
+    if (!name || !PATTERN_RENDER_SUPPORT.has(name)) return [];
     return (this._patterns[name] || []).map((p, i) => ({
       number: i + 1,
       id: p.id,

@@ -142,6 +142,14 @@ test('SDK apply propagates effect activation errors instead of reporting success
   await assert.rejects(sdk.apply('lipstick'), /lipstick material is not ready/);
 });
 
+test('SDK does not advertise lipstick patterns without a renderer mapping', () => {
+  const sdk = new OpenMakeup({ video: {}, renderCanvas: {} });
+  sdk._patterns.lipstick = [{ id: '6427', bundled: true }];
+  sdk._patterns.blush = [{ id: '6413', bundled: true }];
+  assert.deepEqual(sdk.getPatterns('lipstick'), []);
+  assert.deepEqual(sdk.getPatterns('blush'), [{ number: 1, id: '6413', bundled: true }]);
+});
+
 test('SDK apply propagates pattern-loading errors instead of swallowing them', async () => {
   const sdk = new OpenMakeup({ video: {}, renderCanvas: {} });
   sdk._ready = true;

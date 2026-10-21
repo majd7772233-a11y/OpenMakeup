@@ -135,6 +135,10 @@ const mk = new OpenMakeup(options);
 | `mk.setWireframe(on)` | Toggle the debug face mesh. |
 | `mk.start()` / `mk.stop()` / `mk.dispose()` | Control / release the engine. |
 
+**Camera lifecycle:** `await mk.start()` resolves after the camera start operation completes; the app additionally checks that video frames advance. A missing/invalid bundled pattern manifest fails initialization rather than enabling an incomplete studio.
+
+**Pattern support note:** `getPatterns('lipstick')` intentionally returns no options until the lipstick shader has a real pattern-rendering path. Lipstick pattern image assets in the repository are not evidence of working runtime support.
+
 **Constructor options:** `video`, `renderCanvas`, `assetsBaseUrl`, `mediapipeBaseUrl`, `defaults`, `aiColor`.
 
 ---
@@ -145,7 +149,7 @@ const mk = new OpenMakeup(options);
 |---|:---:|:---:|:---:|
 | `foundation` | ✅ | matte · shimmer · glossy · glitter | ✅ |
 | `blush` | ✅ | matte · shimmer · glossy · glitter | ✅ |
-| `lipstick` | ✅ | matte · shimmer · glossy · glitter | ✅ |
+| `lipstick` | ✅ | matte · shimmer · glossy · glitter | — (renderer support pending) |
 | `eyeshadow` | ✅ | matte · shimmer · glossy · glitter | ✅ |
 | `eyeliner` | ✅ | — | ✅ |
 | `mascara` | ✅ | — | ✅ |
