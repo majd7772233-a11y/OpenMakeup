@@ -114,9 +114,14 @@ function readSessionState() {
     if (!parsed || typeof parsed !== 'object') return fallback;
     const makeup = parsed.makeup && typeof parsed.makeup === 'object' ? parsed.makeup : {};
     const rawMorphs = parsed.morphs && typeof parsed.morphs === 'object' ? parsed.morphs : {};
+    const validMorphs = new Set(Object.keys(MORPH_CONTROLS || {}));
     const morphs = {};
     for (const [name, value] of Object.entries(rawMorphs)) {
-      if (Number.isFinite(Number(value))) morphs[name] = Math.max(-1, Math.min(1.5, Number(value)));
+      // Previous builds exposed raw Blender target names. Only restore stable,
+      // friendly controls in the everyday studio UI.
+      if (validMorphs.has(name) && Number.isFinite(Number(value))) {
+        morphs[name] = Math.max(-1, Math.min(1.5, Number(value)));
+      }
     }
     return {
       makeup,
@@ -483,19 +488,18 @@ function buildMorphSliders() {
   const panel = $('morph-panel');
   while (panel.firstChild) panel.removeChild(panel.firstChild);
   sliders.length = 0;
-  const friendly = {};
-  for (const [name, cfg] of Object.entries(MORPH_CONTROLS || {})) friendly[cfg.target] = { name, about: cfg.about };
-  const targets = mk.getMorphTargets();
-  if (targets.length) {
-    for (const target of targets) {
-      const item = friendly[target];
-      makeSlider(item ? item.name : target, item ? item.about : '');
-    }
-  } else {
-    for (const [name, cfg] of Object.entries(MORPH_CONTROLS || {})) makeSlider(name, cfg.about);
+
+  const targets = new Set(mk.getMorphTargets());
+  for (const [name, config] of Object.entries(MORPH_CONTROLS || {})) {
+    // Render documented user-facing controls only; raw facemeshN target names
+    // are implementation details and should not leak into the normal UI.
+    if (targets.size && !targets.has(config.target)) continue;
+    makeSlider(name, config.about);
   }
   if (!sliders.length) panel.textContent = t('morphFallback');
 }
+
+
 $('reset-morph').onclick = () => runAction('statusReset', () => {
   mk.resetMorph();
   sessionState.morphs = {};

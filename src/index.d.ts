@@ -20,14 +20,14 @@ export type Category =
   | 'eyeline'
   | 'mascara';
 
-/** A pattern entry as returned by {@link OpenMakeup.getPatterns}. */
+/** A bundled pattern entry as returned by {@link OpenMakeup.getPatterns}. */
 export interface PatternInfo {
   /** 1-based index into the category's pattern list (pass this to `apply`). */
   number: number;
   /** The underlying asset id. */
   id: string | number;
-  /** Whether the texture ships bundled with the package. */
-  bundled: boolean;
+  /** True because the SDK only returns textures included in the package. */
+  bundled: true;
 }
 
 /** Options for {@link OpenMakeup.apply}. */
@@ -36,8 +36,10 @@ export interface ApplyOptions {
   color?: string;
   /** Finish (only honoured by categories that support one). */
   finish?: Finish;
-  /** Pattern: a 1-based `number` from `getPatterns`, or a raw pattern id. */
+  /** Pattern: a 1-based `number` from `getPatterns`, or a listed pattern id. */
   pattern?: number | string | null;
+  /** Explicit listed pattern id (must exist in the bundled manifest). */
+  patternId?: number | string | null;
 }
 
 /** Resolved result returned by {@link OpenMakeup.apply}. */

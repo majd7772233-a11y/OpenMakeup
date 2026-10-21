@@ -10,8 +10,36 @@ const FALLBACK_AI_COLOR = '#b4002e';
 // renderer/shader uniform. Lipstick textures exist in the asset catalogue,
 // but the current lipstick shader has no supported pattern assignment.
 const PATTERN_RENDER_SUPPORT = new Set([
-  'foundation', 'blush', 'eyeshadow', 'eyeline', 'mascara',
+  'blush', 'eyeshadow', 'eyeline', 'mascara',
 ]);
+
+function validatePatternManifest(manifest) {
+  if (!manifest || !manifest.categories || typeof manifest.categories !== 'object' || Array.isArray(manifest.categories)) {
+    throw new Error('Pattern manifest has no valid categories object.');
+  }
+
+  for (const category of Object.keys(CATEGORIES)) {
+    const entries = manifest.categories[category];
+    if (!Array.isArray(entries)) throw new Error(`Pattern manifest category "${category}" must be an array.`);
+    if (!PATTERN_RENDER_SUPPORT.has(category) && entries.length) {
+      throw new Error(`Pattern manifest advertises "${category}" without a supported renderer.`);
+    }
+    const seen = new Set();
+    for (const entry of entries) {
+      const id = String(entry && entry.id != null ? entry.id : '');
+      if (!/^\d+$/.test(id)) throw new Error(`Invalid pattern id in category "${category}".`);
+      if (seen.has(id)) throw new Error(`Duplicate pattern id "${id}" in category "${category}".`);
+      seen.add(id);
+      if (entry.file !== `patterns/${category}/${id}.png`) {
+        throw new Error(`Pattern "${id}" has an invalid asset path for "${category}".`);
+      }
+      if (entry.bundled !== true) {
+        throw new Error(`Pattern "${id}" for "${category}" is not bundled for offline use.`);
+      }
+    }
+  }
+  return manifest.categories;
+}
 
 /** Normalize '#rgb' / 'rgb' / '#rrggbb' / 'rrggbb' to '#rrggbb', or null. */
 function normalizeHex(input) {
@@ -88,20 +116,16 @@ export class OpenMakeup {
     this._ready = false;
   }
 
-  /** Boot the engine and load the bundled pattern manifest required by the studio. */
+  /** Boot the engine and validate the bundled pattern manifest. */
   async init(onReady) {
+    if (this._ready) return this;
     await this.engine.init();
     try {
       const manifestUrl = this.engine.assets.manifest();
       const response = await fetch(manifestUrl);
-      if (!response.ok) {
-        throw new Error(`Pattern manifest request failed (HTTP ${response.status}).`);
-      }
+      if (!response.ok) throw new Error(`Pattern manifest request failed (HTTP ${response.status}).`);
       const manifest = await response.json();
-      if (!manifest || !manifest.categories || typeof manifest.categories !== 'object') {
-        throw new Error('Pattern manifest has no valid categories object.');
-      }
-      this._patterns = manifest.categories;
+      this._patterns = validatePatternManifest(manifest);
     } catch (error) {
       this._patterns = {};
       this._ready = false;
@@ -112,7 +136,11 @@ export class OpenMakeup {
       throw new Error('OpenMakeup: required pattern manifest could not be loaded. ' + detail);
     }
     this._ready = true;
-    if (onReady) onReady(this);
+    if (onReady) {
+      try { onReady(this); } catch (callbackError) {
+        console.warn('OpenMakeup: onReady callback failed:', callbackError);
+      }
+    }
     return this;
   }
 
@@ -120,15 +148,17 @@ export class OpenMakeup {
     return this._ready;
   }
 
-  /** List the patterns available for a category: [{ number, id, bundled }]. */
+  /** List usable bundled patterns for a category: [{ number, id, bundled: true }]. */
   getPatterns(category) {
     const name = resolveCategory(category);
     if (!name || !PATTERN_RENDER_SUPPORT.has(name)) return [];
-    return (this._patterns[name] || []).map((p, i) => ({
-      number: i + 1,
-      id: p.id,
-      bundled: !!p.bundled,
-    }));
+    return (this._patterns[name] || [])
+      .filter((pattern) => pattern.bundled === true)
+      .map((pattern, i) => ({
+        number: i + 1,
+        id: pattern.id,
+        bundled: true,
+      }));
   }
 
   /** The canonical category names supported by the SDK. */
@@ -149,9 +179,13 @@ export class OpenMakeup {
     const colorMode = this._resolveColorMode(name, opts);
     const patternId = this._resolvePatternId(name, opts);
 
-    // Load a requested pattern before exposing its layer. Failures are passed to
-    // the caller so the UI cannot announce a false success.
-    if (patternId != null) await this.engine.setPattern(cfg.engine, patternId);
+    // Supported categories restore their built-in texture when no pattern is
+    // requested. This prevents a previous pattern from sticking to a new look.
+    if (patternId != null) {
+      await this.engine.setPattern(cfg.engine, patternId);
+    } else if (PATTERN_RENDER_SUPPORT.has(name)) {
+      await this.engine.setPattern(cfg.engine, null);
+    }
     this.engine.setAR(cfg.engine, color, colorMode);
 
     return {
@@ -165,7 +199,8 @@ export class OpenMakeup {
   /** Hide one makeup layer. */
   clear(category) {
     const name = resolveCategory(category);
-    if (name) this.engine.clearPart(this._categories[name].engine);
+    if (!name) throw new Error(`OpenMakeup: unknown category "${category}"`);
+    this.engine.clearPart(this._categories[name].engine);
   }
 
   /** Hide every makeup layer. */
@@ -225,44 +260,62 @@ export class OpenMakeup {
     let color = opts.color != null ? opts.color : cfg.defaults.color;
 
     if (color === AI_SENTINEL) {
-      if (this._aiColor) {
-        try { color = await this._aiColor(name); }
-        catch (e) { color = FALLBACK_AI_COLOR; }
-      } else {
-        color = FALLBACK_AI_COLOR;
+      if (!this._aiColor) return FALLBACK_AI_COLOR;
+      try {
+        color = await this._aiColor(name);
+      } catch (_) {
+        return FALLBACK_AI_COLOR;
       }
     }
-    return normalizeHex(color) || FALLBACK_AI_COLOR;
+
+    const normalized = normalizeHex(color);
+    if (!normalized) {
+      throw new Error(`OpenMakeup: invalid color for "${name}". Use #RGB or #RRGGBB.`);
+    }
+    return normalized;
   }
 
   _resolveColorMode(name, opts) {
     const cfg = this._categories[name];
     if (!cfg.supportsFinish) {
       if (opts.finish != null) {
-        console.warn(`OpenMakeup: "${name}" has no finish; ignoring finish "${opts.finish}".`);
+        throw new Error(`OpenMakeup: finish "${opts.finish}" is not supported for "${name}".`);
       }
       return undefined;
     }
+
     const finish = opts.finish != null ? opts.finish : cfg.defaults.finish;
-    const code = cfg.finishMap[finish];
-    if (code == null) {
-      console.warn(`OpenMakeup: finish "${finish}" not supported for "${name}"; using "${cfg.defaults.finish}".`);
-      return cfg.finishMap[cfg.defaults.finish];
+    if (!Object.prototype.hasOwnProperty.call(cfg.finishMap, finish)) {
+      throw new Error(`OpenMakeup: finish "${finish}" is not supported for "${name}".`);
     }
-    return code;
+    return cfg.finishMap[finish];
   }
 
   _resolvePatternId(name, opts) {
-    if (opts.patternId != null) return opts.patternId; // explicit image id wins
     const cfg = this._categories[name];
-    let p = opts.pattern != null ? opts.pattern : cfg.defaults.pattern;
-    if (p == null) return null; // keep the shader's built-in texture
+    const hasExplicitId = opts.patternId != null;
+    const requested = hasExplicitId
+      ? opts.patternId
+      : (opts.pattern != null ? opts.pattern : cfg.defaults.pattern);
+    if (requested == null) return null;
+
+    if (!PATTERN_RENDER_SUPPORT.has(name)) {
+      throw new Error(`OpenMakeup: patterns are not supported for "${name}" yet.`);
+    }
 
     const list = this._patterns[name] || [];
-    if (Number.isInteger(p) && p >= 1 && p <= list.length) return list[p - 1].id; // 1-based number
-    const byId = list.find((x) => x.id === p);
-    if (byId) return byId.id;
-
-    throw new Error(`OpenMakeup: pattern "${p}" not found for "${name}" (valid: 1..${list.length}).`);
+    if (hasExplicitId) {
+      const entry = list.find((pattern) => String(pattern.id) === String(requested));
+      if (entry) return entry.id;
+      throw new Error(`OpenMakeup: pattern id "${requested}" is not available for "${name}".`);
+    }
+    if (Number.isInteger(requested) && requested >= 1 && requested <= list.length) {
+      return list[requested - 1].id;
+    }
+    const entry = list.find((pattern) => String(pattern.id) === String(requested));
+    if (entry) return entry.id;
+    throw new Error(`OpenMakeup: pattern "${requested}" is not available for "${name}" (valid positions: 1..${list.length}).`);
   }
+
+
 }

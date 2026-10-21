@@ -1,0 +1,247 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { OpenMakeup } from '../src/OpenMakeup.js';
+import { CATEGORIES } from '../src/categories.js';
+import { MORPH_CONTROLS, MORPH_TARGETS_EXTRA } from '../src/morphs.js';
+import { MakeupEngine } from '../src/core/MakeupEngine.js';
+import { Vector3 } from 'three';
+
+const manifest = JSON.parse(readFileSync(new URL('../assets/patterns/patterns.json', import.meta.url), 'utf8'));
+const catalog = JSON.parse(readFileSync(new URL('../docs/pattern-catalog.json', import.meta.url), 'utf8'));
+
+function mockTexture() {
+  return { userData: {}, disposed: false, dispose() { this.disposed = true; } };
+}
+
+test('only implemented bundled pattern categories are published and all catalog paths exist', () => {
+  const expectedCategories = ['blush', 'eyeshadow', 'eyeline', 'mascara'];
+  assert.deepEqual(Object.keys(manifest.categories).sort(), Object.keys(CATEGORIES).sort());
+  assert.deepEqual(expectedCategories.filter((name) => manifest.categories[name].length > 0), expectedCategories);
+  assert.deepEqual(manifest.categories.foundation, []);
+  assert.deepEqual(manifest.categories.lipstick, []);
+
+  const diskIds = new Set();
+  for (const [category, patterns] of Object.entries(manifest.categories)) {
+    for (const pattern of patterns) {
+      assert.equal(pattern.bundled, true, `${category}/${pattern.id} must ship offline`);
+      assert.match(String(pattern.id), /^\d+$/);
+      assert.equal(pattern.file, `patterns/${category}/${pattern.id}.png`);
+      assert.ok(readFileSync(new URL(`../assets/${pattern.file}`, import.meta.url)).length > 1000);
+      diskIds.add(`${category}:${pattern.id}`);
+    }
+  }
+
+  assert.equal(catalog.length, diskIds.size);
+  for (const item of catalog) {
+    assert.ok(diskIds.has(`${item.makeup_type}:${item.pattern_id}`));
+    assert.ok(readFileSync(new URL(`../${item.target_file}`, import.meta.url)).length > 1000);
+  }
+});
+
+test('every friendly morph mapping references a real GLB morph target', () => {
+  const glb = readFileSync(new URL('../assets/models/face.glb', import.meta.url));
+  assert.equal(glb.toString('ascii', 0, 4), 'glTF');
+  assert.equal(glb.readUInt32LE(4), 2);
+  const jsonLength = glb.readUInt32LE(12);
+  const gltf = JSON.parse(glb.toString('utf8', 20, 20 + jsonLength).trim());
+  const mesh = gltf.meshes[0];
+  const targetNames = mesh.extras.targetNames;
+  assert.equal(mesh.primitives[0].targets.length, targetNames.length);
+
+  const missingFriendlyTargets = [...new Set(Object.values(MORPH_CONTROLS).map((item) => item.target))]
+    .filter((target) => !targetNames.includes(target));
+  assert.deepEqual(missingFriendlyTargets, []);
+  assert.deepEqual(MORPH_TARGETS_EXTRA.filter((target) => !targetNames.includes(target)), []);
+  for (const target of targetNames) {
+    const isFriendly = Object.values(MORPH_CONTROLS).some((control) => control.target === target);
+    assert.equal(isFriendly || MORPH_TARGETS_EXTRA.includes(target), true, `unclassified GLB target ${target}`);
+  }
+});
+
+test('finish modes set real shader uniforms with consistent values', () => {
+  const engine = Object.create(MakeupEngine.prototype);
+  Object.assign(engine, {
+    _activeLayers: new Set(),
+    _syncFaceLayerVisibility() {},
+    foundationMat: { uniforms: { _MainColor: { value: null }, _noise: { value: -1 } } },
+    foundationMesh: {},
+    blushMat: { uniforms: { _ShadowColor: { value: null }, _noise: { value: -1 } } },
+    blushMesh: {},
+    eyeShadowMat: { uniforms: { _ShadowColor: { value: null }, _noise: { value: -1 } } },
+    eyeShadowMesh: {},
+    lipsMat: { uniforms: { _MainColor: { value: null }, _shine: { value: 0 }, _bright: { value: 0 } } },
+    lipsMesh: {},
+    eyeLineMat: { uniforms: { color: { value: null } } },
+    eyeLineLeftNurbs: { mesh: {} }, eyeLineRightNurbs: { mesh: {} },
+    mascaraMat: { uniforms: { color: { value: null } } },
+    mascaraLeftNurbs: { mesh: {} }, mascaraRightNurbs: { mesh: {} },
+  });
+
+  for (const category of ['foundation', 'blush', 'eyeshadow']) {
+    engine.setAR(category, '#abcdef', '1');
+    const materialName = { foundation: 'foundationMat', blush: 'blushMat', eyeshadow: 'eyeShadowMat' }[category];
+    assert.equal(engine[materialName].uniforms._noise.value, 0);
+    engine.setAR(category, '#abcdef', '7');
+    assert.equal(engine[materialName].uniforms._noise.value, 0.7);
+    engine.setAR(category, '#abcdef', '5');
+    assert.equal(engine[materialName].uniforms._noise.value, 1);
+  }
+
+  engine.setAR('lipstick', '#abcdef', '2');
+  assert.equal(engine.lipsMat.uniforms._shine.value, 0.9);
+  assert.equal(engine.lipsMat.uniforms._bright.value, 0);
+  engine.setAR('lipstick', '#abcdef', '5');
+  assert.equal(engine.lipsMat.uniforms._shine.value, 0.3);
+  assert.equal(engine.lipsMat.uniforms._bright.value, 0.6);
+  engine.setAR('eyeline', '#123456');
+  engine.setAR('mascara', '#654321');
+  assert.equal(engine._activeLayers.size, 6);
+});
+
+test('finish activation rejects missing uniforms and unsupported mode values', () => {
+  const engine = Object.create(MakeupEngine.prototype);
+  Object.assign(engine, {
+    _activeLayers: new Set(),
+    _syncFaceLayerVisibility() {},
+    foundationMat: { uniforms: { _MainColor: { value: null } } },
+    foundationMesh: {},
+  });
+  assert.throws(() => engine.setAR('foundation', '#123456', '1'), /missing required uniform "_noise"/);
+  engine.foundationMat.uniforms._noise = { value: 0 };
+  assert.throws(() => engine.setAR('foundation', '#123456', '99'), /Unsupported finish mode/);
+  assert.throws(() => engine.setAR('foundation', 'not-a-color', '1'), /Invalid color value/);
+});
+
+test('custom pattern switching disposes replaced texture and reset restores default', async () => {
+  const engine = Object.create(MakeupEngine.prototype);
+  const defaultTexture = mockTexture();
+  const createdTextures = [];
+  Object.assign(engine, {
+    assets: { pattern: (category, id) => `./assets/patterns/${category}/${id}.png` },
+    _texLoader: {
+      load(url, onLoad) {
+        const texture = mockTexture();
+        createdTextures.push({ url, texture });
+        onLoad(texture);
+      },
+    },
+    _defaultPatternTextures: new Map([['blush', defaultTexture]]),
+    _activePatternTextures: new Map(),
+    blushMat: { uniforms: { _EyeShadowTexture: { value: defaultTexture } } },
+  });
+
+  assert.equal(await engine.setPattern('blush', 6413), true);
+  const first = createdTextures[0];
+  assert.equal(engine.blushMat.uniforms._EyeShadowTexture.value, first.texture);
+  assert.equal(first.texture.flipY, false);
+  assert.equal(await engine.setPattern('blush', 6415), true);
+  assert.equal(first.texture.disposed, true);
+  const second = createdTextures[1];
+  assert.equal(engine.blushMat.uniforms._EyeShadowTexture.value, second.texture);
+  assert.equal(await engine.setPattern('blush', null), true);
+  assert.equal(engine.blushMat.uniforms._EyeShadowTexture.value, defaultTexture);
+  assert.equal(second.texture.disposed, true);
+  assert.equal(defaultTexture.disposed, false);
+});
+
+test('unsupported pattern application is rejected before any file load', async () => {
+  const engine = Object.create(MakeupEngine.prototype);
+  let loaded = false;
+  Object.assign(engine, {
+    assets: { pattern: () => { loaded = true; return './fake.png'; } },
+    _texLoader: { load() { loaded = true; } },
+    _defaultPatternTextures: new Map(),
+    _activePatternTextures: new Map(),
+  });
+  await assert.rejects(engine.setPattern('foundation', 6421), /not implemented/);
+  await assert.rejects(engine.setPattern('lipstick', 6427), /not implemented/);
+  assert.equal(loaded, false);
+});
+
+test('failed pattern replacement keeps the previous texture active', async () => {
+  const engine = Object.create(MakeupEngine.prototype);
+  const defaultTexture = mockTexture();
+  const activeTexture = mockTexture();
+  Object.assign(engine, {
+    assets: { pattern: (category, id) => `./assets/patterns/${category}/${id}.png` },
+    _texLoader: { load(url, onLoad, onProgress, onError) { onError(new Error('offline asset')); } },
+    _defaultPatternTextures: new Map([['blush', defaultTexture]]),
+    _activePatternTextures: new Map([['blush', activeTexture]]),
+    blushMat: { uniforms: { _EyeShadowTexture: { value: activeTexture } } },
+  });
+
+  await assert.rejects(engine.setPattern('blush', 6413), /Could not load pattern.*offline asset/);
+  assert.equal(engine.blushMat.uniforms._EyeShadowTexture.value, activeTexture);
+  assert.equal(activeTexture.disposed, false);
+});
+
+test('camera-sensitive materials receive the camera world position', () => {
+  const engine = Object.create(MakeupEngine.prototype);
+  Object.assign(engine, {
+    camera3D: {
+      updateMatrixWorld() {},
+      getWorldPosition(target) { return target.set(12, 34, 56); },
+    },
+    _cameraWorldPosition: new Vector3(),
+    foundationMat: { uniforms: { uCameraPosition: { value: new Vector3() } } },
+    blushMat: { uniforms: { uCameraPosition: { value: new Vector3() } } },
+    lipsMat: { uniforms: { cameraPosition: { value: new Vector3() } } },
+  });
+  engine._updateCameraUniforms();
+  assert.deepEqual(engine.foundationMat.uniforms.uCameraPosition.value.toArray(), [12, 34, 56]);
+  assert.deepEqual(engine.blushMat.uniforms.uCameraPosition.value.toArray(), [12, 34, 56]);
+  assert.deepEqual(engine.lipsMat.uniforms.cameraPosition.value.toArray(), [12, 34, 56]);
+});
+
+test('SDK rejects unsupported patterns, invalid colors and invalid finishes', async () => {
+  const sdk = new OpenMakeup({ video: {}, renderCanvas: {} });
+  sdk._ready = true;
+  sdk._patterns = { blush: [{ id: 6413, bundled: true }] };
+  sdk.engine.setPattern = async () => { throw new Error('pattern should not load'); };
+  sdk.engine.setAR = () => { throw new Error('effect should not activate'); };
+  await assert.rejects(sdk.apply('foundation', { pattern: 1 }), /patterns are not supported for "foundation"/);
+  await assert.rejects(sdk.apply('blush', { color: 'bad-color' }), /invalid color/);
+  await assert.rejects(sdk.apply('lipstick', { finish: 'mirror' }), /finish "mirror" is not supported/);
+  await assert.rejects(sdk.apply('eyeline', { finish: 'glossy' }), /finish "glossy" is not supported/);
+});
+
+test('SDK apply restores a supported category default pattern when omitted', async () => {
+  const sdk = new OpenMakeup({ video: {}, renderCanvas: {} });
+  sdk._ready = true;
+  let patternCall;
+  sdk.engine.setPattern = async (...args) => { patternCall = args; };
+  sdk.engine.setAR = () => true;
+  const result = await sdk.apply('blush', { color: '#123456' });
+  assert.deepEqual(patternCall, ['blush', null]);
+  assert.equal(result.pattern, null);
+});
+
+test('SDK initializes with valid bundled manifest and rejects a manifest that advertises non-bundled files', async () => {
+  const sdk = new OpenMakeup({ video: {}, renderCanvas: {} });
+  sdk.engine.init = async () => {};
+  sdk.engine.dispose = () => {};
+  sdk.engine.assets = { manifest: () => './assets/patterns/patterns.json' };
+  const originalFetch = globalThis.fetch;
+  let responseManifest = manifest;
+  globalThis.fetch = async () => ({ ok: true, json: async () => responseManifest });
+  try {
+    await sdk.init();
+    assert.equal(sdk.ready, true);
+    assert.equal(sdk.getPatterns('blush').length, manifest.categories.blush.length);
+    assert.equal(sdk.getPatterns('foundation').length, 0);
+
+    const invalidSdk = new OpenMakeup({ video: {}, renderCanvas: {} });
+    let disposed = false;
+    invalidSdk.engine.init = async () => {};
+    invalidSdk.engine.dispose = () => { disposed = true; };
+    invalidSdk.engine.assets = { manifest: () => './assets/patterns/patterns.json' };
+    responseManifest = structuredClone(manifest);
+    responseManifest.categories.blush[0].bundled = false;
+    await assert.rejects(invalidSdk.init(), /not bundled for offline use/);
+    assert.equal(invalidSdk.ready, false);
+    assert.equal(disposed, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
