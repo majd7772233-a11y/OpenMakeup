@@ -340,17 +340,47 @@ export class MakeupEngine {
 
         // Material loaders reject when a required shader or texture is absent;
         // the UI must not be told that an incompletely loaded engine is ready.
-        const [faceWarpMat, blurMat, blushMat, lipsMat, eyeShadowMat, foundationMat, eyeLineMat, mascaraMat] =
-            await Promise.all([
-                loadFaceWarpMat(this.assets, this.videoTexture),
-                loadBlurMat(this.assets, refractUniforms),
-                loadBlushMat(this.assets),
-                loadLipMats(this.assets),
-                loadEyeShadowMat(this.assets),
-                loadFoundationMat(this.assets),
-                loadEyeLineMat(this.assets),
-                loadMascaraMat(this.assets),
-            ]);
+        const materialResults = await Promise.allSettled([
+            loadFaceWarpMat(this.assets, this.videoTexture),
+            loadBlurMat(this.assets, refractUniforms),
+            loadBlushMat(this.assets),
+            loadLipMats(this.assets),
+            loadEyeShadowMat(this.assets),
+            loadFoundationMat(this.assets),
+            loadEyeLineMat(this.assets),
+            loadMascaraMat(this.assets),
+        ]);
+        const materialFailure = materialResults.find((result) => result.status === 'rejected');
+        if (materialFailure) {
+            // Promise.allSettled lets every in-flight load finish so materials
+            // that succeeded before another asset failed can be disposed too.
+            const disposedTextures = new Set();
+            for (const result of materialResults) {
+                if (result.status !== 'fulfilled') continue;
+                const material = result.value;
+                if (material && material.uniforms) {
+                    for (const uniform of Object.values(material.uniforms)) {
+                        const texture = uniform && uniform.value;
+                        if (texture && texture.isTexture && !disposedTextures.has(texture)) {
+                            disposedTextures.add(texture);
+                            texture.dispose();
+                        }
+                    }
+                }
+                if (material && material.dispose) material.dispose();
+            }
+            throw materialFailure.reason;
+        }
+        const [
+            faceWarpMat,
+            blurMat,
+            blushMat,
+            lipsMat,
+            eyeShadowMat,
+            foundationMat,
+            eyeLineMat,
+            mascaraMat,
+        ] = materialResults.map((result) => result.value);
 
         this.blurMat = blurMat;
         this.blushMat = blushMat;
