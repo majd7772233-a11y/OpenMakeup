@@ -81,15 +81,28 @@ export class OpenMakeup {
     this._ready = false;
   }
 
-  /** Boot the engine and load the pattern manifest. */
+  /** Boot the engine and load the bundled pattern manifest required by the studio. */
   async init(onReady) {
     await this.engine.init();
     try {
-      const res = await fetch(this.engine.assets.manifest());
-      const manifest = await res.json();
-      this._patterns = manifest.categories || {};
-    } catch (e) {
+      const manifestUrl = this.engine.assets.manifest();
+      const response = await fetch(manifestUrl);
+      if (!response.ok) {
+        throw new Error(`Pattern manifest request failed (HTTP ${response.status}).`);
+      }
+      const manifest = await response.json();
+      if (!manifest || !manifest.categories || typeof manifest.categories !== 'object') {
+        throw new Error('Pattern manifest has no valid categories object.');
+      }
+      this._patterns = manifest.categories;
+    } catch (error) {
       this._patterns = {};
+      this._ready = false;
+      try { this.engine.dispose(); } catch (disposeError) {
+        console.warn('OpenMakeup: engine cleanup after manifest failure failed:', disposeError);
+      }
+      const detail = error && error.message ? error.message : String(error || 'unknown manifest error');
+      throw new Error('OpenMakeup: required pattern manifest could not be loaded. ' + detail);
     }
     this._ready = true;
     if (onReady) onReady(this);

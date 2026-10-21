@@ -11,6 +11,23 @@ function makeVideo({ trackState = 'live', enabled = true, currentTime = 0, ready
   } };
 }
 
+test('SDK initialization rejects a missing pattern manifest and disposes the engine', async () => {
+  const sdk = new OpenMakeup({ video: {}, renderCanvas: {} });
+  let disposed = false;
+  sdk.engine.init = async () => {};
+  sdk.engine.dispose = () => { disposed = true; };
+  sdk.engine.assets = { manifest: () => '/assets/patterns/patterns.json' };
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: false, status: 404 });
+  try {
+    await assert.rejects(sdk.init(), /required pattern manifest could not be loaded.*HTTP 404/);
+    assert.equal(sdk.ready, false);
+    assert.equal(disposed, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('camera readiness requires a live, enabled video track', () => {
   assert.equal(hasLiveCameraTrack(makeVideo()), true);
   assert.equal(hasLiveCameraTrack(makeVideo({ trackState: 'ended' })), false);
