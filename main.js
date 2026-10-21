@@ -32,7 +32,7 @@ const dictionaries = {
     creatorLabel:'تطوير', aboutDetails:'MediaPipe إطار مفتوح المصدر من Google لتقنيات الإدراك والتعلم الآلي. يستخدم التطبيق حل Face Mesh مع رسوم WebGL. قد تختلف النتائج بحسب الإضاءة والكاميرا وأداء الجهاز وإصدار Android System WebView.',
     projectButton:'المشروع على GitHub ↗', contactButton:'تواصل مع المطوّر ↗', version:'Open Makeup · الإصدار 1.2.0',
     aboutFooter:'للإبداع، لا للكمال.', statusWaiting:'محرك الوجه غير جاهز بعد. انتظر قليلًا من فضلك.',
-    statusActionError:'تعذّر تنفيذ الإجراء', statusReady:'الاستوديو جاهز. اسمح بالوصول إلى الكاميرا ثم جرّب إطلالة.',
+    statusActionError:'تعذّر تنفيذ الإجراء', statusReady:'الكاميرا تعمل والاستوديو جاهز. جرّب إطلالة.',
     statusNoCamera:'المحرك جاهز. إذا لم تظهر المعاينة، تحقق من إذن الكاميرا وAndroid System WebView.',
     statusEngineError:'تعذّر تشغيل محرك الوجه. تحقق من إذن الكاميرا ودعم WebGL وحدّث Android System WebView.',
     statusStudio:'الاستوديو جاهز', statusRose:'تم تطبيق الإطلالة الوردية.', statusBerry:'تم تطبيق الإطلالة التوتية.',
@@ -70,7 +70,7 @@ const dictionaries = {
     creatorLabel:'Created with care by', aboutDetails:'MediaPipe is Google’s open-source framework for machine-learning perception. This app uses Face Mesh with WebGL rendering. Results vary with lighting, camera quality, device performance, and Android System WebView.',
     projectButton:'View project on GitHub ↗', contactButton:'Contact the creator ↗', version:'Open Makeup · Version 1.2.0',
     aboutFooter:'Made for creativity, not perfection.', statusWaiting:'The face engine is not ready yet. Please wait a moment.',
-    statusActionError:'Could not complete action', statusReady:'Studio ready. Allow camera access, then try a look.',
+    statusActionError:'Could not complete action', statusReady:'Camera is live and the studio is ready. Try a look.',
     statusNoCamera:'Engine ready. If the preview is blank, check camera permission and Android System WebView.',
     statusEngineError:'Could not start the face engine. Check camera permission, WebGL support, and Android System WebView.',
     statusStudio:'Studio ready', statusRose:'Rose look applied.', statusBerry:'Berry look applied.',
@@ -369,6 +369,12 @@ async function startEngine() {
   } catch (error) {
     console.error('Open Makeup initialization failed:', error);
     engineReady = false;
+    try { if (mk) mk.stop(); } catch (stopError) { console.warn('Could not stop failed startup:', stopError); }
+    const failedStream = $('video').srcObject;
+    if (failedStream && failedStream.getTracks) {
+      failedStream.getTracks().forEach((track) => { try { track.stop(); } catch (_) {} });
+      $('video').srcObject = null;
+    }
     actionButtons.forEach((button) => { button.disabled = true; });
     setStatus(t('statusEngineError') + ' ' + (error && error.message ? error.message : t('statusErrorFallback')), 'error');
     $('morph-panel').textContent = t('morphFallback');
@@ -524,8 +530,6 @@ function stopAndDetachCamera() {
   video.srcObject = null;
 }
 
-let resumeInProgress = false;
-let hiddenAt = 0;
 async function recoverCamera() {
   if (document.hidden || !engineReady || resumeInProgress) return false;
   resumeInProgress = true;
