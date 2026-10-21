@@ -1,4 +1,5 @@
 import { OpenMakeup, MORPH_CONTROLS } from './src/index.js';
+import { hasLiveCameraTrack, waitForCameraFrames } from './src/core/cameraReadiness.js';
 
 const $ = (id) => document.getElementById(id);
 const statusText = $('status-text');
@@ -40,7 +41,10 @@ const dictionaries = {
     statusMascara:'تم تطبيق الماسكارا.', statusClear:'تم مسح المكياج.', statusReset:'تمت إعادة ضبط ملامح الوجه.',
     statusWireframe:'تم تحديث عرض الشبكة.', statusBlur:'تم تحديث التنعيم.', statusErrorFallback:'حدث خطأ غير متوقع.',
     statusFullscreen:'تم تفعيل المعاينة بملء الشاشة.', statusCameraResume:'جارٍ استئناف الكاميرا...',
-    statusCameraResumeError:'تعذّر استئناف الكاميرا. جارٍ إعادة تشغيل الاستوديو...', fullscreenExit:'إنهاء ملء الشاشة',
+    statusCameraResumeError:'تعذّر استئناف الكاميرا. يمكنك إعادة المحاولة دون فقد الإطلالة.',
+    retryCamera:'إعادة محاولة الكاميرا',
+    statusSessionRestoreWarning:'عاد الاستوديو للعمل، لكن تعذّر استعادة بعض التأثيرات المحفوظة.',
+    fullscreenExit:'إنهاء ملء الشاشة',
     morphFallback:'لا توجد أدوات لتعديل الوجه في النموذج المضمّن.', liftBrow:'رفع الحاجب', plumpLips:'امتلاء الشفاه',
     plumpLipsVariant:'امتلاء الشفاه (بديل)', slimNose:'تنحيف الأنف', noseBridge:'تعديل جسر الأنف',
     fullerCheeks:'امتلاء الخدين', jawAngle:'تحديد زاوية الفك', jawWide:'عرض الفك',
@@ -75,7 +79,10 @@ const dictionaries = {
     statusMascara:'Mascara applied.', statusClear:'Makeup cleared.', statusReset:'Face shape reset.',
     statusWireframe:'Mesh view updated.', statusBlur:'Soft focus updated.', statusErrorFallback:'Something unexpected went wrong.',
     statusFullscreen:'Full-screen preview enabled.', statusCameraResume:'Resuming camera...',
-    statusCameraResumeError:'Could not resume the camera. Restarting the studio...', fullscreenExit:'Exit full screen',
+    statusCameraResumeError:'Could not resume the camera. Retry without losing your saved look.',
+    retryCamera:'Retry camera',
+    statusSessionRestoreWarning:'The studio resumed, but some saved effects could not be restored.',
+    fullscreenExit:'Exit full screen',
     morphFallback:'No face-shape controls were found in the bundled model.', liftBrow:'Brow lift', plumpLips:'Lip plump',
     plumpLipsVariant:'Lip plump (variant)', slimNose:'Nose slim', noseBridge:'Nose bridge',
     fullerCheeks:'Fuller cheeks', jawAngle:'Jaw angle', jawWide:'Jaw width',
@@ -87,13 +94,109 @@ const dictionaries = {
   }
 };
 
-const mk = new OpenMakeup({
-  video: $('video'),
-  renderCanvas: $('renderCanvas'),
-  assetsBaseUrl: './assets',
-  mediapipeBaseUrl: './mediapipe/face_mesh',
-  aiColor: async () => '#c21f4d',
-});
+function createEngine() {
+  return new OpenMakeup({
+    video: $('video'),
+    renderCanvas: $('renderCanvas'),
+    assetsBaseUrl: './assets',
+    mediapipeBaseUrl: './mediapipe/face_mesh',
+    aiColor: async () => '#c21f4d',
+  });
+}
+
+let mk = createEngine();
+const SESSION_KEY = 'openMakeupSessionState';
+
+function readSessionState() {
+  const fallback = { makeup: {}, morphs: {}, activeLook: null, wireframe: false, blur: false };
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    if (!parsed || typeof parsed !== 'object') return fallback;
+    const makeup = parsed.makeup && typeof parsed.makeup === 'object' ? parsed.makeup : {};
+    const rawMorphs = parsed.morphs && typeof parsed.morphs === 'object' ? parsed.morphs : {};
+    const morphs = {};
+    for (const [name, value] of Object.entries(rawMorphs)) {
+      if (Number.isFinite(Number(value))) morphs[name] = Math.max(-1, Math.min(1.5, Number(value)));
+    }
+    return {
+      makeup,
+      morphs,
+      activeLook: typeof parsed.activeLook === 'string' ? parsed.activeLook : null,
+      wireframe: parsed.wireframe === true,
+      blur: parsed.blur === true,
+    };
+  } catch (_) {
+    return fallback;
+  }
+}
+const sessionState = readSessionState();
+
+function persistSessionState() {
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessionState)); } catch (_) {}
+}
+
+function updateLayerButtonStates() {
+  const buttonIds = { lipstick: 'lipstick', eyeshadow: 'eyeshadow', eyeline: 'eyeline',
+    blush: 'blush', foundation: 'foundation', mascara: 'mascara' };
+  for (const [category, id] of Object.entries(buttonIds)) {
+    const button = $(id);
+    const active = Object.prototype.hasOwnProperty.call(sessionState.makeup, category);
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  }
+  for (const look of ['rose', 'berry', 'nude']) {
+    const button = $('look-' + look);
+    const active = sessionState.activeLook === look;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  }
+}
+
+async function restoreSessionState() {
+  const restoreErrors = [];
+  for (const [category, options] of Object.entries(sessionState.makeup)) {
+    try {
+      await mk.apply(category, options || {});
+    } catch (error) {
+      restoreErrors.push(category + ': ' + (error && error.message ? error.message : String(error)));
+      delete sessionState.makeup[category];
+    }
+  }
+  for (const [name, value] of Object.entries(sessionState.morphs)) {
+    try { mk.setMorph(name, value); } catch (error) { restoreErrors.push(name + ': ' + (error.message || String(error))); }
+  }
+  try {
+    mk.setWireframe(sessionState.wireframe);
+    mk.setBlur(sessionState.blur);
+  } catch (error) {
+    restoreErrors.push('view settings: ' + (error.message || String(error)));
+  }
+  $('wireframe').checked = sessionState.wireframe;
+  $('blur').checked = sessionState.blur;
+  for (const item of sliders) {
+    if (Object.prototype.hasOwnProperty.call(sessionState.morphs, item.name)) {
+      item.input.value = String(sessionState.morphs[item.name]);
+      item.output.textContent = Number(item.input.value).toFixed(2);
+    }
+  }
+  updateLayerButtonStates();
+  persistSessionState();
+  return restoreErrors;
+}
+
+async function applyLayer(category, options) {
+  const result = await mk.apply(category, options);
+  sessionState.makeup[category] = JSON.parse(JSON.stringify(options || {}));
+  sessionState.activeLook = null;
+  updateLayerButtonStates();
+  persistSessionState();
+  return result;
+}
+
+async function restoreMakeupSnapshot(snapshot) {
+  mk.clearAll();
+  for (const [category, options] of Object.entries(snapshot)) await mk.apply(category, options || {});
+}
 
 function t(key) { return dictionaries[currentLanguage][key] || dictionaries.en[key] || key; }
 
@@ -141,23 +244,43 @@ $('language-toggle').addEventListener('click', () => applyLanguage(currentLangua
 async function runAction(labelKey, action) {
   if (!engineReady) {
     setStatusKey('statusWaiting', 'error');
-    return;
+    return false;
   }
   try {
     await action();
     setStatus(t(labelKey), 'success');
+    return true;
   } catch (error) {
     console.error(error);
-    setStatus(t('statusActionError') + ' — ' + (error?.message || t('statusErrorFallback')), 'error');
+    setStatus(t('statusActionError') + ' — ' + (error && error.message ? error.message : t('statusErrorFallback')), 'error');
+    return false;
   }
 }
 
-function applyLook({ lipstick, blush, shadow }) {
-  return Promise.all([
-    mk.apply('lipstick', { color: lipstick, finish: 'glossy' }),
-    mk.apply('blush', { color: blush }),
-    mk.apply('eyeshadow', { color: shadow, pattern: 1, finish: 'glitter' }),
-  ]);
+async function applyLook({ name, lipstick, blush, shadow }) {
+  const previousMakeup = JSON.parse(JSON.stringify(sessionState.makeup));
+  const nextMakeup = {
+    ...previousMakeup,
+    lipstick: { color: lipstick, finish: 'glossy' },
+    blush: { color: blush },
+    eyeshadow: { color: shadow, pattern: 1, finish: 'glitter' },
+  };
+  try {
+    await Promise.all(Object.entries({
+      lipstick: nextMakeup.lipstick,
+      blush: nextMakeup.blush,
+      eyeshadow: nextMakeup.eyeshadow,
+    }).map(([category, options]) => mk.apply(category, options)));
+  } catch (error) {
+    try { await restoreMakeupSnapshot(previousMakeup); } catch (rollbackError) {
+      console.error('Could not roll back a partially applied look:', rollbackError);
+    }
+    throw error;
+  }
+  sessionState.makeup = nextMakeup;
+  sessionState.activeLook = name;
+  updateLayerButtonStates();
+  persistSessionState();
 }
 
 function openAbout() {
@@ -223,37 +346,62 @@ window.handleAndroidBack = () => {
   return false;
 };
 
+let engineStarting = false;
 async function startEngine() {
+  if (engineStarting) return false;
+  engineStarting = true;
+  $('camera-retry').hidden = true;
   actionButtons.forEach((button) => { button.disabled = true; });
   setStatusKey('statusLoading');
   try {
     await mk.init();
+    await waitForCameraFrames($('video'), { timeoutMs: 6000, pollIntervalMs: 150 });
+    buildMorphSliders();
+    const restoreErrors = await restoreSessionState();
     engineReady = true;
     actionButtons.forEach((button) => { button.disabled = false; });
-    setStatusKey('statusReady', 'success');
-    buildMorphSliders();
-    if (!$('video').srcObject) {
-      setTimeout(() => {
-        if (!$('video').srcObject && !document.hidden) setStatusKey('statusNoCamera');
-      }, 3500);
+    if (restoreErrors.length) {
+      setStatus(t('statusSessionRestoreWarning') + ' ' + restoreErrors.join(' · '), 'error');
+    } else {
+      setStatusKey('statusReady', 'success');
     }
+    return true;
   } catch (error) {
-    console.error(error);
-    setStatus(t('statusEngineError') + ' ' + (error?.message || ''), 'error');
+    console.error('Open Makeup initialization failed:', error);
+    engineReady = false;
+    actionButtons.forEach((button) => { button.disabled = true; });
+    setStatus(t('statusEngineError') + ' ' + (error && error.message ? error.message : t('statusErrorFallback')), 'error');
     $('morph-panel').textContent = t('morphFallback');
+    $('camera-retry').hidden = false;
+    return false;
+  } finally {
+    engineStarting = false;
   }
 }
 
-$('lipstick').onclick = () => runAction('statusLipstick', () => mk.apply('lipstick', { finish: 'glossy' }));
-$('eyeshadow').onclick = () => runAction('statusEyeshadow', () => mk.apply('eyeshadow', { color: '#7a3b9d', pattern: 1, finish: 'glitter' }));
-$('eyeline').onclick = () => runAction('statusEyeline', () => mk.apply('eyeline', { pattern: 1 }));
-$('blush').onclick = () => runAction('statusBlush', () => mk.apply('blush', { color: '#e26d7a' }));
-$('foundation').onclick = () => runAction('statusFoundation', () => mk.apply('foundation', { color: '#d9b89c', finish: 'matte' }));
-$('mascara').onclick = () => runAction('statusMascara', () => mk.apply('mascara', {}));
-$('clear').onclick = () => runAction('statusClear', () => mk.clearAll());
-$('look-rose').onclick = () => runAction('statusRose', () => applyLook({ lipstick: '#e76c91', blush: '#e88a9d', shadow: '#a55a98' }));
-$('look-berry').onclick = () => runAction('statusBerry', () => applyLook({ lipstick: '#9c315f', blush: '#b84e76', shadow: '#633b87' }));
-$('look-nude').onclick = () => runAction('statusNude', () => applyLook({ lipstick: '#bd927b', blush: '#d4a18d', shadow: '#927d9b' }));
+async function reinitializeEngine() {
+  if (engineStarting) return false;
+  try { if (mk) mk.dispose(); } catch (error) { console.warn('Engine disposal before retry failed:', error); }
+  mk = createEngine();
+  window.mk = mk;
+  engineReady = false;
+  return startEngine();
+}
+
+$('camera-retry').addEventListener('click', () => { reinitializeEngine(); });
+
+
+
+$('lipstick').onclick = () => runAction('statusLipstick', () => applyLayer('lipstick', { finish: 'glossy' }));
+$('eyeshadow').onclick = () => runAction('statusEyeshadow', () => applyLayer('eyeshadow', { color: '#7a3b9d', pattern: 1, finish: 'glitter' }));
+$('eyeline').onclick = () => runAction('statusEyeline', () => applyLayer('eyeline', { pattern: 1 }));
+$('blush').onclick = () => runAction('statusBlush', () => applyLayer('blush', { color: '#e26d7a' }));
+$('foundation').onclick = () => runAction('statusFoundation', () => applyLayer('foundation', { color: '#d9b89c', finish: 'matte' }));
+$('mascara').onclick = () => runAction('statusMascara', () => applyLayer('mascara', {}));
+$('clear').onclick = () => runAction('statusClear', () => { mk.clearAll(); sessionState.makeup = {}; sessionState.activeLook = null; updateLayerButtonStates(); persistSessionState(); });
+$('look-rose').onclick = () => runAction('statusRose', () => applyLook({ name: 'rose', lipstick: '#e76c91', blush: '#e88a9d', shadow: '#a55a98' }));
+$('look-berry').onclick = () => runAction('statusBerry', () => applyLook({ name: 'berry', lipstick: '#9c315f', blush: '#b84e76', shadow: '#633b87' }));
+$('look-nude').onclick = () => runAction('statusNude', () => applyLook({ name: 'nude', lipstick: '#bd927b', blush: '#d4a18d', shadow: '#927d9b' }));
 
 const morphNames = {
   browLift:['liftBrow','liftBrowAbout'], lipPlump:['plumpLips','plumpLipsAbout'],
@@ -312,10 +460,16 @@ function makeSlider(name, about) {
   row.appendChild(output);
   input.addEventListener('input', () => {
     output.textContent = Number(input.value).toFixed(2);
-    try { mk.setMorph(name, Number(input.value)); } catch (error) { console.warn('Could not update face shape:', error); }
+    const value = Number(input.value);
+    sessionState.morphs[name] = value;
+    persistSessionState();
+    try { mk.setMorph(name, value); } catch (error) {
+      console.warn('Could not update face shape:', error);
+      setStatus(t('statusActionError') + ' — ' + (error.message || t('statusErrorFallback')), 'error');
+    }
   });
   $('morph-panel').appendChild(row);
-  sliders.push({ input, output });
+  sliders.push({ input, output, name });
 }
 function buildMorphSliders() {
   const panel = $('morph-panel');
@@ -336,57 +490,88 @@ function buildMorphSliders() {
 }
 $('reset-morph').onclick = () => runAction('statusReset', () => {
   mk.resetMorph();
+  sessionState.morphs = {};
+  persistSessionState();
   for (const slider of sliders) { slider.input.value = '0'; slider.output.textContent = '0.00'; }
 });
-$('wireframe').onchange = (event) => runAction('statusWireframe', () => mk.setWireframe(event.target.checked));
-$('blur').onchange = (event) => runAction('statusBlur', () => mk.setBlur(event.target.checked));
+$('wireframe').onchange = async (event) => {
+  const value = event.target.checked;
+  const ok = await runAction('statusWireframe', () => {
+    mk.setWireframe(value);
+    sessionState.wireframe = value;
+    persistSessionState();
+  });
+  if (!ok) event.target.checked = sessionState.wireframe;
+};
+$('blur').onchange = async (event) => {
+  const value = event.target.checked;
+  const ok = await runAction('statusBlur', () => {
+    mk.setBlur(value);
+    sessionState.blur = value;
+    persistSessionState();
+  });
+  if (!ok) event.target.checked = sessionState.blur;
+};
 
 /*
- * Camera recovery: stop MediaPipe's camera loop when the page is backgrounded,
- * release any stale tracks, and restart the SDK when Android makes the page visible.
- * If the WebView/Camera helper cannot recover its stream, reload the local page once.
+ * Camera recovery verifies actual frame progression and preserves the local
+ * session. It never blindly reloads the page as a fallback.
  */
-document.addEventListener('visibilitychange', async () => {
-  if (document.hidden) {
-    hiddenAt = Date.now();
-    if (engineReady) {
-      try { mk.stop(); } catch (error) { console.warn('Camera pause failed:', error); }
-      const stream = $('video').srcObject;
-      if (stream && stream.getTracks) stream.getTracks().forEach((track) => { try { track.stop(); } catch (_) {} });
-    }
-    return;
-  }
-  if (!engineReady || !hiddenAt || resumeInProgress) return;
-  const backgroundDuration = Date.now() - hiddenAt;
-  hiddenAt = 0;
+function stopAndDetachCamera() {
+  const video = $('video');
+  const stream = video.srcObject;
+  if (stream && stream.getTracks) stream.getTracks().forEach((track) => { try { track.stop(); } catch (_) {} });
+  video.srcObject = null;
+}
+
+let resumeInProgress = false;
+let hiddenAt = 0;
+async function recoverCamera() {
+  if (document.hidden || !engineReady || resumeInProgress) return false;
   resumeInProgress = true;
+  hiddenAt = 0;
+  actionButtons.forEach((button) => { button.disabled = true; });
   setStatusKey('statusCameraResume');
   try {
-    const video = $('video');
-    if (video.srcObject && video.srcObject.getTracks) {
-      video.srcObject.getTracks().forEach((track) => { try { track.stop(); } catch (_) {} });
-      video.srcObject = null;
-    }
-    mk.start();
-    let cameraReady = false;
-    for (let attempt = 0; attempt < 12; attempt += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      const stream = video.srcObject;
-      const activeTracks = stream && stream.getVideoTracks ? stream.getVideoTracks().some((track) => track.readyState === 'live' && track.enabled) : false;
-      if (stream && activeTracks && video.readyState >= 2) { cameraReady = true; break; }
-    }
-    if (!cameraReady) throw new Error('Camera stream did not resume');
-    if (video.paused) await video.play();
+    try { mk.stop(); } catch (error) { console.warn('Camera pause before recovery failed:', error); }
+    stopAndDetachCamera();
+    await mk.start();
+    await waitForCameraFrames($('video'), { timeoutMs: 6000, pollIntervalMs: 150 });
+    actionButtons.forEach((button) => { button.disabled = false; });
     setStatusKey('statusReady', 'success');
     if (mk.engine && mk.engine._sizeToVideoBox) mk.engine._sizeToVideoBox();
+    return true;
   } catch (error) {
-    console.warn('Camera resume failed; refreshing local studio:', error, backgroundDuration);
+    console.warn('Camera recovery failed; attempting a controlled local-engine restart:', error);
     setStatusKey('statusCameraResumeError', 'error');
-    setTimeout(() => window.location.reload(), 500);
+    stopAndDetachCamera();
+    let restarted = false;
+    try { restarted = await reinitializeEngine(); } catch (restartError) {
+      console.error('Full camera recovery failed:', restartError);
+    }
+    if (!restarted) {
+      $('camera-retry').hidden = false;
+      setStatusKey('statusCameraResumeError', 'error');
+    }
+    return restarted;
   } finally {
     resumeInProgress = false;
   }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    hiddenAt = Date.now();
+    if (mk) {
+      try { mk.stop(); } catch (error) { console.warn('Camera pause failed:', error); }
+      stopAndDetachCamera();
+    }
+    return;
+  }
+  if (hiddenAt) recoverCamera();
 });
+
+
 
 window.addEventListener('resize', () => {
   if (mk.engine && mk.engine._sizeToVideoBox) mk.engine._sizeToVideoBox();
@@ -402,12 +587,11 @@ window.mk = mk;
 window.handleOpenMakeupResume = () => {
   if (document.hidden || !engineReady || resumeInProgress) return;
   const video = $('video');
-  const stream = video.srcObject;
-  const activeTracks = stream && stream.getVideoTracks ? stream.getVideoTracks().some((track) => track.readyState === 'live' && track.enabled) : false;
-  if (!activeTracks || video.readyState < 2) {
-    hiddenAt = hiddenAt || Date.now();
-    document.dispatchEvent(new Event('visibilitychange'));
+  if (hiddenAt || !hasLiveCameraTrack(video) || video.readyState < 2) {
+    if (!hiddenAt) hiddenAt = Date.now();
+    recoverCamera();
   }
 };
 applyLanguage(currentLanguage);
+updateLayerButtonStates();
 startEngine();
