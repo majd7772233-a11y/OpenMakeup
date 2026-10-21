@@ -54,10 +54,12 @@ const PATTERN_TARGETS = {
 /** Convert a '#rrggbb' string to a THREE.Vector4 with alpha 1. */
 function hexToVector4(hex) {
     const cleanHex = String(hex).replace(/^#/, '');
+    if (!/^[0-9a-fA-F]{6}$/.test(cleanHex)) {
+        throw new Error('Invalid color value: ' + hex);
+    }
     const r = parseInt(cleanHex.slice(0, 2), 16);
     const g = parseInt(cleanHex.slice(2, 4), 16);
     const b = parseInt(cleanHex.slice(4, 6), 16);
-    if (![r, g, b].every(Number.isFinite)) throw new Error('Invalid color value: ' + hex);
     return new Vector4(r / 255, g / 255, b / 255, 1);
 }
 

@@ -137,7 +137,7 @@ const mk = new OpenMakeup(options);
 
 **Camera lifecycle:** `await mk.start()` resolves after the camera start operation completes; the app additionally checks that video frames advance. A missing/invalid bundled pattern manifest fails initialization rather than enabling an incomplete studio.
 
-**Pattern support note:** `getPatterns('lipstick')` intentionally returns no options until the lipstick shader has a real pattern-rendering path. Lipstick pattern image assets in the repository are not evidence of working runtime support.
+**Pattern support note:** `getPatterns('lipstick')` and `getPatterns('foundation')` intentionally return no options until real renderer mappings and bundled mask files exist for those categories. Pattern choices are constrained to entries returned by `getPatterns(category)`; use `pattern` for a 1-based list position or `patternId` for a specific listed ID. Unknown IDs and non-bundled manifest entries are rejected rather than silently choosing a fallback.
 
 **Constructor options:** `video`, `renderCanvas`, `assetsBaseUrl`, `mediapipeBaseUrl`, `defaults`, `aiColor`.
 

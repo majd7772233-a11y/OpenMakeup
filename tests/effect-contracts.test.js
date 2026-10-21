@@ -116,6 +116,7 @@ test('finish activation rejects missing uniforms and unsupported mode values', (
   engine.foundationMat.uniforms._noise = { value: 0 };
   assert.throws(() => engine.setAR('foundation', '#123456', '99'), /Unsupported finish mode/);
   assert.throws(() => engine.setAR('foundation', 'not-a-color', '1'), /Invalid color value/);
+  assert.throws(() => engine.setAR('foundation', '#abcdef00', '1'), /Invalid color value/);
 });
 
 test('custom pattern switching disposes replaced texture and reset restores default', async () => {
@@ -241,6 +242,21 @@ test('SDK rejects unsupported patterns, invalid colors and invalid finishes', as
   await assert.rejects(sdk.apply('blush', { color: 'bad-color' }), /invalid color/);
   await assert.rejects(sdk.apply('lipstick', { finish: 'mirror' }), /finish "mirror" is not supported/);
   await assert.rejects(sdk.apply('eyeline', { finish: 'glossy' }), /finish "glossy" is not supported/);
+});
+
+test('SDK accepts an explicit listed pattern ID and rejects unknown IDs', async () => {
+  const sdk = new OpenMakeup({ video: {}, renderCanvas: {} });
+  sdk._ready = true;
+  sdk._patterns = { eyeshadow: manifest.categories.eyeshadow };
+  const patternCalls = [];
+  sdk.engine.setPattern = async (...args) => { patternCalls.push(args); return true; };
+  sdk.engine.setAR = () => true;
+  const selected = manifest.categories.eyeshadow[2];
+  const result = await sdk.apply('eyeshadow', { patternId: selected.id });
+  assert.deepEqual(patternCalls, [['eyeshadow', selected.id]]);
+  assert.equal(result.pattern, selected.id);
+  await assert.rejects(sdk.apply('eyeshadow', { patternId: 999999 }), /pattern id "999999" is not available/);
+  await assert.rejects(sdk.apply('eyeshadow', { patternId: '../patterns/lipstick/6427.png' }), /pattern id ".+" is not available/);
 });
 
 test('SDK apply restores a supported category default pattern when omitted', async () => {
