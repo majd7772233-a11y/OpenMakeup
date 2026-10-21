@@ -52,7 +52,7 @@ It's a real-time AR makeup mirror **and** a beauty face-reshape engine, built on
 ### 💋 Virtual makeup
 - **Real-time face tracking** — 468-point MediaPipe FaceMesh, live on a webcam.
 - **6 makeup categories** — `foundation`, `blush`, `lipstick`, `eyeliner`, `mascara`, `eyeshadow`.
-- **73 ready-to-use pattern textures** out of the box.
+- **69 bundled pattern masks** for blush, eyeliner, mascara, and eyeshadow. Foundation/lipstick pattern placeholders are not advertised until real mapped assets exist.
 - **Material finishes** — `matte`, `shimmer`, `glossy`, `glitter` (where supported).
 - **Custom GLSL shaders** for believable blending, gloss, and glitter — not flat overlays.
 - **Smart defaults** — every parameter has one; plug in your own AI color provider for lipstick.
