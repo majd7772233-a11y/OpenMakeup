@@ -48,6 +48,10 @@ test('every friendly morph mapping references a real GLB morph target', () => {
   const mesh = gltf.meshes[0];
   const targetNames = mesh.extras.targetNames;
   assert.equal(mesh.primitives[0].targets.length, targetNames.length);
+  for (let i = 0; i <= 5; i++) assert.ok(mesh.primitives[0].attributes[`TEXCOORD_${i}`] !== undefined);
+  const faceController = readFileSync(new URL('../src/core/FaceMeshModelController.js', import.meta.url), 'utf8');
+  assert.match(faceController, /geo\.attributes\.texcoord_4 \|\| geo\.attributes\.uv4/);
+  assert.match(faceController, /const shadowUv = geo\.attributes\.uv3/);
 
   const missingFriendlyTargets = [...new Set(Object.values(MORPH_CONTROLS).map((item) => item.target))]
     .filter((target) => !targetNames.includes(target));
@@ -244,4 +248,119 @@ test('SDK initializes with valid bundled manifest and rejects a manifest that ad
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+
+test('category configuration maps every public category to a live engine layer', async () => {
+  const sdk = new OpenMakeup({ video: {}, renderCanvas: {} });
+  sdk._ready = true;
+  sdk._patterns = { blush: [], eyeshadow: [], eyeline: [], mascara: [] };
+  const activations = [];
+  const textureResets = [];
+  sdk.engine.setAR = (category, color, finish) => { activations.push({ category, color, finish }); };
+  sdk.engine.setPattern = async (category, id) => { textureResets.push([category, id]); };
+
+  for (const category of Object.keys(CATEGORIES)) await sdk.apply(category);
+  assert.deepEqual(activations.map((item) => item.category), Object.values(CATEGORIES).map((config) => config.engine));
+  assert.deepEqual(textureResets, [
+    ['blush', null], ['eyeshadow', null], ['eyeline', null], ['mascara', null],
+  ]);
+});
+
+test('clearing a single layer and clearing all restore default patterns and dispose custom textures', () => {
+  const engine = Object.create(MakeupEngine.prototype);
+  const categories = ['blush', 'eyeshadow', 'eyeline', 'mascara'];
+  const defaults = Object.fromEntries(categories.map((category) => [category, mockTexture()]));
+  const active = Object.fromEntries(categories.map((category) => [category, mockTexture()]));
+  Object.assign(engine, {
+    _activeLayers: new Set(['blush', 'eyeshadow', 'eyeline', 'mascara', 'lipstick']),
+    _defaultPatternTextures: new Map(Object.entries(defaults)),
+    _activePatternTextures: new Map(Object.entries(active)),
+    _syncFaceLayerVisibility() {},
+    blushMat: { uniforms: { _EyeShadowTexture: { value: active.blush } } },
+    eyeShadowMat: { uniforms: { _EyeShadowTexture: { value: active.eyeshadow } } },
+    eyeLineMat: { uniforms: { map: { value: active.eyeline } } },
+    mascaraMat: { uniforms: { map: { value: active.mascara } } },
+  });
+
+  engine.clearPart('blush');
+  assert.equal(engine._activeLayers.has('blush'), false);
+  assert.equal(engine._activeLayers.has('eyeshadow'), true);
+  assert.equal(engine.blushMat.uniforms._EyeShadowTexture.value, defaults.blush);
+  assert.equal(active.blush.disposed, true);
+
+  engine.clearAll();
+  assert.equal(engine._activeLayers.size, 0);
+  for (const category of categories) assert.equal(active[category].disposed, true);
+  assert.equal(engine.eyeShadowMat.uniforms._EyeShadowTexture.value, defaults.eyeshadow);
+  assert.equal(engine.eyeLineMat.uniforms.map.value, defaults.eyeline);
+  assert.equal(engine.mascaraMat.uniforms.map.value, defaults.mascara);
+});
+
+test('tracking visibility hides stale makeup without deleting layer selections', () => {
+  const engine = Object.create(MakeupEngine.prototype);
+  const layers = {
+    faceVideoMesh: { visible: false }, blushMesh: { visible: false },
+    lipsMesh: { visible: false }, eyeShadowMesh: { visible: false },
+    foundationMesh: { visible: false }, blureMesh: { visible: false },
+    wireMesh: { visible: false },
+    eyeLineLeftNurbs: { mesh: { visible: false } }, eyeLineRightNurbs: { mesh: { visible: false } },
+    mascaraLeftNurbs: { mesh: { visible: false } }, mascaraRightNurbs: { mesh: { visible: false } },
+  };
+  Object.assign(engine, layers, {
+    _faceVisible: true, _activeLayers: new Set(['blush', 'eyeline']),
+    _blurEnabled: true, _wireframeEnabled: true,
+  });
+  engine._syncFaceLayerVisibility();
+  assert.equal(engine.blushMesh.visible, true);
+  assert.equal(engine.eyeLineLeftNurbs.mesh.visible, true);
+  assert.equal(engine.lipsMesh.visible, false);
+  assert.equal(engine.blureMesh.visible, true);
+  assert.equal(engine.wireMesh.visible, true);
+
+  engine._faceVisible = false;
+  engine._syncFaceLayerVisibility();
+  assert.equal(engine.blushMesh.visible, false);
+  assert.equal(engine.eyeLineRightNurbs.mesh.visible, false);
+  assert.equal(engine.blureMesh.visible, false);
+  assert.equal(engine.wireMesh.visible, false);
+  assert.equal(engine._activeLayers.has('blush'), true);
+  assert.equal(engine._activeLayers.has('eyeline'), true);
+});
+
+test('camera uniforms referenced by shaders exist and receive runtime updates', () => {
+  const foundationFragment = readFileSync(new URL('../assets/shaders/foundation/fragment.glsl', import.meta.url), 'utf8');
+  const blushVertex = readFileSync(new URL('../assets/shaders/blush/vertex.glsl', import.meta.url), 'utf8');
+  const lipFragment = readFileSync(new URL('../assets/shaders/lip/fragment.glsl', import.meta.url), 'utf8');
+  assert.match(foundationFragment, /uniform float _noise;/);
+  assert.match(foundationFragment, /uniform vec3 uCameraPosition;/);
+  assert.match(blushVertex, /uniform vec3 uCameraPosition;/);
+  assert.match(lipFragment, /uniform vec3 cameraPosition;/);
+});
+
+test('normal UI uses only friendly morph controls, not raw GLB target names', () => {
+  const mainSource = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
+  assert.match(mainSource, /for \(const \[name, config\] of Object\.entries\(MORPH_CONTROLS \|\| \{\}\)\)/);
+  assert.match(mainSource, /validMorphs\.has\(name\)/);
+  assert.doesNotMatch(mainSource, /makeSlider\(item \? item\.name : target/);
+});
+
+test('morph API rejects unknown names/non-finite weights and drives valid model targets', () => {
+  const glb = readFileSync(new URL('../assets/models/face.glb', import.meta.url));
+  const jsonLength = glb.readUInt32LE(12);
+  const gltf = JSON.parse(glb.toString('utf8', 20, 20 + jsonLength).trim());
+  const targetNames = gltf.meshes[0].extras.targetNames;
+  const engine = Object.create(MakeupEngine.prototype);
+  engine._morphReady = true;
+  engine._morphDict = Object.fromEntries(targetNames.map((name, index) => [name, index]));
+  engine._morphInfluences = new Float32Array(targetNames.length);
+  engine._pendingMorph = {};
+  engine.setMorph('noseSlim', 0.65);
+  assert.equal(engine._morphInfluences[engine._morphDict[MORPH_CONTROLS.noseSlim.target]], 0.65);
+  engine.setMorph('facemesh10.001', 0.25);
+  assert.equal(engine._morphInfluences[engine._morphDict['facemesh10.001']], 0.25);
+  assert.throws(() => engine.setMorph('faceSlimMagic', 0.5), /unknown face morph/);
+  assert.throws(() => engine.setMorph('noseSlim', Number.NaN), /finite number/);
+  engine.resetMorph();
+  assert.ok(engine._morphInfluences.every((weight) => weight === 0));
 });
