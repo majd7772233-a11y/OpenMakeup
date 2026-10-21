@@ -152,6 +152,7 @@ export class MakeupEngine {
         this._initPromise = null;
         this._cameraStartPromise = null;
         this._cameraRunning = false;
+        this._lifecycleGeneration = 0;
         this._activeLayers = new Set();
         this._faceVisible = false;
         this._noFaceFrames = 0;
@@ -755,14 +756,29 @@ export class MakeupEngine {
         if (this._cameraRunning) return this;
         if (this._cameraStartPromise) return this._cameraStartPromise;
 
+        const camera = this._camera;
+        const generation = this._lifecycleGeneration;
         this._cameraStartPromise = (async () => {
             if (this._rafId == null) this._animate();
             try {
-                await this._camera.start();
+                await camera.start();
+                // A timed-out initialization or background/stop event may have
+                // invalidated this start while its browser permission promise
+                // was still pending. Never let a late completion revive it.
+                if (generation !== this._lifecycleGeneration || this._camera !== camera) {
+                    try { camera.stop(); } catch (_) {}
+                    this._stopAttachedVideoTracks();
+                    throw new Error('Camera startup was cancelled by a lifecycle change.');
+                }
                 this._cameraRunning = true;
                 return this;
             } catch (error) {
-                this.stop();
+                if (generation === this._lifecycleGeneration && this._camera === camera) {
+                    this.stop();
+                } else {
+                    try { camera.stop(); } catch (_) {}
+                    this._stopAttachedVideoTracks();
+                }
                 const detail = error && error.message ? error.message : String(error || 'unknown camera error');
                 throw new Error('Camera could not start: ' + detail);
             } finally {
@@ -772,7 +788,16 @@ export class MakeupEngine {
         return this._cameraStartPromise;
     }
 
+    _stopAttachedVideoTracks() {
+        if (!this.video || !this.video.srcObject || !this.video.srcObject.getTracks) return;
+        const stream = this.video.srcObject;
+        stream.getTracks().forEach((track) => { try { track.stop(); } catch (_) {} });
+        if (this.video.srcObject === stream) this.video.srcObject = null;
+    }
+
     stop() {
+        // Invalidate pending Camera.start() calls before they can complete late.
+        this._lifecycleGeneration += 1;
         if (this._camera && this._camera.stop) {
             try { this._camera.stop(); } catch (error) { console.warn('OpenMakeupSDK: camera stop failed:', error); }
         }
