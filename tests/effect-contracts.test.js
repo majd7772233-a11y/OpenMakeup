@@ -5,6 +5,7 @@ import { OpenMakeup } from '../src/OpenMakeup.js';
 import { CATEGORIES } from '../src/categories.js';
 import { MORPH_CONTROLS, MORPH_TARGETS_EXTRA } from '../src/morphs.js';
 import { MakeupEngine } from '../src/core/MakeupEngine.js';
+import { calculateVideoBoxLayout } from '../src/core/videoLayout.js';
 import { Vector3 } from 'three';
 
 const manifest = JSON.parse(readFileSync(new URL('../assets/patterns/patterns.json', import.meta.url), 'utf8'));
@@ -398,4 +399,25 @@ test('morph API rejects unknown names/non-finite weights and drives valid model 
   assert.throws(() => engine.setMorph('noseSlim', Number.NaN), /finite number/);
   engine.resetMorph();
   assert.ok(engine._morphInfluences.every((weight) => weight === 0));
+});
+
+test('preview and fullscreen use matching video/canvas fit rectangles', () => {
+  const cover = calculateVideoBoxLayout(640, 480, 1000, 500, 'cover');
+  assert.deepEqual(cover, { width: 1000, height: 750, left: 0, top: -125 });
+
+  const contain = calculateVideoBoxLayout(640, 480, 1000, 500, 'contain');
+  assert.deepEqual(contain, { width: 667, height: 500, left: 167, top: 0 });
+
+  const portraitContain = calculateVideoBoxLayout(1280, 720, 360, 800, 'contain');
+  assert.deepEqual(portraitContain, { width: 360, height: 203, left: 0, top: 299 });
+
+  assert.deepEqual(calculateVideoBoxLayout(0, 720, 360, 800, 'contain'), {
+    width: 0, height: 0, left: 0, top: 0,
+  });
+});
+
+test('video and WebGL canvas retain the same front-camera mirror transform', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /#video\{[^}]*transform:scaleX\(-1\)/);
+  assert.match(html, /#renderCanvas\{[^}]*transform:scaleX\(-1\)/);
 });

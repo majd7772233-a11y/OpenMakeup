@@ -35,6 +35,7 @@ import {
 } from './materials.js';
 import { loadFaceWarpMat } from './faceWarpMaterial.js';
 import { createAssetResolver, defaultConfig, resolveAsset } from '../config.js';
+import { calculateVideoBoxLayout } from './videoLayout.js';
 import { MORPH_CONTROLS, MORPH_TARGETS_EXTRA, resolveMorphTarget } from '../morphs.js';
 
 const KNOWN_MORPH_INPUTS = new Set([
@@ -285,19 +286,11 @@ export class MakeupEngine {
         const vidW = this.video.videoWidth || containerWidth;
         const vidH = this.video.videoHeight || containerHeight;
 
-        const videoAspect = vidW / vidH;
-        const containerAspect = containerWidth / containerHeight;
-
-        let targetWidth;
-        let targetHeight;
-
-        if (videoAspect > containerAspect) {
-            targetHeight = containerHeight;
-            targetWidth = Math.round(targetHeight * videoAspect);
-        } else {
-            targetWidth = containerWidth;
-            targetHeight = Math.round(targetWidth / videoAspect);
-        }
+        if (containerWidth <= 0 || containerHeight <= 0) return;
+        const fitMode = container.classList && container.classList.contains('fullscreen') ? 'contain' : 'cover';
+        const layout = calculateVideoBoxLayout(vidW, vidH, containerWidth, containerHeight, fitMode);
+        const { width: targetWidth, height: targetHeight } = layout;
+        if (targetWidth <= 0 || targetHeight <= 0) return;
 
         this.sceneSize.set(targetWidth, targetHeight);
 
@@ -307,8 +300,8 @@ export class MakeupEngine {
 
         const el = this.renderer.domElement;
         el.style.position = 'absolute';
-        el.style.left = `${Math.round((containerWidth - targetWidth) / 2)}px`;
-        el.style.top = `${Math.round((containerHeight - targetHeight) / 2)}px`;
+        el.style.left = `${layout.left}px`;
+        el.style.top = `${layout.top}px`;
         el.style.pointerEvents = 'none';
         el.style.maxWidth = 'none';
         el.style.width = `${targetWidth}px`;
