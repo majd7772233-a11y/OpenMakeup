@@ -128,8 +128,8 @@ export class OpenMakeup {
   /** Toggle the background blur layer. */
   setBlur(on: boolean): void;
 
-  /** Start the render loop / camera. */
-  start(): void;
+  /** Start the render loop / camera and resolve when the camera start operation completes. */
+  start(): Promise<OpenMakeup>;
 
   /** Stop the render loop / camera. */
   stop(): void;
@@ -183,7 +183,7 @@ export class MakeupEngine {
   /** Global multiplier for reshape strength (default 1). */
   morphGain: number;
   init(): Promise<void>;
-  start(): void;
+  start(): Promise<MakeupEngine>;
   stop(): void;
   dispose(): void;
   setAR(arType: string, color: string, colorMode: string | number): void;

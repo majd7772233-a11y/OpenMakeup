@@ -72,6 +72,20 @@ test('camera readiness rejects when the track ends during startup', async () => 
   }), /No live camera video track/);
 });
 
+test('SDK start returns a promise that settles with camera startup', async () => {
+  const sdk = new OpenMakeup({ video: {}, renderCanvas: {} });
+  let resolveStart;
+  sdk.engine.start = () => new Promise((resolve) => { resolveStart = resolve; });
+  const startResult = sdk.start();
+  assert.equal(typeof startResult.then, 'function');
+  let finished = false;
+  startResult.then(() => { finished = true; });
+  await Promise.resolve();
+  assert.equal(finished, false);
+  resolveStart();
+  assert.equal(await startResult, sdk);
+});
+
 test('SDK apply propagates effect activation errors instead of reporting success', async () => {
   const sdk = new OpenMakeup({ video: {}, renderCanvas: {} });
   sdk._ready = true;

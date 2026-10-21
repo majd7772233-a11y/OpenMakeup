@@ -194,7 +194,7 @@ export class OpenMakeup {
     this.engine.setBlur(on);
   }
 
-  start() { this.engine.start(); }
+  start() { return this.engine.start().then(() => this); }
   stop() { this.engine.stop(); }
   dispose() { this.engine.dispose(); }
 
