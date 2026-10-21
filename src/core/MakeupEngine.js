@@ -36,7 +36,9 @@ import {
 import { loadFaceWarpMat } from './faceWarpMaterial.js';
 import { createAssetResolver, defaultConfig, resolveAsset } from '../config.js';
 import { calculateVideoBoxLayout } from './videoLayout.js';
-import { MORPH_CONTROLS, MORPH_TARGETS_EXTRA, resolveMorphTarget } from '../morphs.js';
+import {
+    MORPH_CONTROLS, MORPH_TARGETS_EXTRA, MORPH_WEIGHT_MIN, MORPH_WEIGHT_MAX, resolveMorphTarget,
+} from '../morphs.js';
 
 const KNOWN_MORPH_INPUTS = new Set([
     ...Object.keys(MORPH_CONTROLS),
@@ -833,13 +835,16 @@ export class MakeupEngine {
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    /** Set one reshape control (friendly name from morphs.js, or a raw glb target). */
+    /** Set one reshape control with a finite weight in MORPH_WEIGHT_MIN..MORPH_WEIGHT_MAX. */
     setMorph(name, value) {
         if (typeof name !== 'string' || !KNOWN_MORPH_INPUTS.has(name)) {
             throw new Error(`OpenMakeupSDK: unknown face morph "${name}". Use a documented control or a model target name.`);
         }
         if (!Number.isFinite(value)) {
             throw new Error(`OpenMakeupSDK: morph weight for "${name}" must be a finite number.`);
+        }
+        if (value < MORPH_WEIGHT_MIN || value > MORPH_WEIGHT_MAX) {
+            throw new Error(`OpenMakeupSDK: morph weight for "${name}" must be within ${MORPH_WEIGHT_MIN}..${MORPH_WEIGHT_MAX}.`);
         }
         if (!this._morphReady) {
             this._pendingMorph[name] = value;

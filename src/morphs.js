@@ -2,8 +2,11 @@
  * OpenMakeupSDK — face morph (reshape) controls.
  *
  * Maps friendly control names to the morph target names baked into face.glb.
- * Values are influence weights, typically 0..1 (negative or >1 exaggerate).
+ * Weights are clamped by contract to this tested interval so extreme values do
+ * not generate unstable geometry or overflow the model's Float32 influence array.
  */
+export const MORPH_WEIGHT_MIN = -1;
+export const MORPH_WEIGHT_MAX = 1.5;
 export const MORPH_CONTROLS = {
   browLift:   { target: 'facemesh9',      about: 'lift the outer brow corner' },
   lipPlump:   { target: 'facemesh4',      about: 'plump the lips (filler look)' },

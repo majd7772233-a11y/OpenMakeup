@@ -1,4 +1,4 @@
-import { OpenMakeup, MORPH_CONTROLS } from './src/index.js';
+import { OpenMakeup, MORPH_CONTROLS, MORPH_WEIGHT_MIN, MORPH_WEIGHT_MAX } from './src/index.js';
 import { hasLiveCameraTrack, waitForCameraFrames } from './src/core/cameraReadiness.js';
 
 const $ = (id) => document.getElementById(id);
@@ -120,7 +120,7 @@ function readSessionState() {
       // Previous builds exposed raw Blender target names. Only restore stable,
       // friendly controls in the everyday studio UI.
       if (validMorphs.has(name) && Number.isFinite(Number(value))) {
-        morphs[name] = Math.max(-1, Math.min(1.5, Number(value)));
+        morphs[name] = Math.max(MORPH_WEIGHT_MIN, Math.min(MORPH_WEIGHT_MAX, Number(value)));
       }
     }
     return {
@@ -461,8 +461,8 @@ function makeSlider(name, about) {
   }
   const input = document.createElement('input');
   input.type = 'range';
-  input.min = '-1';
-  input.max = '1.5';
+  input.min = String(MORPH_WEIGHT_MIN);
+  input.max = String(MORPH_WEIGHT_MAX);
   input.step = '0.05';
   input.value = '0';
   input.setAttribute('aria-label', localizedMorphName(name, false));

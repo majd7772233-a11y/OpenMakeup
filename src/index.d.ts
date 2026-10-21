@@ -75,6 +75,14 @@ export interface OpenMakeupOptions {
   aiColor?: AiColorProvider;
 }
 
+/** Lowest allowed face-morph influence weight for SDK and UI controls. */
+export const MORPH_WEIGHT_MIN: -1;
+/** Highest allowed face-morph influence weight for SDK and UI controls. */
+export const MORPH_WEIGHT_MAX: 1.5;
+export const MORPH_CONTROLS: Record<string, { target: string; about: string }>;
+export const MORPH_TARGETS_EXTRA: string[];
+export function resolveMorphTarget(name: string): string;
+
 /**
  * High-level entry point: an AR makeup mirror plus a face-reshape engine.
  *
@@ -112,10 +120,10 @@ export class OpenMakeup {
   /** Hide every makeup layer. */
   clearAll(): void;
 
-  /** Reshape the face. Weights are typically 0..1 (negative or >1 exaggerate). */
+  /** Reshape the face using finite weights within MORPH_WEIGHT_MIN..MORPH_WEIGHT_MAX. */
   morph(map?: Record<string, number>): void;
 
-  /** Set a single reshape control by friendly name or raw target name. */
+  /** Set a single reshape control by friendly name or raw target name, within the documented weight range. */
   setMorph(name: string, value: number): void;
 
   /** Reset every reshape control to zero. */
