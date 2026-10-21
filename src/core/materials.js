@@ -113,6 +113,7 @@ export async function loadLipMats(assets) {
         _opacity:              { value: 0.81 },
         _shine:                { value: 0.81 },
         _bright:               { value: 0.0 },
+        cameraPosition:        { value: new Vector3() },
 
         // Colors (vec4)
         _Color:         { value: new Vector4(1.0, 1.0, 1.0, 1.0) },

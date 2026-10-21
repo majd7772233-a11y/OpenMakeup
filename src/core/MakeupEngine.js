@@ -5,6 +5,7 @@ import {
     RGBAFormat,
     Scene,
     Vector2,
+    Vector3,
     Vector4,
     WebGLRenderer,
     VideoTexture,
@@ -34,7 +35,20 @@ import {
 } from './materials.js';
 import { loadFaceWarpMat } from './faceWarpMaterial.js';
 import { createAssetResolver, defaultConfig, resolveAsset } from '../config.js';
-import { resolveMorphTarget } from '../morphs.js';
+import { MORPH_CONTROLS, MORPH_TARGETS_EXTRA, resolveMorphTarget } from '../morphs.js';
+
+const KNOWN_MORPH_INPUTS = new Set([
+    ...Object.keys(MORPH_CONTROLS),
+    ...Object.values(MORPH_CONTROLS).map((control) => control.target),
+    ...MORPH_TARGETS_EXTRA,
+]);
+
+const PATTERN_TARGETS = {
+    blush: { material: 'blushMat', uniform: '_EyeShadowTexture', flipY: false },
+    eyeshadow: { material: 'eyeShadowMat', uniform: '_EyeShadowTexture', flipY: false },
+    eyeline: { material: 'eyeLineMat', uniform: 'map', flipY: true },
+    mascara: { material: 'mascaraMat', uniform: 'map', flipY: true },
+};
 
 /** Convert a '#rrggbb' string to a THREE.Vector4 with alpha 1. */
 function hexToVector4(hex) {
@@ -158,6 +172,9 @@ export class MakeupEngine {
         this._noFaceFrames = 0;
         this._wireframeEnabled = false;
         this._blurEnabled = false;
+        this._defaultPatternTextures = new Map();
+        this._activePatternTextures = new Map();
+        this._cameraWorldPosition = new Vector3();
 
         // face reshape (morph) state
         this.faceVideoMesh = null;     // camera video projected onto the morphable face mesh
@@ -389,6 +406,14 @@ export class MakeupEngine {
         this.foundationMat = foundationMat;
         this.eyeLineMat = eyeLineMat;
         this.mascaraMat = mascaraMat;
+        this._defaultPatternTextures = new Map([
+            ['blush', this.blushMat.uniforms._EyeShadowTexture.value],
+            ['eyeshadow', this.eyeShadowMat.uniforms._EyeShadowTexture.value],
+            ['eyeline', this.eyeLineMat.uniforms.map.value],
+            ['mascara', this.mascaraMat.uniforms.map.value],
+        ]);
+        this._activePatternTextures.clear();
+        this._updateCameraUniforms();
 
         this.faceVideoMesh = new Mesh(mesh.geometry, faceWarpMat);
         this.faceVideoMesh.renderOrder = 1;
@@ -485,6 +510,7 @@ export class MakeupEngine {
     }
 
     _onResults = (results) => {
+        this._updateCameraUniforms();
         if (this.overlayCtx) {
             this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
         }
@@ -534,52 +560,82 @@ export class MakeupEngine {
 
     _animate = () => {
         this._rafId = requestAnimationFrame(this._animate);
+        this._updateCameraUniforms();
         if (this.renderer) this.renderer.render(this.scene, this.camera3D);
     };
+
+    _updateCameraUniforms() {
+        if (!this.camera3D) return;
+        this.camera3D.updateMatrixWorld();
+        this.camera3D.getWorldPosition(this._cameraWorldPosition);
+        for (const material of [this.foundationMat, this.blushMat, this.lipsMat]) {
+            const uniform = material && material.uniforms &&
+                (material.uniforms.uCameraPosition || material.uniforms.cameraPosition);
+            if (uniform && uniform.value && typeof uniform.value.copy === 'function') {
+                uniform.value.copy(this._cameraWorldPosition);
+            }
+        }
+    }
 
     /* ───────────────────────── control API (was DOM events) ───────────────────────── */
 
     /** Apply / update a makeup layer. (was the `setAR` event) */
     setAR(arType, colorCode, colorMode) {
         const color = hexToVector4(colorCode);
+        const requireUniform = (material, uniformName, effectName) => {
+            const uniform = material && material.uniforms && material.uniforms[uniformName];
+            if (!uniform) {
+                throw new Error(`The ${effectName} shader is missing required uniform "${uniformName}".`);
+            }
+            return uniform;
+        };
+        const write = (material, uniformName, value, effectName) => {
+            requireUniform(material, uniformName, effectName).value = value;
+        };
         const ready = (material, mesh, name) => {
-            if (!material || !mesh) throw new Error(`The ${name} effect is not ready. Wait for the studio to finish loading and retry.`);
+            if (!material || !mesh) {
+                throw new Error(`The ${name} effect is not ready. Wait for the studio to finish loading and retry.`);
+            }
+        };
+        const mode = colorMode == null ? null : String(colorMode);
+        const setNoiseFinish = (material, name) => {
+            const noise = ({ '1': 0, '5': 1, '7': 0.7 })[mode];
+            if (noise == null) throw new Error(`Unsupported finish mode "${colorMode}" for ${name}.`);
+            write(material, '_noise', noise, name);
         };
 
         if (arType === 'foundation') {
             ready(this.foundationMat, this.foundationMesh, 'foundation');
-            this.foundationMat.uniforms._MainColor.value = color;
-            if (colorMode == '5') this.foundationMat.uniforms._noise.value = 1;
-            if (colorMode == '7') this.foundationMat.uniforms._noise.value = 0.7;
-            if (colorMode == '1') this.foundationMat.uniforms._noise.value = 0;
+            write(this.foundationMat, '_MainColor', color, 'foundation');
+            setNoiseFinish(this.foundationMat, 'foundation');
         } else if (arType === 'blush') {
             ready(this.blushMat, this.blushMesh, 'blush');
-            this.blushMat.uniforms._ShadowColor.value = color;
-            if (colorMode == '5') this.blushMat.uniforms._noise.value = 1;
-            if (colorMode == '7') this.blushMat.uniforms._noise.value = 0.7;
-            if (colorMode == '1') this.blushMat.uniforms._noise.value = 0;
+            write(this.blushMat, '_ShadowColor', color, 'blush');
+            setNoiseFinish(this.blushMat, 'blush');
         } else if (arType === 'lipstick') {
             ready(this.lipsMat, this.lipsMesh, 'lipstick');
-            this.lipsMat.uniforms._MainColor.value = color;
-            if (colorMode == '5') { this.lipsMat.uniforms._shine.value = 0.3; this.lipsMat.uniforms._bright.value = 0.6; }
-            if (colorMode == '7') { this.lipsMat.uniforms._shine.value = 0.5; this.lipsMat.uniforms._bright.value = 0.0; }
-            if (colorMode == '2') { this.lipsMat.uniforms._shine.value = 0.9; this.lipsMat.uniforms._bright.value = 0.0; }
-            if (colorMode == '1') { this.lipsMat.uniforms._shine.value = 0.0; this.lipsMat.uniforms._bright.value = 0.0; }
+            write(this.lipsMat, '_MainColor', color, 'lipstick');
+            const lipstickFinish = ({
+                '1': { shine: 0, bright: 0 },
+                '2': { shine: 0.9, bright: 0 },
+                '5': { shine: 0.3, bright: 0.6 },
+                '7': { shine: 0.5, bright: 0 },
+            })[mode];
+            if (!lipstickFinish) throw new Error(`Unsupported finish mode "${colorMode}" for lipstick.`);
+            write(this.lipsMat, '_shine', lipstickFinish.shine, 'lipstick');
+            write(this.lipsMat, '_bright', lipstickFinish.bright, 'lipstick');
         } else if (arType === 'eyeshadow') {
             ready(this.eyeShadowMat, this.eyeShadowMesh, 'eyeshadow');
-            this.eyeShadowMat.uniforms._ShadowColor.value = color;
-            this.eyeShadowMat.needsUpdate = true;
-            if (colorMode == '5') this.eyeShadowMat.uniforms._noise.value = 1;
-            if (colorMode == '7') this.eyeShadowMat.uniforms._noise.value = 0.7;
-            if (colorMode == '1') this.eyeShadowMat.uniforms._noise.value = 0;
+            write(this.eyeShadowMat, '_ShadowColor', color, 'eyeshadow');
+            setNoiseFinish(this.eyeShadowMat, 'eyeshadow');
         } else if (arType === 'eyeline') {
             ready(this.eyeLineMat, this.eyeLineLeftNurbs && this.eyeLineLeftNurbs.mesh, 'eyeliner');
             ready(this.eyeLineMat, this.eyeLineRightNurbs && this.eyeLineRightNurbs.mesh, 'eyeliner');
-            this.eyeLineMat.uniforms.color.value = color;
+            write(this.eyeLineMat, 'color', color, 'eyeliner');
         } else if (arType === 'mascara') {
             ready(this.mascaraMat, this.mascaraLeftNurbs && this.mascaraLeftNurbs.mesh, 'mascara');
             ready(this.mascaraMat, this.mascaraRightNurbs && this.mascaraRightNurbs.mesh, 'mascara');
-            this.mascaraMat.uniforms.color.value = color;
+            write(this.mascaraMat, 'color', color, 'mascara');
         } else {
             throw new Error('Unknown makeup layer: ' + arType);
         }
@@ -591,6 +647,7 @@ export class MakeupEngine {
 
     /** Hide every makeup layer. (was the `ClearAll` event) */
     clearAll() {
+        for (const category of Object.keys(PATTERN_TARGETS)) this._resetPattern(category);
         this._activeLayers.clear();
         this._syncFaceLayerVisibility();
     }
@@ -598,40 +655,61 @@ export class MakeupEngine {
     /** Hide one makeup layer. (was the `ClearPartOfMakeUp` event) */
     clearPart(action) {
         if (!['foundation', 'blush', 'lipstick', 'eyeshadow', 'eyeline', 'mascara'].includes(action)) return;
+        if (PATTERN_TARGETS[action]) this._resetPattern(action);
         this._activeLayers.delete(action);
         this._syncFaceLayerVisibility();
     }
 
-    /** Set the pattern texture for a makeup type. (was the `setPattern` event) */
+    /** Apply a bundled alpha-mask pattern; null restores the built-in texture. */
     async setPattern(armode, imageId) {
-        const tex = await this._fetchPatternTexture(armode, imageId);
-        if (armode === 'foundation' && this.foundationMat) {
-            this.foundationMat.uniforms._Mask.value = tex;
+        const target = PATTERN_TARGETS[armode];
+        if (!target) {
+            throw new Error(`Pattern support is not implemented for makeup layer "${armode}".`);
+        }
+
+        if (imageId == null) return this._resetPattern(armode);
+        if (!/^\d+$/.test(String(imageId))) {
+            throw new Error(`Invalid pattern id "${imageId}" for "${armode}".`);
+        }
+
+        const material = this[target.material];
+        const uniform = material && material.uniforms && material.uniforms[target.uniform];
+        if (!uniform) throw new Error(`The ${armode} shader has no pattern uniform "${target.uniform}".`);
+
+        const current = this._activePatternTextures.get(armode);
+        if (current && current.userData && String(current.userData.openMakeupPatternId) === String(imageId)) {
             return true;
         }
-        if (armode === 'eyeline' && this.eyeLineMat) {
-            tex.flipY = true;
-            this.eyeLineMat.uniforms.map.value = tex;
-            return true;
-        }
-        if (armode === 'mascara' && this.mascaraMat) {
-            tex.flipY = true;
-            this.mascaraMat.uniforms.map.value = tex;
-            return true;
-        }
-        if (armode === 'eyeshadow' && this.eyeShadowMat) {
-            this.eyeShadowMat.uniforms._EyeShadowTexture.value = tex;
-            return true;
-        }
-        if (armode === 'blush' && this.blushMat) {
-            this.blushMat.uniforms._EyeShadowTexture.value = tex;
-            return true;
-        }
-        tex.dispose();
-        throw new Error(`Pattern support is not implemented for makeup layer "${armode}".`);
+
+        // Load the replacement completely before swapping it into the live
+        // material. If loading fails, the currently active pattern survives.
+        const texture = await this._fetchPatternTexture(armode, imageId);
+        texture.flipY = target.flipY;
+        texture.userData = texture.userData || {};
+        texture.userData.openMakeupPatternId = String(imageId);
+        const previous = this._activePatternTextures.get(armode);
+        uniform.value = texture;
+        this._activePatternTextures.set(armode, texture);
+        if (previous && previous !== texture) previous.dispose();
+        return true;
     }
 
-    /** Load a pattern texture from assets/patterns/<type>/<id>.png (no hardcoded host). */
+    _resetPattern(armode) {
+        const target = PATTERN_TARGETS[armode];
+        if (!target) return false;
+        const defaultTexture = this._defaultPatternTextures.get(armode);
+        const material = this[target.material];
+        const uniform = material && material.uniforms && material.uniforms[target.uniform];
+        if (!defaultTexture || !uniform) return false;
+
+        const previous = this._activePatternTextures.get(armode);
+        uniform.value = defaultTexture;
+        this._activePatternTextures.delete(armode);
+        if (previous && previous !== defaultTexture) previous.dispose();
+        return true;
+    }
+
+    /** Load an asset from the bundled pattern folder. IDs are numeric manifest keys. */
     _fetchPatternTexture(armode, id) {
         const url = this.assets.pattern(armode, id);
         return new Promise((resolve, reject) => {
@@ -647,10 +725,15 @@ export class MakeupEngine {
                     resolve(texture);
                 },
                 undefined,
-                (err) => reject(err),
+                (error) => {
+                    const detail = error && error.message ? error.message : String(error || 'unknown texture error');
+                    reject(new Error(`Could not load pattern "${id}" for "${armode}" from "${url}": ${detail}`));
+                },
             );
         });
     }
+
+
 
     /* ───────────────────────── face reshape (morph) ───────────────────────── */
 
@@ -738,16 +821,32 @@ export class MakeupEngine {
 
     /** Set one reshape control (friendly name from morphs.js, or a raw glb target). */
     setMorph(name, value) {
-        if (!this._morphReady) { this._pendingMorph[name] = value; return; }
+        if (typeof name !== 'string' || !KNOWN_MORPH_INPUTS.has(name)) {
+            throw new Error(`OpenMakeupSDK: unknown face morph "${name}". Use a documented control or a model target name.`);
+        }
+        if (!Number.isFinite(value)) {
+            throw new Error(`OpenMakeupSDK: morph weight for "${name}" must be a finite number.`);
+        }
+        if (!this._morphReady) {
+            this._pendingMorph[name] = value;
+            return true;
+        }
         const target = resolveMorphTarget(name);
         const idx = this._morphDict[target];
-        if (idx == null) { console.warn(`OpenMakeupSDK: unknown morph "${name}"`); return; }
+        if (idx == null || !this._morphInfluences || idx >= this._morphInfluences.length) {
+            throw new Error(`OpenMakeupSDK: model does not contain the required morph target "${target}".`);
+        }
         this._morphInfluences[idx] = value;
+        return true;
     }
 
     /** Apply a map of reshape controls, e.g. { noseSlim: 0.6, cheeks: 0.3 }. */
     morph(map = {}) {
-        for (const name in map) this.setMorph(name, map[name]);
+        if (!map || typeof map !== 'object' || Array.isArray(map)) {
+            throw new Error('OpenMakeupSDK: morph() expects an object of control names and finite weights.');
+        }
+        for (const [name, value] of Object.entries(map)) this.setMorph(name, value);
+        return true;
     }
 
     /** Reset all reshape controls to 0. */
@@ -928,5 +1027,7 @@ export class MakeupEngine {
         this._morphInfluences = null;
         this._basePos = null;
         this._pendingMorph = {};
+        this._defaultPatternTextures.clear();
+        this._activePatternTextures.clear();
     }
 }

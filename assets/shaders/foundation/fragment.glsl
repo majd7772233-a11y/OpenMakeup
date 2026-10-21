@@ -8,7 +8,12 @@ uniform vec4 _MainColor;
 uniform sampler2D _Mask;
 uniform vec4 _Mask_ST; // xy = scale, zw = offset
 uniform float _shedat;
+uniform float _noise;
 uniform vec3 uCameraPosition;
+
+float hash21(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
 
 out vec4 outColor;
 
@@ -26,13 +31,16 @@ void main() {
     // نمونه‌گیری از ماسک
     float maskVal = texture(_Mask, uvMask).r;
 
-    // آلفا بر اساس ماسک و فِرِنل
+    // Alpha remains bounded by the face mask and view angle.
     float alpha = maskVal * fresnel;
 
-    // رنگ نهایی
-    vec4 baseColor = vec4(_MainColor.rgb, alpha*_shedat*0.5);
-
-    outColor = baseColor ;//* _shedat;
+    // Finish modes share a subtle procedural surface: matte is clean, shimmer
+    // adds sparse highlights, and the higher value strengthens those flecks.
+    float seed = hash21(floor(vUv * vec2(420.0, 620.0)));
+    float sparkle = smoothstep(0.965, 0.998, seed) * _noise * 0.16;
+    vec3 finishedColor = clamp(_MainColor.rgb + vec3(sparkle), 0.0, 1.0);
+    vec4 baseColor = vec4(finishedColor, alpha * _shedat * 0.5);
+    outColor = baseColor;
     //gl_FragDepth = 0.3;
 
 }
