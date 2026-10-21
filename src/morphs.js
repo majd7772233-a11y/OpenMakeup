@@ -2,7 +2,7 @@
  * OpenMakeupSDK — face morph (reshape) controls.
  *
  * Maps friendly control names to the morph target names baked into face.glb.
- * Weights are clamped by contract to this tested interval so extreme values do
+ * Weights must remain inside this tested interval so extreme values do
  * not generate unstable geometry or overflow the model's Float32 influence array.
  */
 export const MORPH_WEIGHT_MIN = -1;

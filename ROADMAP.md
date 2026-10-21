@@ -1,8 +1,8 @@
 # Open Makeup — Project Roadmap
 
 **Last updated:** 2026-10-22  
-**Stage 2 code revision validated by CI:** `a5fcc28287b2a6214d52c7c9a99a3e327c0640df`  
-**CI run:** [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245)  
+**Stage 2 code revision validated by CI:** `a3f4f89a5e40c9a26ea882b58185057b5cb2f743`  
+**CI run:** [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807)  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
 **Related pull request:** [#3 — Arabic-first mobile UI, fullscreen preview, and camera recovery](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
 **Engineering protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
@@ -121,8 +121,8 @@ Acceptance criteria:
 ### Stage 2 — Makeup Effect and Face-Control Correctness
 
 **Status:** Implementation and automated CI complete. Real-device visual/camera validation is deliberately deferred to the combined regression pass after Stage 4, per user direction.  
-**Code revision validated by CI:** `a5fcc28287b2a6214d52c7c9a99a3e327c0640df`  
-**CI run:** [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245)
+**Code revision validated by CI:** `a3f4f89a5e40c9a26ea882b58185057b5cb2f743`  
+**CI run:** [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807)
 
 #### Findings addressed
 
@@ -142,11 +142,12 @@ Acceptance criteria:
 - Added strict finish/color/pattern validation and explicit errors for unsupported modes instead of silent fallbacks.
 - Made pattern state consistent across apply, reapply, single-layer clear, clear-all, failed loads, racing loads and engine disposal.
 - Added `src/core/videoLayout.js` for mathematically consistent cover/contain preview sizing.
+- Centralized face-morph bounds as `MORPH_WEIGHT_MIN = -1` and `MORPH_WEIGHT_MAX = 1.5` across engine, UI sliders, saved-state restoration and TypeScript declarations; the SDK rejects values outside the interval.
 - Added 21 tests in `tests/effect-contracts.test.js`, in addition to the 11 runtime tests in `tests/runtime-reliability.test.js`.
 
 #### Completion evidence and deferred device boundary
 
-- CI run [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245) passed **32 Node tests, 0 failures**, SDK type-check, Vite web bundle, Android asset packaging, debug APK build and artifact upload. Artifact: `Open-Makeup-debug-apk`.
+- CI run [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807) passed **32 Node tests, 0 failures**, SDK type-check, Vite web bundle, Android asset packaging, debug APK build and artifact upload. Artifact: `Open-Makeup-debug-apk`.
 - Automated tests validate SDK/material state, bundled assets/catalogue integrity, GLB morph/UV contracts, layer mappings, finish uniforms, texture races/cleanup, invalid input handling and preview layout. They do not establish subjective shader appearance under live lighting or physical camera alignment.
 - Foundation/lipstick pattern masks remain intentionally unsupported until proper category-specific mapping and assets exist. The SDK publishes no choices for those categories and rejects attempts.
 - Physical Android 6/7 rendering, repeated resume, touch/permission workflows and performance will be checked together after Stage 4. This is intentionally deferred verification, not a claimed success.
@@ -156,7 +157,7 @@ Acceptance criteria:
 2. Invalid colors, finishes, categories and explicit pattern IDs fail clearly instead of being silently substituted.
 3. Custom pattern selection, switching, reset, clear-one, clear-all, asset failure, racing loads and disposal have automated coverage and correct resource ownership.
 4. All six categories map to a real engine layer; finish settings assign existing uniforms; missing uniforms and unsupported values fail explicitly.
-5. Friendly morph controls map to existing GLB targets; the regular UI hides raw target names and the API rejects unknown names/non-finite values.
+5. Friendly morph controls map to existing GLB targets; the regular UI hides raw target names and the API rejects unknown names, non-finite values and weights outside -1..1.5.
 6. Normal/fullscreen camera-canvas rectangles use one shared fit calculation and preserve the mirror transform.
 7. README, TypeScript definitions, manifest and catalogue agree with runtime support.
 8. `npm test` (32 tests), `npm run typecheck`, `npm run build`, Android debug APK build and artifact upload pass at the recorded revision.
@@ -238,7 +239,7 @@ For every stage:
 
 - PR #3 remains open; work remains on `feat/open-makeup-arabic-mobile-lifecycle`.
 - Stage 1 source and runtime-reliability tests passed CI; device acceptance is intentionally deferred rather than blocking further implementation.
-- Stage 2 revision `a5fcc28287b2a6214d52c7c9a99a3e327c0640df` passed GitHub Actions run [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245): 32 tests pass, zero fail, plus type-check, web bundle, Android asset packaging, debug APK build and artifact upload.
+- Stage 2 revision `a3f4f89a5e40c9a26ea882b58185057b5cb2f743` passed GitHub Actions run [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807): 32 tests pass, zero fail, plus type-check, web bundle, Android asset packaging, debug APK build and artifact upload.
 - CI does not simulate physical camera behavior, real Android WebView or shader appearance under live lighting. Per the user's time-saving instruction, physical Android 6/7 testing for Stages 1–4 is scheduled as one combined pass after Stage 4.
-- PR #3 remains open and unmerged. The APK artifact `Open-Makeup-debug-apk` is attached to run [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245).
+- PR #3 remains open and unmerged. The APK artifact `Open-Makeup-debug-apk` is attached to run [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807).
 - Next eligible stage: Stage 3 — Complete Mobile UI/UX, Localization and Accessibility. The roadmap contains five stages total.

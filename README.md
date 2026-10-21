@@ -139,6 +139,8 @@ const mk = new OpenMakeup(options);
 
 **Pattern support note:** `getPatterns('lipstick')` and `getPatterns('foundation')` intentionally return no options until real renderer mappings and bundled mask files exist for those categories. Pattern choices are constrained to entries returned by `getPatterns(category)`; use `pattern` for a 1-based list position or `patternId` for a specific listed ID. Unknown IDs and non-bundled manifest entries are rejected rather than silently choosing a fallback.
 
+**Face-morph weight range:** The SDK exports `MORPH_WEIGHT_MIN = -1` and `MORPH_WEIGHT_MAX = 1.5`. UI controls and session restoration use the same limits; out-of-range SDK requests are rejected.
+
 **Constructor options:** `video`, `renderCanvas`, `assetsBaseUrl`, `mediapipeBaseUrl`, `defaults`, `aiColor`.
 
 ---

@@ -3,8 +3,8 @@
 **Last updated:** 2026-10-22  
 **Repository:** https://github.com/majd7772233-a11y/OpenMakeup  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
-**Stage 2 code revision validated by CI:** `a5fcc28287b2a6214d52c7c9a99a3e327c0640df`  
-**CI run:** [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245)  
+**Stage 2 code revision validated by CI:** `a3f4f89a5e40c9a26ea882b58185057b5cb2f743`  
+**CI run:** [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807)  
 **Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
 **Mandatory execution protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
 
@@ -109,7 +109,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - CI run [39675435438](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39675435438) completed successfully on code revision `0f4590431e168976c3c2605ce4c14dd09b82156e`, including eleven Node tests, SDK type-check, Vite bundle, Android debug APK build and artifact upload.
 - An earlier run failed only because Vite found duplicate `resumeInProgress`/`hiddenAt` declarations; that regression was fixed and the later run above passed.
 - The eleven Stage-1 tests cover manifest failure/cleanup, track readiness, progressing/stalled frames, single-frame-then-freeze, ended tracks, late start cancellation, SDK startup promises and truthful errors.
-- Stage 2 added 21 tests in `tests/effect-contracts.test.js` for real manifest files, GLB UV/morph mappings, finish uniforms, layer mappings, pattern resets/disposal/races, invalid inputs, morph UI/API and preview layout. CI run [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245) passed all 32 tests, type-check, Vite build, Android packaging, APK build and artifact upload on revision `a5fcc28287b2a6214d52c7c9a99a3e327c0640df`.
+- Stage 2 added 21 tests in `tests/effect-contracts.test.js` for real manifest files, GLB UV/morph mappings, finish uniforms, layer mappings, pattern resets/disposal/races, invalid inputs, morph UI/API and preview layout. CI run [39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245) passed all 32 tests, type-check, Vite build, Android packaging, APK build and artifact upload on revision `a3f4f89a5e40c9a26ea882b58185057b5cb2f743`.
 - CI does not simulate real Android WebView, GPU shader appearance or a physical camera. By user request, physical Android 6/7 tests for Stages 1–4 will be run together after Stage 4, before Stage 5; until then hardware-specific behavior stays marked unverified.
 
 ## 7. Stage-2 Effect and Face-Control Changes
@@ -124,17 +124,18 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - `439a09f66985c85ff6e0b9cb8ef30c432f15556d`: made async pattern changes latest-wins and disposed late superseded textures.
 - `cb6731fde8dd90668e7bdc4e2eb4534debf7fd4d`: shared cover/contain calculation for normal/fullscreen video-canvas alignment.
 - `a5fcc28287b2a6214d52c7c9a99a3e327c0640df`: strict hex validation, explicit pattern-ID tests, and SDK pattern documentation.
+- `a3f4f89a5e40c9a26ea882b58185057b5cb2f743`: exported common morph bounds (-1..1.5), enforced them in engine/UI/session restore/TypeScript, and added boundary regression assertions.
 
 ### Current effect contracts
 - Only blush, eyeshadow, eyeliner and mascara advertise patterns. Foundation/lipstick remain unsupported until real assets and renderer mappings exist.
 - `pattern` is a 1-based visible list position; `patternId` names a specific ID returned by `getPatterns()`. Unknown IDs, path-like values, unsupported categories and invalid manifest records reject.
 - Custom textures reset on reapply/clear, replacements are disposed, and stale async loads cannot overwrite newer selections.
 - Foundation/blush/eyeshadow finish modes set `_noise` to 0, 0.7 or 1; foundation declares and consumes the uniform. Lipstick modes set `_shine`/`_bright`; unsupported finish values reject.
-- Eight friendly morph controls map to real GLB targets; raw extra targets are not exposed in the regular UI.
+- Eight friendly morph controls map to real GLB targets; raw extra targets are not exposed in the regular UI. `MORPH_WEIGHT_MIN = -1` and `MORPH_WEIGHT_MAX = 1.5` are exported from the SDK entry point; engine calls outside the interval reject, while UI inputs and restored values use the same constants.
 - `videoLayout.js` ensures normal cover and fullscreen contain use consistent video/canvas geometry. Physical visual alignment is deferred.
 
 ### Validation evidence
-- CI [run 39680109245](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680109245): 32 tests passed, zero failures; type-check, Vite bundle, Android packaging, debug APK and artifact upload passed.
+- CI [run 39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807): 32 tests passed, zero failures; type-check, Vite bundle, Android packaging, debug APK and artifact upload passed.
 - Target-device camera/shader appearance/performance tests are deliberately batched until after Stage 4. Do not describe them as passed before an actual device matrix is executed.
 - Next stage: Stage 3 — Complete Mobile UI/UX, Localization and Accessibility. Total roadmap stages: **5**.
 
