@@ -265,17 +265,19 @@ async function applyLook({ name, lipstick, blush, shadow }) {
     blush: { color: blush },
     eyeshadow: { color: shadow, pattern: 1, finish: 'glitter' },
   };
-  try {
-    await Promise.all(Object.entries({
-      lipstick: nextMakeup.lipstick,
-      blush: nextMakeup.blush,
-      eyeshadow: nextMakeup.eyeshadow,
-    }).map(([category, options]) => mk.apply(category, options)));
-  } catch (error) {
+  const results = await Promise.allSettled(Object.entries({
+    lipstick: nextMakeup.lipstick,
+    blush: nextMakeup.blush,
+    eyeshadow: nextMakeup.eyeshadow,
+  }).map(([category, options]) => mk.apply(category, options)));
+  const failure = results.find((result) => result.status === 'rejected');
+  if (failure) {
+    // Wait for every concurrent layer operation to finish before rolling back;
+    // a late resolve must not mutate the face after the rollback has completed.
     try { await restoreMakeupSnapshot(previousMakeup); } catch (rollbackError) {
       console.error('Could not roll back a partially applied look:', rollbackError);
     }
-    throw error;
+    throw failure.reason;
   }
   sessionState.makeup = nextMakeup;
   sessionState.activeLook = name;
