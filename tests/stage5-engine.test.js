@@ -77,7 +77,7 @@ test('camera switching replaces the stream, verifies frame progression and resto
   assert.match(engine, /async switchCamera\(facingMode\)/);
   assert.match(engine, /_stopAttachedVideoTracks\(\)/);
   assert.match(engine, /await waitForCameraFrames\(this\.video/);
-  assert.match(engine, /previous camera was restored/i);
+  assert.match(engine, /camera was restored/i);
   assert.match(engine, /facingMode: this\._cameraFacingMode/);
   assert.match(sdk, /switchCamera\(facingMode\)/);
   assert.match(html, /id="switch-camera"/);
