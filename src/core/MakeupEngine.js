@@ -308,7 +308,7 @@ export class MakeupEngine {
             canvas: this.renderCanvas,
             alpha: true,
             antialias: this.performanceProfile.antialias,
-            preserveDrawingBuffer: true,
+            preserveDrawingBuffer: false,
         });
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.performanceProfile.maxPixelRatio));
         this.renderCanvas.addEventListener('webglcontextlost', this._onWebGLContextLost, false);
@@ -612,12 +612,11 @@ export class MakeupEngine {
         if (this.wireMesh) this.wireMesh.visible = faceVisible && this._wireframeEnabled;
     };
 
+    // Camera results drive steady-state rendering; this method only paints a wake-up frame.
+    // Avoid keeping a second perpetual render loop alive beside MediaPipe's frame callback.
     _animate = () => {
-        if (this._webglContextLost) {
-            this._rafId = null;
-            return;
-        }
-        this._rafId = requestAnimationFrame(this._animate);
+        this._rafId = null;
+        if (this._webglContextLost) return;
         this._updateCameraUniforms();
         if (this.renderer && !this._webglContextLost) this.renderer.render(this.scene, this.camera3D);
     };
