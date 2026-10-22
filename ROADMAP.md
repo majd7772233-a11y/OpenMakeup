@@ -1,8 +1,9 @@
 # Open Makeup — Project Roadmap
 
 **Last updated:** 2026-10-22  
-**Stage 3 code revision validated by CI:** `9d9029a0e397627c624d49294d1f835808de2a12`  
-**CI run:** [39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293) — 41 tests passed; type-check, web bundle, Android packaging, debug APK and upload passed.  
+**Stage 4 code revision validated by CI:** defe336265a24f9720b6283c1bddfb6b749a195c  
+**CI run:** [39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915) — 50 tests passed, 0 failed; type-check, Vite build, Android asset packaging, debug APK build and artifact upload passed.  
+**APK artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915/artifacts/12456698785) — 14,952,872 bytes; SHA-256 295198706052fb40b8f5932d794ecece48e9efa218d8896e481665b035446d09.  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
 **Related pull request:** [#3 — Arabic-first mobile UI, fullscreen preview, and camera recovery](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
 **Engineering protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
@@ -23,7 +24,8 @@ The product is judged by real user behavior, not only compilation. A visible act
 - Layer/preset selections, morph values and visual toggles stay synchronized with the engine and persist across supported recoveries.
 - All six existing makeup layers, three quick looks, clear action and face controls work or show an honest actionable error.
 - Mobile layouts remain accessible and usable; fullscreen video/effect alignment is verified across supported aspect ratios.
-- Custom color/intensity controls, before/after comparison, photo capture/save/share, named custom looks, undo/redo, camera switching, onboarding and a richer preset library follow only after existing behavior is dependable.
+- Stage 4 provides shader-backed per-layer color/intensity/finish controls, original-camera comparison, explicit photo capture/save/share, named local looks, and undo/redo.
+- Stage 5 still covers camera switching, onboarding, a richer curated preset library, performance/context-loss work and release hardening.
 - Automated tests, type-check, web bundle and Android debug APK build pass. Device-specific claims are made only after an actual target-device test.
 
 ## 3. Repository Baseline and Architecture
@@ -31,9 +33,10 @@ The product is judged by real user behavior, not only compilation. A visible act
 ### Main components
 
 - `index.html`: responsive studio UI, Arabic/English labels, preview, makeup controls, morph controls, settings, About dialog, fullscreen preview and camera-retry affordance.
-- `main.js`: UI orchestration, language switching, status feedback, makeup/session state, Android Back/pause/resume hooks and camera recovery.
+- `main.js`: UI orchestration, localization, versioned session and named-look persistence, shader intensity editor, comparison/capture/share controls, undo/redo and camera lifecycle recovery.
+- `src/ui/studio-state.js`: versioned state normalization/migration, custom-look validation and bounded undo/redo history.
 - `src/ui/locales.js`: independently testable Arabic/English dictionaries and safe count interpolation.
-- `src/OpenMakeup.js`: public SDK wrapper, category/finish/color resolution, pattern selection and face morph API.
+- `src/OpenMakeup.js`: public SDK wrapper, category/finish/color/intensity resolution, pattern selection and face morph API.
 - `src/categories.js`, `src/morphs.js`, `src/config.js`: effect categories/defaults, morph mappings and runtime asset URLs.
 - `src/core/MakeupEngine.js`: Three.js scene/renderer, video texture, model/material loading, MediaPipe tracking, effect layers, morphing and camera lifecycle/disposal.
 - `src/core/FaceMeshModelController.js`: GLTF model loading and landmark fitting.
@@ -198,24 +201,42 @@ Acceptance criteria:
 
 ### Stage 4 — Personalization, Color/Strength, Capture and History
 
-**Dependencies:** Stages 1–3.  
-**Primary files:** UI/session modules, effect APIs, persistence, Android save/share integration if required, tests and docs.
+**Status:** Source implementation and automated CI complete. The consolidated physical-device matrix is **not yet performed**; this connector session has no attached Android 6/7 handset or configured physical-device runner. Hardware acceptance remains an explicit blocker, not a claimed pass.  
+**Code revision validated by CI:** defe336265a24f9720b6283c1bddfb6b749a195c  
+**CI run:** [39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915) — 50 tests passed, zero failed; type-check, Vite build, Android asset packaging, APK build and upload passed.  
+**APK artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915/artifacts/12456698785)
 
-Required work:
-- Add real color pickers and per-layer intensity/opacity/finish controls backed by shader uniforms.
-- Add deterministic before/after comparison and temporary original-camera preview.
-- Add photo capture, local save and explicit share intent with correct mirror/orientation and permission/error handling.
-- Add named custom looks with local save/load/delete and a validated versioned storage schema.
-- Add undo/redo for ordered effect and morph operations.
-- Preserve on-device processing and only share after explicit user action.
-- At the end of Stage 4, execute one consolidated physical-device regression pass covering Stages 1–4: Android 6/7 launch and permission denial, repeated camera pause/resume, all six makeup layers and presets, face-tracking loss/reacquisition, morph controls, preview/fullscreen alignment in portrait/landscape, capture/save/share if implemented, and resource/performance stability. Record device model, Android/WebView versions, steps, results and defects in both project memory files.
+#### Delivered
 
-Acceptance criteria:
-- Users can create, save, relaunch and restore custom looks accurately.
-- Captures match chosen effect state, orientation and mirror behavior.
-- Comparison doesn't mutate selected state; undo/redo reverses the intended sequence.
-- Storage/share failures are clear and do not corrupt saved looks.
-- The combined Stages 1–4 physical-device matrix is executed and documented, or the exact unavailable-device blocker is recorded without claiming a pass.
+1. **Shader-backed personalization:** SDK apply(category, { intensity }) validates the inclusive 0–1 range and defaults to 1. The engine maps the value to a real uIntensity uniform on all six existing layer materials; the foundation, blush, lipstick, eyeshadow, eyeliner and mascara fragment shaders use it to scale effect opacity. TypeScript declarations match runtime behavior.
+2. **Color and supported finish editor:** a per-category color picker, intensity slider and finish selector are available; finish is disabled for categories that do not support it. Arabic and English include the editor labels and status messages.
+3. **Original/applied comparison:** the control temporarily hides the rendered makeup canvas to expose the original camera preview beneath it. It does not clear or rewrite selected engine/session state.
+4. **Photo capture:** capture requests a fresh renderer frame and exports a mirrored PNG into a capped-size canvas, then shows a preview before save/share actions are enabled. preserveDrawingBuffer is enabled for capture; its sustained GPU/memory cost still needs target-device measurement.
+5. **Explicit saving and sharing:** browser mode downloads the PNG and uses Web Share files when available, with download fallback. Android saves through MediaStore on Android Q+ and permission-gated Pictures storage on Android 6–9; sharing uses an app-cache FileProvider URI and an explicit ACTION_SEND chooser. Captured images are not uploaded automatically.
+6. **Versioned local state and named looks:** studio state migrates the older unversioned session schema, validates categories/colors/intensity/finish/morph values and avoids overwriting recognized future session versions. Named looks use openMakeupCustomLooksV1, allow at most 100 entries, cap names at 40 characters, prevent case-insensitive duplicates and isolate corrupt records.
+7. **Undo/redo:** bounded 50-step before/after history covers actions wrapped through the studio action runner and committed morph-slider gestures. Applying a saved snapshot reverts to the prior snapshot if an application fails.
+8. **Truthful persistence/lifecycle states:** failed named-look writes roll back in-memory save/delete operations instead of announcing success. Stage-4 controls join the camera restart disable/enable gating. Storage permission denial and capture/save/share failures have localized status messages.
+9. **Android build identity:** versionCode 5 / versionName 1.4.0; application ID and minSdk remain unchanged. FileProvider configuration is constrained to the local image-sharing cache path.
+
+#### Automated verification
+
+- Added tests/studio-state.test.js for schema migration/validation, future-version rejection, history semantics and custom-look parsing.
+- Extended tests/effect-contracts.test.js for SDK intensity validation/forwarding and all six engine-uniform mappings.
+- Extended tests/accessibility-ui.test.js for the stage-4 controls, comparison/capture/share/history wiring, future-schema protection and camera lifecycle control state.
+- CI run [39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915) passed **50 tests, 0 failures**, followed by type-check, web bundle, Android asset packaging, debug APK build and artifact upload.
+- CI does not verify an actual device camera frame, physical mirror/orientation, legacy storage permission prompts, gallery visibility, system share chooser, face tracking under live lighting or GPU performance.
+
+#### Consolidated physical-device matrix — pending
+
+Not yet run on a physical Android 6/7 device: launch and camera-permission denial; repeated background/resume; all six makeup layers and quick looks; face-loss/reacquisition; morph sliders and persisted state; portrait/landscape/fullscreen alignment; capture orientation/mirroring; gallery save and permission denial; system share chooser; sustained rendering/resource stability. Record the real device model, Android and WebView versions, exact steps, results and defects once hardware is available. CI is not a substitute. This remains the open hardware release gate before Stage 5 can be considered release-ready.
+
+Acceptance criteria status:
+- [x] Shader-backed intensity wired to all six layer shaders.
+- [x] Color/finish/intensity editor, before/after comparison, capture/save/share path, named looks and undo/redo implemented.
+- [x] Versioned state validation and persistence failure handling avoid overwriting recognized future data or showing false success.
+- [x] 50 automated tests and full CI build/package/APK/artifact pipeline passed.
+- [ ] Physical Android 6/7 regression has not been performed; camera alignment, old-version permission flow, gallery/share behavior and sustained GPU cost remain unverified.
+- [ ] Run and document the consolidated Stages 1–4 device matrix before closing the hardware release gate.
 
 ### Stage 5 — Camera Switching, Onboarding, Preset Library, Performance and Release
 
@@ -252,8 +273,9 @@ For every stage:
 - PR #3 remains open; work remains on `feat/open-makeup-arabic-mobile-lifecycle`.
 - Stage 1 source and runtime-reliability tests passed CI; device acceptance is intentionally deferred rather than blocking further implementation.
 - Stage 2 revision `a3f4f89a5e40c9a26ea882b58185057b5cb2f743` passed GitHub Actions run [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807): 32 tests pass, zero fail, plus type-check, web bundle, Android asset packaging, debug APK build and artifact upload.
-- CI does not simulate physical camera behavior, real Android WebView or shader appearance under live lighting. Per the user's time-saving instruction, physical Android 6/7 testing for Stages 1–4 is scheduled as one combined pass after Stage 4.
+- CI does not simulate physical camera behavior, real Android WebView or shader appearance under live lighting. Per the user's time-saving instruction, Stages 1–4 use one combined physical-device matrix. It is **still pending/not performed** because this connector session has no physical Android 6/7 target; keep camera/image orientation, storage permission, gallery/share and sustained GPU performance as unverified release checks.
 - PR #3 remains open and unmerged. The APK artifact `Open-Makeup-debug-apk` is attached to run [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807).
-- Stage 3 revision `9d9029a0e397627c624d49294d1f835808de2a12` passed CI run [39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293): 41 tests passed, zero failed; type-check, web bundle, Android packaging, debug APK build and artifact upload passed.
-- Device-specific camera, screen-reader, contrast and GPU checks remain unverified until the combined after-Stage-4 pass.
-- Next eligible stage: Stage 4 — Personalization, Color/Strength, Capture and History. The roadmap contains five stages total.
+- Stage 3 revision 9d9029a0e397627c624d49294d1f835808de2a12 passed CI run [39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293): 41 tests passed, zero failed.
+- Stage 4 revision defe336265a24f9720b6283c1bddfb6b749a195c passed CI run [39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915): 50 tests passed, zero failed; type-check, web build, Android packaging, APK build and artifact upload passed. Version is 1.4.0 / version code 5.
+- Physical Android 6/7 testing for Stages 1–4 is **not performed** because no physical target is attached to this connector session. Camera and image orientation, legacy permissions, gallery/share and GPU performance remain unverified.
+- Next implementation stage: Stage 5 — Camera Switching, Onboarding, Preset Library, Performance and Release. Total roadmap stages: **5**.

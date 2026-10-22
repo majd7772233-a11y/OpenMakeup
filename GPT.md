@@ -3,8 +3,9 @@
 **Last updated:** 2026-10-22  
 **Repository:** https://github.com/majd7772233-a11y/OpenMakeup  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
-**Stage 3 code revision validated by CI:** `9d9029a0e397627c624d49294d1f835808de2a12`  
-**CI run:** [39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293)  
+**Stage 4 code revision validated by CI:** defe336265a24f9720b6283c1bddfb6b749a195c  
+**CI run:** [39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915) — 50 tests passed, zero failed  
+**APK artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915/artifacts/12456698785)  
 **Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
 **Mandatory execution protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
 
@@ -28,7 +29,8 @@ The user's workflow requires complete stage execution rather than partial delive
 ## 3. Architecture and Ownership
 
 - `index.html`: responsive UI, translated labels, preview, camera-retry action, About dialog and fullscreen controls.
-- `main.js`: UI orchestration, language switching, localized state/error messages, makeup/session state, accessible About dialog, fullscreen, Android Back/pause/resume hooks and camera recovery.
+- `main.js`: UI orchestration, localization, camera recovery, versioned session/named-look persistence, layer personalization, before/after comparison, capture/save/share and history.
+- `src/ui/studio-state.js`: versioned state normalization/migration, custom-look validation and bounded undo/redo history.
 - `src/ui/locales.js`: Arabic/English dictionaries and safe string/count interpolation, imported by the app and directly covered by tests.
 - `src/OpenMakeup.js`: public SDK wrapper, category/color/finish/pattern handling and morph APIs.
 - `src/categories.js`, `src/morphs.js`, `src/config.js`: category/default definitions, morph mapping and asset URLs.
@@ -163,7 +165,28 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - Per user direction, run the combined physical-device matrix for Stages 1–4 after Stage 4, before Stage 5. Do not schedule separate device checks after every earlier stage.
 - Next eligible stage: Stage 4 — Personalization, Color/Strength, Capture and History. Total roadmap stages: **5**.
 
-## 9. Build and Test Commands
+## 9. Stage-4 Personalization, Capture, Local Looks and History
+
+### Current revision and verification
+- Code revision: defe336265a24f9720b6283c1bddfb6b749a195c.
+- CI [run 39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915) passed **50 tests, 0 failures**, TypeScript type-check, Vite build, Android asset packaging, Gradle debug APK and artifact upload.
+- Artifact: [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915/artifacts/12456698785), 14,952,872 bytes; SHA-256 295198706052fb40b8f5932d794ecece48e9efa218d8896e481665b035446d09.
+- Android versionCode 5 / versionName 1.4.0; package id and minimum SDK unchanged.
+
+### Implementation
+- OpenMakeup.apply(category, { intensity }) validates finite intensity 0–1 (default 1), forwards it to MakeupEngine.setIntensity and returns it in the applied result. The engine requires a real uIntensity uniform mapped to foundation, blush, lipstick, eyeshadow, eyeliner and mascara; all six fragment shaders use it to scale effect alpha.
+- A per-layer category/color/intensity/finish editor has Arabic/English labels and disables finish for categories without finish support. Before/after hides the makeup renderer without changing the selected look.
+- Capture renders a fresh scene and exports a capped-size mirrored PNG preview. Android save uses MediaStore on Android Q+ and permission-gated Pictures storage on API 23–28. Android sharing writes to app cache and opens an explicit FileProvider ACTION_SEND chooser. Browser saves download the photo; file sharing uses Web Share when available, with a download fallback.
+- Custom looks use the openMakeupCustomLooksV1 schema, max 100 records and names up to 40 characters. Studio sessions migrate the previous unversioned schema. Corrupt records are isolated, recognized future schemas are not overwritten, and failed save/delete attempts roll back in-memory changes.
+- Undo/redo stores up to 50 snapshots and restores makeup/morph/toggles together, reverting when applying a snapshot fails. Stage-4 controls participate in camera lifecycle disable/re-enable handling.
+- preserveDrawingBuffer is enabled for photo capture and may impose GPU/memory cost. Measure sustained impact on real devices; CI cannot validate performance.
+
+### Device acceptance boundary
+- No physical Android 6/7 test has been run or is claimed. This connector session has no attached physical handset or configured physical-device runner.
+- Pending matrix: first launch and permission denial; pause/resume cycles; all six layers/quick looks; tracking loss/reacquisition; morph controls/state restoration; portrait/landscape/fullscreen alignment; capture mirror/orientation; gallery save and permission denial; share chooser; and sustained GPU/resource stability.
+- Record the actual model, Android and System WebView versions, exact steps/results and defects when a device is available. This remains the open hardware release gate.
+
+## 10. Build and Test Commands
 
 - `npm install`
 - `npm test`
@@ -171,7 +194,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - `npm run build`
 - CI also packages web assets into Android and runs `gradle --no-daemon -p android assembleDebug`; the debug APK is uploaded as workflow artifact `Open-Makeup-debug-apk`.
 
-## 10. Permanent Engineering Rules
+## 11. Permanent Engineering Rules
 
 - Never store tokens/passwords/private keys in this repository or either memory file.
 - Don't claim functionality from class existence, green compilation, or a swallowed SDK error.
@@ -181,11 +204,12 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - Distinguish automated verification from physical-device verification.
 - Update both `ROADMAP.md` and `GPT.md` after implementation and test results.
 
-## 11. Exact Resume Procedure
+## 12. Exact Resume Procedure
 
 1. Read both project memory files.
 2. Fetch branch head and latest GitHub Actions run.
 3. Check `npm test`, type-check, Vite bundle, APK build and artifact upload.
-4. Stage 3 UI/UX/localization/accessibility implementation and CI are complete at revision `9d9029a0e397627c624d49294d1f835808de2a12`. Continue with Stage 4 and fix in-scope regressions.
-5. At the end of Stage 4, run and document one combined physical-device regression pass for Stages 1–4.
-6. Until that pass occurs, mark camera/rendering, screen-reader, device layout and performance unverified; do not block Stage 4 solely because device tests are deferred.
+4. Stage 4 implementation and automated CI are complete on defe336265a24f9720b6283c1bddfb6b749a195c; run 39851101915 passed 50 tests and the full APK pipeline.
+5. Stage 5 is the next implementation stage.
+6. The consolidated physical Android 6/7 regression for Stages 1–4 has **not been performed** because no physical device is attached to this connector session. Do not claim a device pass; run and document the full matrix before release/closing the hardware gate.
+7. Before any further work, inspect the latest branch head and CI. Keep PR #3 open and unmerged unless the user separately requests merging.

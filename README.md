@@ -55,6 +55,9 @@ It's a real-time AR makeup mirror **and** a beauty face-reshape engine, built on
 - **69 bundled pattern masks** for blush, eyeliner, mascara, and eyeshadow. Foundation/lipstick pattern placeholders are not advertised until real mapped assets exist.
 - **Material finishes** — `matte`, `shimmer`, `glossy`, `glitter` (where supported).
 - **Custom GLSL shaders** for believable blending, gloss, and glitter — not flat overlays.
+- **Per-layer personalization** — choose a color and shader-backed intensity (0–1) for all six layers; finish options remain category-specific.
+- **Named local looks** — save, load and delete looks on this device; undo/redo up to 50 recent studio states.
+- **Capture and sharing** — capture a mirrored PNG, save locally or explicitly open the system share sheet. No image is uploaded automatically.
 - **Smart defaults** — every parameter has one; plug in your own AI color provider for lipstick.
 
 ### 🧬 Face reshape (morph / blend shapes)
@@ -64,7 +67,8 @@ Project the live camera image onto a morphable 3D mesh so the user's **actual fa
 - Arabic-first phone interface with a persistent English switch and RTL/LTR direction.
 - Quick looks and makeup tools stay in the main flow; sculpting, wireframe and blur are grouped under expandable advanced controls.
 - Localized camera/tracking status, clear retry/error guidance, keyboard skip navigation, visible focus, 44px touch targets and reduced-motion support.
-- About dialog handles keyboard focus and Escape/Android Back; physical Android/WebView/GPU support still depends on the device and is verified separately.
+- About dialog handles keyboard focus and Escape/Android Back.
+- Version 1.4.0 adds effect customization, original/applied comparison, photo capture, local gallery save and explicit sharing. Real Android/WebView/GPU behavior still requires device verification.
 
 ### 🧰 Developer experience
 - **Drop-in, framework-agnostic** — plain ES modules, works with any stack.
@@ -130,7 +134,7 @@ const mk = new OpenMakeup(options);
 | Method | Description |
 |---|---|
 | `await mk.init(onReady?)` | Boot the engine, load assets, start the camera. |
-| `await mk.apply(category, opts)` | Apply/update a layer: `{ color, finish, pattern }`. |
+| `await mk.apply(category, opts)` | Apply/update a layer: `{ color, finish, pattern, intensity }`; intensity is 0–1 and defaults to 1. |
 | `mk.clear(category)` | Remove one makeup layer. |
 | `mk.clearAll()` | Remove all makeup. |
 | `mk.morph(map)` | Reshape: `{ noseSlim: 0.6, cheeks: 0.3, ... }`. |
@@ -155,9 +159,9 @@ const mk = new OpenMakeup(options);
 
 | Category | Color | Finish | Patterns |
 |---|:---:|:---:|:---:|
-| `foundation` | ✅ | matte · shimmer · glossy · glitter | ✅ |
+| `foundation` | ✅ | matte · shimmer · glossy · glitter | — (pattern support pending) |
 | `blush` | ✅ | matte · shimmer · glossy · glitter | ✅ |
-| `lipstick` | ✅ | matte · shimmer · glossy · glitter | — (renderer support pending) |
+| `lipstick` | ✅ | matte · shimmer · glossy · glitter | — (pattern support pending) |
 | `eyeshadow` | ✅ | matte · shimmer · glossy · glitter | ✅ |
 | `eyeliner` | ✅ | — | ✅ |
 | `mascara` | ✅ | — | ✅ |
@@ -202,7 +206,7 @@ Weights are typically `0..1`; negative values and values above 1 exaggerate the 
 - [x] TypeScript types
 - [x] **Published to npm** 🎉
 
-> v1 is live. Next up: more patterns, demo recipes, and community-contributed looks.
+> Stage 4's app now includes on-device personalization and explicit capture/share flows. Before claiming release-level mobile support, run the consolidated physical Android 6/7 camera, permissions, save/share, mirror-alignment and performance matrix; CI cannot prove these hardware-dependent behaviors.
 
 ---
 
