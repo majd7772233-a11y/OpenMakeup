@@ -82,6 +82,12 @@ test('camera switching replaces the stream, verifies frame progression and resto
   assert.match(sdk, /switchCamera\(facingMode\)/);
   assert.match(html, /id="switch-camera"/);
   assert.match(main, /refreshCameraSwitchAvailability/);
+  assert.match(main, /count == null \|\| count >= 2/);
+  const switchHandler = main.slice(
+    main.indexOf('async function switchCameraFromButton'),
+    main.indexOf("$('switch-camera').addEventListener")
+  );
+  assert.match(switchHandler, /await recoverCamera\(\)/);
 });
 
 test('WebGL context loss pauses rendering and restoration requests a fresh camera frame', () => {
