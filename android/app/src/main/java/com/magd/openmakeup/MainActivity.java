@@ -215,7 +215,10 @@ public class MainActivity extends Activity {
                 output = null;
                 ContentValues publish = new ContentValues();
                 publish.put(MediaStore.Images.Media.IS_PENDING, 0);
-                getContentResolver().update(inserted, publish, null, null);
+                if (getContentResolver().update(inserted, publish, null, null) <= 0) {
+                    getContentResolver().delete(inserted, null, null);
+                    return false;
+                }
                 return true;
             }
             if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) return false;

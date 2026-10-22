@@ -7,7 +7,7 @@ test('legacy sessions migrate into a versioned and defensively normalized schema
   const state = normalizeStudioState(JSON.stringify({
     makeup: { lipstick: { color: '#A12', finish: 'glossy', intensity: 0.42 },
       unknownLayer: { color: '#000000' }, foundation: { color: 'not-a-color', intensity: 9 },
-      mascara: { pattern: 1, finish: 'glitter' } },
+      mascara: { pattern: 1, finish: 'glitter', intensity: '' } },
     morphs: { noseSlim: 0.4, bogus: 1, jawWide: 50, cheeks: Infinity }, wireframe: true, blur: false, activeLook: 'rose',
   }));
   assert.equal(state.schemaVersion, STUDIO_STATE_VERSION);

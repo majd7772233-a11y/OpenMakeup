@@ -26,7 +26,9 @@ function normalizeLayerOptions(category, raw) {
   if (color) result.color = color;
   else if (typeof config.defaults.color === 'string' && normalizedColor(config.defaults.color)) result.color = normalizedColor(config.defaults.color);
   else if (category === 'lipstick') result.color = '#b4002e';
-  const intensity = raw.intensity == null ? 1 : Number(raw.intensity);
+  const rawIntensity = raw.intensity;
+  const intensity = rawIntensity == null || (typeof rawIntensity === 'string' && rawIntensity.trim() === '')
+    ? 1 : Number(rawIntensity);
   result.intensity = Number.isFinite(intensity) && intensity >= 0 && intensity <= 1 ? intensity : 1;
   if (config.supportsFinish) result.finish = FINISHES.has(raw.finish) ? raw.finish : config.defaults.finish;
   if (PATTERN_CATEGORIES.has(category)) {
