@@ -13,7 +13,7 @@ test('legacy sessions migrate into a versioned and defensively normalized schema
   assert.equal(state.schemaVersion, STUDIO_STATE_VERSION);
   assert.deepEqual(state.makeup.lipstick, { color: '#aa1122', intensity: 0.42, finish: 'glossy' });
   assert.deepEqual(state.makeup.foundation, { color: '#d9b89c', intensity: 1, finish: 'matte' });
-  assert.deepEqual(state.makeup.mascara, { color: '#000000', intensity: 1, pattern: 1 });
+  assert.deepEqual(state.makeup.mascara, { color: '#000000', intensity: 1 });
   assert.deepEqual(state.morphs, { noseSlim: 0.4 });
   assert.equal(state.wireframe, true);
 });

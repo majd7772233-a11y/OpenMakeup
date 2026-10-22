@@ -56,6 +56,9 @@ export function normalizeStudioState(input) {
   const morphs = {};
   if (parsed.morphs && typeof parsed.morphs === 'object' && !Array.isArray(parsed.morphs)) {
     for (const [name, raw] of Object.entries(parsed.morphs)) {
+      // JSON turns non-finite numeric values into null; never coerce null/empty
+      // values to zero, which would silently introduce a valid but unintended morph.
+      if (raw == null || (typeof raw === 'string' && raw.trim() === '')) continue;
       const value = Number(raw);
       if (MORPH_NAMES.has(name) && Number.isFinite(value) && value >= MORPH_WEIGHT_MIN && value <= MORPH_WEIGHT_MAX) morphs[name] = value;
     }
