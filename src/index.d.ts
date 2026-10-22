@@ -73,6 +73,8 @@ export interface OpenMakeupOptions {
   defaults?: Partial<Record<Category, ApplyOptions>>;
   /** Resolves the color for AI-defaulted categories (lipstick by default). */
   aiColor?: AiColorProvider;
+  /** Notified when the tracker stably detects a face or loses it. */
+  onFaceTrackingChange?: (detected: boolean) => void;
 }
 
 /** Lowest allowed face-morph influence weight for SDK and UI controls. */

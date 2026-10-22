@@ -113,6 +113,7 @@ export class MakeupEngine {
             camera,
             faceMeshClass,
             cameraClass,
+            onFaceTrackingChange = null,
         } = options;
 
         if (!video) throw new Error('MakeupEngine: `video` element is required');
@@ -175,6 +176,8 @@ export class MakeupEngine {
         this._activeLayers = new Set();
         this._faceVisible = false;
         this._noFaceFrames = 0;
+        this._reportedFaceTrackingState = null;
+        this.onFaceTrackingChange = typeof onFaceTrackingChange === 'function' ? onFaceTrackingChange : null;
         this._wireframeEnabled = false;
         this._blurEnabled = false;
         this._defaultPatternTextures = new Map();
@@ -518,9 +521,9 @@ export class MakeupEngine {
             this._noFaceFrames += 1;
             // Hide stale face-attached makeup after a short grace period to avoid
             // flicker from one intermittently missed detection.
-            if (this._noFaceFrames >= 3 && this._faceVisible) {
-                this._faceVisible = false;
-                this._syncFaceLayerVisibility();
+            if (this._noFaceFrames >= 3) {
+                if (this._faceVisible) { this._faceVisible = false; this._syncFaceLayerVisibility(); }
+                this._notifyFaceTrackingState(false);
             }
             if (this.renderer) this.renderer.render(this.scene, this.camera3D);
             return;
@@ -528,6 +531,7 @@ export class MakeupEngine {
 
         this._noFaceFrames = 0;
         this._faceVisible = true;
+        this._notifyFaceTrackingState(true);
         this._syncFaceLayerVisibility();
         if (this.faceModel && this.faceModel.scene != null) {
             this.faceModel.updateWithLandmarks(landmarks);
@@ -540,6 +544,16 @@ export class MakeupEngine {
         }
         if (this.renderer) this.renderer.render(this.scene, this.camera3D);
     };
+
+    _notifyFaceTrackingState(detected) {
+        const state = detected === true;
+        if (this._reportedFaceTrackingState === state) return;
+        this._reportedFaceTrackingState = state;
+        if (this.onFaceTrackingChange) {
+            try { this.onFaceTrackingChange(state); }
+            catch (error) { console.warn('OpenMakeup: face-tracking callback failed:', error); }
+        }
+    }
 
     _syncFaceLayerVisibility() {
         const faceVisible = this._faceVisible;

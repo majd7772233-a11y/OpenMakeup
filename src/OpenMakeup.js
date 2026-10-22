@@ -87,17 +87,19 @@ export class OpenMakeup {
    * @param {(category: string) => (string|Promise<string>)} [options.aiColor]
    *                                      provider for categories whose default
    *                                      color is `ai` (lipstick by default)
+   * @param {(detected: boolean) => void} [options.onFaceTrackingChange]
+   *                                      notified after stable face detection/loss
    */
   constructor(options = {}) {
     const {
       video, renderCanvas, overlayCanvas,
       assetsBaseUrl, mediapipeBaseUrl, faceMesh, camera,
-      defaults = {}, aiColor = null,
+      defaults = {}, aiColor = null, onFaceTrackingChange = null,
     } = options;
 
     this.engine = new MakeupEngine({
       video, renderCanvas, overlayCanvas,
-      assetsBaseUrl, mediapipeBaseUrl, faceMesh, camera,
+      assetsBaseUrl, mediapipeBaseUrl, faceMesh, camera, onFaceTrackingChange,
     });
 
     this._aiColor = typeof aiColor === 'function' ? aiColor : null;
