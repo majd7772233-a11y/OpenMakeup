@@ -7,7 +7,7 @@ const $ = (id) => document.getElementById(id);
 const statusText = $('status-text');
 const statusBox = $('status');
 const statusIcon = $('status-icon');
-const actionButtons = [...document.querySelectorAll('.makeup-grid button, .looks button, .quick-actions button, .switches input')];
+const actionButtons = [...document.querySelectorAll('.makeup-grid button, .looks button, .quick-actions button, .switches input, .studio-tool-panel button, .studio-tool-panel input, .studio-tool-panel select')];
 const sliders = [];
 let engineReady = false;
 let currentLanguage = 'ar';
@@ -469,6 +469,8 @@ async function startEngine() {
     engineReady = true;
     setTrackingState(mk.engine && mk.engine._reportedFaceTrackingState === false ? 'noFace' : (mk.engine && mk.engine._faceVisible ? 'detected' : 'waiting'));
     actionButtons.forEach((button) => { button.disabled = false; });
+    renderCustomLooks();
+    updateHistoryButtons();
     if (sessionStateWriteBlocked || customLooksWriteBlocked) {
       setStatusKey('statusStoredSchemaUnsupported', 'error');
     } else if (restoreErrors.length) {
@@ -791,6 +793,8 @@ async function recoverCamera() {
     await mk.start();
     await waitForCameraFrames($('video'), { timeoutMs: 6000, pollIntervalMs: 150 });
     actionButtons.forEach((button) => { button.disabled = false; });
+    renderCustomLooks();
+    updateHistoryButtons();
     setStatusKey('statusReady', 'success');
     if (mk.engine && mk.engine._sizeToVideoBox) mk.engine._sizeToVideoBox();
     return true;

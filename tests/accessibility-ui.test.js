@@ -104,6 +104,8 @@ test('stage-4 personalization, capture and history controls have accessible hook
   assert.match(main, /navigator\.share/);
   assert.match(main, /studioHistory\.undo\(\)/);
   assert.match(main, /studioHistory\.redo\(\)/);
+  assert.match(main, /\.studio-tool-panel button, \.studio-tool-panel input, \.studio-tool-panel select/);
+  assert.match(main, /renderCustomLooks\(\);\s*updateHistoryButtons\(\);/);
 });
 
 test('future persistence schemas are preserved instead of overwritten', () => {
