@@ -98,7 +98,7 @@ test('stage-4 personalization, capture and history controls have accessible hook
   }
   assert.match(html, /id="compare-toggle"[^>]*aria-pressed="false"/);
   assert.match(html, /id="layer-intensity"[^>]*type="range"[^>]*min="0"[^>]*max="1"/);
-  assert.match(main, /renderer\.render\(mk\.engine\.scene, mk\.engine\.camera3D\)/);
+  assert.match(main, /renderSceneToPngDataUrl\(mk\.engine/);
   assert.match(main, /context\.scale\(-1, 1\)/);
   assert.match(main, /window\.OpenMakeupBridge/);
   assert.match(main, /navigator\.share/);
