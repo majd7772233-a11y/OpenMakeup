@@ -1,11 +1,11 @@
 # Open Makeup — Project Roadmap
 
-**Last updated:** 2026-10-22  
-**Stage 4 code revision validated by CI:** 96020600bcb3c72e3681470435bf3d5a0769bc70  
-**CI run:** [39853574683](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683) — 51 tests passed, 0 failed; type-check, Vite build, Android asset packaging, debug APK build and artifact upload passed.  
-**APK artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683/artifacts/12458157274) — 14,952,886 bytes; SHA-256 a64042d50bff5b7ca07cca91178268c57176ec38f921773011affb8b07f774fe.  
+**Last updated:** 2026-10-23  
+**Stage 5 implementation revision:** `7113616871ef499bf23d8010ece00a8e7c3bd361`  
+**Latest implementation CI:** [Run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613) — the run is validating camera-switch rollback recovery plus the 65-test suite, TypeScript type-check, web bundle, production/full dependency audit, debug and unsigned release APKs, version metadata, and artifact checksums.  
+**Current verified release line:** Android versionName `1.5.0`, versionCode `6`, application ID `com.magd.openmakeup`, minSdk `23`.  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
-**Related pull request:** [#3 — Arabic-first mobile UI, fullscreen preview, and camera recovery](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
+**Related pull request:** [#3 — Arabic-first mobile UI, fullscreen preview, and camera recovery](https://github.com/majd7772233-a11y/OpenMakeup/pull/3) — open and unmerged.  
 **Engineering protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
 
 ## 1. Product Objective
@@ -22,7 +22,7 @@ The product is judged by real user behavior, not only compilation. A visible act
 - Face-attached effects hide after tracking disappears for several consecutive results and return when the face is detected again, without erasing the selected look.
 - Background/resume recovery checks repeated video-frame progression, can recreate the engine and offers a retry action; it never blindly reloads the page and silently loses session state.
 - Layer/preset selections, morph values and visual toggles stay synchronized with the engine and persist across supported recoveries.
-- All six existing makeup layers, three quick looks, clear action and face controls work or show an honest actionable error.
+- All six existing makeup layers, twelve categorized curated looks, clear action and face controls work or show an honest actionable error.
 - Mobile layouts remain accessible and usable; fullscreen video/effect alignment is verified across supported aspect ratios.
 - Stage 4 provides shader-backed per-layer color/intensity/finish controls, original-camera comparison, explicit photo capture/save/share, named local looks, and undo/redo.
 - Stage 5 still covers camera switching, onboarding, a richer curated preset library, performance/context-loss work and release hardening.
@@ -43,10 +43,15 @@ The product is judged by real user behavior, not only compilation. A visible act
 - `src/core/FaceNurbsModelController.js`: NURBS geometry for eyeliner and mascara.
 - `src/core/materials.js`, `src/core/faceWarpMaterial.js`: shader/texture loaders and render materials.
 - `src/core/cameraReadiness.js`: live-track and repeated frame-progression verification.
+- `src/core/camera-capabilities.js`: facing-mode validation, capability checks and defensive camera enumeration.
+- `src/core/performance-profile.js`: conservative/balanced camera resolution, antialias and pixel-ratio profile selection.
+- `src/core/capture-frame.js`: temporary WebGL render target, top-origin RGBA conversion and mirrored still capture.
+- `src/ui/look-presets.js`: twelve data-driven curated looks in four localized groups.
+- `tests/stage5-engine.test.js`, `tests/capture-frame.test.js` and `tests/release-readiness.test.js`: camera/performance contracts, image-row orientation and release-readiness checks.
 - `tests/runtime-reliability.test.js`: Node built-in runtime reliability tests.
 - `assets/models/face.glb`, `assets/shaders/**`, `assets/patterns/**`, `public/mediapipe/**`: bundled runtime/model/shader/pattern assets.
 - `android/app/src/main/java/com/magd/openmakeup/MainActivity.java`: WebViewAssetLoader host, permission bridge, external links, camera pause/resume and Back integration.
-- `.github/workflows/android.yml`: install, type-check, tests, Vite build, Android asset packaging, Gradle APK build and artifact upload.
+- `.github/workflows/android.yml`: install, full and production dependency audits, type-check, tests, Vite build, Android asset packaging, debug/unsigned release APK builds, version validation, SHA-256 checksums and artifact upload.
 
 ### Platforms and technical constraints
 
@@ -211,7 +216,7 @@ Acceptance criteria:
 1. **Shader-backed personalization:** SDK apply(category, { intensity }) validates the inclusive 0–1 range and defaults to 1. The engine maps the value to a real uIntensity uniform on all six existing layer materials; the foundation, blush, lipstick, eyeshadow, eyeliner and mascara fragment shaders use it to scale effect opacity. TypeScript declarations match runtime behavior.
 2. **Color and supported finish editor:** a per-category color picker, intensity slider and finish selector are available; finish is disabled for categories that do not support it. Arabic and English include the editor labels and status messages.
 3. **Original/applied comparison:** the control temporarily hides the rendered makeup canvas to expose the original camera preview beneath it. It does not clear or rewrite selected engine/session state.
-4. **Photo capture:** capture requests a fresh renderer frame and exports a mirrored PNG into a capped-size canvas, then shows a preview before save/share actions are enabled. preserveDrawingBuffer is enabled for capture; its sustained GPU/memory cost still needs target-device measurement.
+4. **Photo capture:** Stage 4 initially used a preserved drawing buffer. Stage 5 replaces that steady-state GPU cost with a temporary `WebGLRenderTarget`, keeps `preserveDrawingBuffer: false`, converts readback rows to top-origin RGBA and mirrors the exported PNG. Unit tests verify row ordering, while actual device color/mirror orientation remains a physical-device check.
 5. **Explicit saving and sharing:** browser mode downloads the PNG and uses Web Share files when available, with download fallback. Android saves through MediaStore on Android Q+ and permission-gated Pictures storage on Android 6–9; sharing uses an app-cache FileProvider URI and an explicit ACTION_SEND chooser. Captured images are not uploaded automatically.
 6. **Versioned local state and named looks:** studio state migrates the older unversioned session schema, validates categories/colors/intensity/finish/morph values and avoids overwriting recognized future session versions. Named looks use openMakeupCustomLooksV1, allow at most 100 entries, cap names at 40 characters, prevent case-insensitive duplicates after collapsing repeated whitespace before comparison and isolate corrupt records.
 7. **Undo/redo:** bounded 50-step before/after history covers actions wrapped through the studio action runner and committed morph-slider gestures. Applying a saved snapshot reverts to the prior snapshot if an application fails.
@@ -228,7 +233,7 @@ Acceptance criteria:
 
 #### Consolidated physical-device matrix — pending
 
-Not yet run on a physical Android 6/7 device: launch and camera-permission denial; repeated background/resume; all six makeup layers and quick looks; face-loss/reacquisition; morph sliders and persisted state; portrait/landscape/fullscreen alignment; capture orientation/mirroring; gallery save and permission denial; system share chooser; sustained rendering/resource stability. Record the real device model, Android and WebView versions, exact steps, results and defects once hardware is available. CI is not a substitute. This remains the open hardware release gate before Stage 5 can be considered release-ready.
+The combined physical matrix was scheduled after Stage 4 but was **not performed**: this connector session has no attached/configured physical Android device. Stage 5 implementation and CI proceeded without pretending that hardware acceptance passed. Required tests remain: launch/permission denial; repeated pause/resume; front/rear camera switching and duplicate-stream/frozen-preview checks; all six makeup layers and twelve curated looks; face loss/reacquisition; morph/state persistence; portrait/landscape/fullscreen alignment; capture color/orientation/mirroring; gallery save/permission denial; share chooser; WebGL context loss/recovery; and sustained GPU/thermal/resource stability. Record actual model, Android/WebView versions, exact steps and outcomes when a real device is available. This remains the final hardware release gate.
 
 Acceptance criteria status:
 - [x] Shader-backed intensity wired to all six layer shaders.
@@ -240,24 +245,52 @@ Acceptance criteria status:
 
 ### Stage 5 — Camera Switching, Onboarding, Preset Library, Performance and Release
 
-**Dependencies:** Stages 1–4 plus the consolidated physical-device regression pass scheduled at the end of Stage 4.  
-**Primary files:** Android host/manifest, camera module, UI/localization, preset/catalogue assets, workflows, README and release notes.
+**Status:** Stage 5 source implementation and CI/release-candidate pipeline are delivered. **Physical-device compatibility, camera-switch behavior, and sustained thermal/performance measurement remain unverified**, so a production-release readiness claim is not made.  
+**Implementation revision under final CI:** `7113616871ef499bf23d8010ece00a8e7c3bd361`  
+**CI run:** [39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613).  
+**Release identity:** Android `1.5.0` / versionCode `6`; application ID and minSdk preserved.
 
-Required work:
-- Add front/back camera switching with capability checks, stream replacement and track disposal.
-- Add dismissible first-run guidance for permission, framing, lighting and core controls, plus a meaningful face-detection state.
-- Expand curated, categorized looks via maintainable data-driven definitions.
-- Profile sustained performance/thermal impact, tune camera/render resolution and handle WebGL context loss.
-- Perform final compatibility, accessibility, dependency/security, offline asset and release-build checks.
-- Verify artifact/version metadata; publish a verifiable release package and notes.
+#### Delivered
 
-Acceptance criteria:
-- Camera switching has no duplicate streams or frozen preview on supported hardware.
-- Onboarding doesn't repeatedly block returning users.
-- Performance is measured on a defined device matrix with clear fallback behavior.
-- CI, release build and critical user workflows pass; device results are documented honestly.
+1. **Front/rear camera switching:** the SDK exposes `canSwitchCamera()`, `cameraFacingMode` and `switchCamera('user' | 'environment')`. It checks browser constraint support, creates a replacement MediaPipe camera controller with the requested facing mode, stops/releases the previous stream tracks, waits for video frames to progress, verifies the reported facing mode when the browser exposes it, and attempts rollback to the prior camera after a failed switch. If both the requested switch and rollback fail, the UI attempts local camera recovery/reinitialization before re-enabling tools.
+2. **Dismissible first-run guidance:** Arabic-first/English guidance explains permission, framing, lighting and core actions. “Start camera” and “skip guide” both dismiss it; the dismissal is persisted in local storage when available. Escape and Android Back dismiss the modal, focus is contained/restored, and permission still comes from Android/WebView at runtime.
+3. **Data-driven preset library:** twelve curated looks, localized in Arabic and English, grouped as Everyday, Soft/Romantic, Bold and Evening. Definitions live in `src/ui/look-presets.js`, include supported layer colors/intensity/finish/pattern choices, validate against the category contract, and apply transactionally with rollback on a failure.
+4. **Tracking and graphics recovery:** retains the face-detection live state; WebGL context loss pauses rendering, exposes a recovery status, and attempts to resume camera frames after context restoration. A retry action rebuilds the local engine if automatic recovery fails.
+5. **Lower sustained render-buffer cost:** disables persistent `preserveDrawingBuffer`, caps pixel ratio, disables antialiasing and uses 640×480 for constrained devices (≤4 reported logical cores or ≤4 GB reported memory); other devices use a bounded 960×540 profile and at most 1.5 renderer pixel ratio. These are defensive defaults, **not a claim of measured thermal performance**.
+6. **Release hardening:** full dependency audit (including development tooling) and production-only audit; TypeScript check, test suite, web build, local runtime asset packaging, Gradle debug plus unsigned release APKs, Android version metadata checks, generated SHA-256 sums, and uploads of debug/release candidate artifacts with the audit report, lockfile and release notes.
+7. **SDK/documentation contracts:** JSDoc and TypeScript expose the camera APIs and WebGL context callback. README and release notes distinguish the unsigned release candidate from a signed distribution build.
 
-## 7. Project-Wide Quality Gates
+#### Automated verification
+
+- The successful Stage-5 pipeline on the preceding implementation revision passed **65 tests, 0 failures**, SDK type-check, web build, Android asset packaging, Gradle debug/release builds, version metadata checks, SHA-256 generation and both artifact uploads. See [run 39859079525](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39859079525). The current final recovery/test revision is being checked in [run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613).
+- Both the full audit (including development tooling) and `npm audit --omit=dev --audit-level=high` reported **0 vulnerabilities** in the validated report.
+- Artifact names: `Open-Makeup-debug-apk` and `Open-Makeup-release-candidate`. The latter contains the unsigned APK, `APK-SHA256SUMS.txt`, `RELEASE_NOTES.md`, full npm audit report and lockfile.
+- An unsigned release APK must be signed with the project owner's release key before distribution. CI does not sign or invent a release key.
+
+#### Hardware acceptance — pending / not performed
+
+No physical-device camera test, UI accessibility audit on an actual handset, or sustained thermal test was run in this connector session. A passing CI build cannot demonstrate that a particular Android WebView switches lenses, avoids freezing/duplicate streams, restores after real GPU context loss, aligns effects in all orientations, or remains thermally stable.
+
+| Planned target class | Test focus | Evidence status |
+|---|---|---|
+| Android 6 / API 23 and Android 7 / API 24–25 with older/low-memory WebView/GPU | Permission flow, local/offline startup, camera constraints, mirror/alignment, storage and share compatibility | **Not tested on device** |
+| Mid-range Android with front/rear cameras and 4–6 GB RAM | Switch forward/back repeatedly, tracking reacquisition, background/resume, portrait/landscape and save/share | **Not tested on device** |
+| Higher-DPR / newer Android device | High-DPI profile, full-screen composition, WebGL loss/restore, sustained temperature/frame stability | **Not tested on device** |
+
+The matrix above is a **test plan**, not a record of tested devices. Record device model, Android version, System WebView version, steps, expected/actual output and defects when physical access is available.
+
+#### Acceptance status
+
+- [x] Camera-switch SDK API, facing-mode checks, track cleanup, frame progression and rollback implementation.
+- [x] Onboarding dismissal persistence and bilingual guidance.
+- [x] Twelve validated data-driven looks across four localized groups.
+- [x] Conservative/balanced performance defaults; WebGL context-loss callback and recovery path; temporary-target capture tests.
+- [x] Full and production dependency audit, type-check, 65-test Stage-5 suite, web build, debug and unsigned release APK build, checksum generation and artifact upload passed on the validated revision.
+- [ ] Physical front/rear switch and failed-switch recovery verified on supported hardware.
+- [ ] Sustained performance/thermal impact measured on a defined physical device matrix.
+- [ ] Physical portrait/landscape, capture, accessibility, permission, gallery/share and Android 6/7 compatibility checks recorded before a production release.
+
+## 7. Project-Wide Quality Gates## 7. Project-Wide Quality Gates
 
 For every stage:
 - Inspect affected files and callers; successful compilation is not evidence of UI correctness.
@@ -270,12 +303,11 @@ For every stage:
 
 ## 8. Current Operational State
 
-- PR #3 remains open; work remains on `feat/open-makeup-arabic-mobile-lifecycle`.
-- Stage 1 source and runtime-reliability tests passed CI; device acceptance is intentionally deferred rather than blocking further implementation.
-- Stage 2 revision `a3f4f89a5e40c9a26ea882b58185057b5cb2f743` passed GitHub Actions run [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807): 32 tests pass, zero fail, plus type-check, web bundle, Android asset packaging, debug APK build and artifact upload.
-- CI does not simulate physical camera behavior, real Android WebView or shader appearance under live lighting. Per the user's time-saving instruction, Stages 1–4 use one combined physical-device matrix. It is **still pending/not performed** because this connector session has no physical Android 6/7 target; keep camera/image orientation, storage permission, gallery/share and sustained GPU performance as unverified release checks.
-- PR #3 remains open and unmerged. The APK artifact `Open-Makeup-debug-apk` is attached to run [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807).
-- Stage 3 revision 9d9029a0e397627c624d49294d1f835808de2a12 passed CI run [39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293): 41 tests passed, zero failed.
-- Stage 4 revision 96020600bcb3c72e3681470435bf3d5a0769bc70 passed CI run [39853574683](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683): 51 tests passed, zero failed; type-check, web build, Android packaging, APK build and artifact upload passed. Version is 1.4.0 / version code 5.
-- Physical Android 6/7 testing for Stages 1–4 is **not performed** because no physical target is attached to this connector session. Camera and image orientation, legacy permissions, gallery/share and GPU performance remain unverified.
-- Next implementation stage: Stage 5 — Camera Switching, Onboarding, Preset Library, Performance and Release. Total roadmap stages: **5**.
+- Current work remains on `feat/open-makeup-arabic-mobile-lifecycle`; PR #3 is open and unmerged.
+- Stage 5 implementation revision under final CI: `7113616871ef499bf23d8010ece00a8e7c3bd361`; [run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613) is the current camera-rollback recovery / updated-test run.
+- A preceding full Stage-5 run, [39859079525](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39859079525), passed **65 tests, 0 failures**, type-check, Vite build, Android asset packaging, Gradle debug and unsigned release APK builds, version validation, checksums and both artifact uploads.
+- The full dependency audit (including development tools) and production-only audit each reported **0 vulnerabilities** in run 39859079525. The new workflow preserves `npm-audit-full.json`, `package-lock.json`, `RELEASE_NOTES.md` and APK checksums in the release-candidate artifact.
+- Android version is `1.5.0` / code 6; package ID `com.magd.openmakeup` and minimum SDK 23 remain unchanged.
+- Available artifact classes are `Open-Makeup-debug-apk` and `Open-Makeup-release-candidate`; the latter is unsigned and requires the project's release key before distribution.
+- Stage 1–5 source and automated CI have been implemented; **physical device acceptance is still not performed**. Do not claim a camera-switch/device, screen-reader/contrast, gallery/share, GPU recovery or sustained thermal pass before testing real hardware.
+- Next step is the combined physical Android matrix documented above, then fix any real-device failures and sign a release artifact only with the owner's key. Keep PR #3 open/unmerged unless the user separately requests merging.

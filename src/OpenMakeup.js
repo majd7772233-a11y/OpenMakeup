@@ -89,6 +89,8 @@ export class OpenMakeup {
    *                                      color is `ai` (lipstick by default)
    * @param {(detected: boolean) => void} [options.onFaceTrackingChange]
    *                                      notified after stable face detection/loss
+   * @param {(state: 'lost'|'restored'|'restore-failed') => void} [options.onWebGLContextChange]
+   *                                      notified when the graphics context changes state
    */
   constructor(options = {}) {
     const {
@@ -258,10 +260,18 @@ export class OpenMakeup {
     this.engine.setBlur(on);
   }
 
+  /** Current camera direction requested by the engine. */
   get cameraFacingMode() { return this.engine.cameraFacingMode; }
 
+  /** Whether this runtime appears to support camera-facing constraints. */
   canSwitchCamera() { return this.engine.canSwitchCamera(); }
 
+  /**
+   * Switch front/rear cameras. Resolves after fresh frames; on failure the engine
+   * attempts to restore the previous camera before rejecting.
+   * @param {'user'|'environment'} facingMode
+   * @returns {Promise<OpenMakeup>}
+   */
   switchCamera(facingMode) {
     if (!this._ready) return Promise.reject(new Error('OpenMakeup: await init() before switching cameras.'));
     return this.engine.switchCamera(facingMode).then(() => this);

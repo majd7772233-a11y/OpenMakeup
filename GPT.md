@@ -1,12 +1,13 @@
 # GPT.md — Open Makeup Engineering Notebook
 
-**Last updated:** 2026-10-22  
+**Last updated:** 2026-10-23  
 **Repository:** https://github.com/majd7772233-a11y/OpenMakeup  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
-**Stage 4 code revision validated by CI:** 96020600bcb3c72e3681470435bf3d5a0769bc70  
-**CI run:** [39853574683](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683) — 51 tests passed, zero failed  
-**APK artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683/artifacts/12458157274)  
-**Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
+**Stage 5 implementation revision:** `7113616871ef499bf23d8010ece00a8e7c3bd361`  
+**Current final recovery/test CI:** [Run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613)  
+**Latest fully successful Stage-5 CI:** [Run 39859079525](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39859079525) — 65 tests passed; type-check, full/production dependency audits, Vite bundle, Android asset packaging, debug and unsigned release APKs, metadata checksums and artifacts passed.  
+**Artifacts:** `Open-Makeup-debug-apk` and `Open-Makeup-release-candidate` (unsigned).  
+**Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3), still open/unmerged.  
 **Mandatory execution protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
 
 ## 1. Project Intent and Non-Negotiable Requirements
@@ -21,7 +22,7 @@ The user's workflow requires complete stage execution rather than partial delive
 
 - Web app/SDK: JavaScript ESM, Vite 8, TypeScript 5.9 declarations/type-check, Three.js 0.184, MediaPipe global-script packages.
 - Android host: Java, AndroidX WebKit 1.12.1, Gradle 8.9 in CI.
-- CI runs Node 22; `npm install`, `npm run typecheck`, `npm test`, `npm run build`, embeds `dist/` into Android assets, runs `gradle --no-daemon -p android assembleDebug` and uploads a debug APK.
+- CI runs Node 22; `npm install`, full and production dependency audits, `npm run typecheck`, `npm test`, `npm run build`, embeds `dist/` into Android assets, builds both debug and unsigned release APKs, verifies version metadata, emits APK SHA-256 checksums and uploads debug/release/audit artifacts.
 - Package ID: `com.magd.openmakeup`; minimum Android API 23; compile/target SDK 35.
 - Android host loads `https://appassets.androidplatform.net/assets/www/index.html` via `WebViewAssetLoader`, restricts camera permission to the local origin and forwards camera pause/resume and Back.
 - Runtime assets: `assets/models`, `assets/shaders`, `assets/patterns`, `public/mediapipe`.
@@ -39,6 +40,10 @@ The user's workflow requires complete stage execution rather than partial delive
 - `src/core/FaceNurbsModelController.js`: eyeliner/mascara NURBS geometry.
 - `src/core/materials.js`, `src/core/faceWarpMaterial.js`: GLSL/texture loading.
 - `src/core/cameraReadiness.js`: live-track and repeated-frame progression checks.
+- `src/core/camera-capabilities.js`: facing-mode validation and camera enumeration.
+- `src/core/performance-profile.js`: bounded camera resolution, renderer pixel ratio and antialias selection.
+- `src/core/capture-frame.js`: temporary WebGL render target and top-origin/mirrored RGBA-to-PNG capture.
+- `src/ui/look-presets.js`: twelve data-driven, bilingual curated-look definitions.
 - `tests/runtime-reliability.test.js`: Node test runner tests for startup, camera readiness, cancellation, and truthful SDK error paths.
 
 ## 4. Runtime Contracts
@@ -162,7 +167,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 ### Validation evidence
 - CI [run 39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293): **41 tests passed, 0 failed**, SDK type-check, Vite build, Android asset packaging, debug APK build and artifact upload passed.
 - This is source/CI verification, not an assistive-technology or physical-device audit. Installed WebView/GPU behavior, touch feel, screen-reader output and device contrast stay unverified.
-- Per user direction, run the combined physical-device matrix for Stages 1–4 after Stage 4, before Stage 5. Do not schedule separate device checks after every earlier stage.
+- The combined Stages 1–4 physical-device matrix did not happen before Stage 5 because no device/runner is connected. Keep it as an open pre-release gate and run it as one batch when hardware is available.
 - Next eligible stage: Stage 4 — Personalization, Color/Strength, Capture and History. Total roadmap stages: **5**.
 
 ## 9. Stage-4 Personalization, Capture, Local Looks and History
@@ -189,10 +194,12 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 ## 10. Build and Test Commands
 
 - `npm install`
+- `npm audit --json` (full tree, including development dependencies)
+- `npm audit --omit=dev --audit-level=high` (production dependencies)
 - `npm test`
 - `npm run typecheck`
 - `npm run build`
-- CI also packages web assets into Android and runs `gradle --no-daemon -p android assembleDebug`; the debug APK is uploaded as workflow artifact `Open-Makeup-debug-apk`.
+- CI packages web assets into Android, runs `gradle --no-daemon -p android assembleDebug assembleRelease`, validates version metadata, writes `APK-SHA256SUMS.txt`, and uploads `Open-Makeup-debug-apk` plus `Open-Makeup-release-candidate`.
 
 ## 11. Permanent Engineering Rules
 
@@ -210,6 +217,30 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 2. Fetch branch head and latest GitHub Actions run.
 3. Check `npm test`, type-check, Vite bundle, APK build and artifact upload.
 4. Stage 4 implementation and automated CI are complete on 96020600bcb3c72e3681470435bf3d5a0769bc70; run 39853574683 passed 51 tests and the full APK pipeline.
-5. Stage 5 is the next implementation stage.
-6. The consolidated physical Android 6/7 regression for Stages 1–4 has **not been performed** because no physical device is attached to this connector session. Do not claim a device pass; run and document the full matrix before release/closing the hardware gate.
-7. Before any further work, inspect the latest branch head and CI. Keep PR #3 open and unmerged unless the user separately requests merging.
+5. Stage 5 implementation and release-candidate pipeline are now delivered on the current branch. The last complete green run passed 65 tests plus the full debug/unsigned release APK, type-check, bundle, asset, audit and checksum pipeline; verify run 39865743613 for the latest failed-camera-recovery handling and added assertions.
+6. Both full and production dependency audits reported zero vulnerabilities in the successful Stage-5 run.
+7. The combined physical Android 6/7 regression and sustained performance/thermal matrix remain **not performed**. Do not claim hardware success. This is the remaining release gate, not a code/CI failure.
+8. The release-candidate APK is unsigned; distribution requires the project owner's signing key. Keep PR #3 open/unmerged unless the user separately requests merging.
+
+
+## Stage-5 Implementation and Release-Candidate Record
+
+### Implemented
+
+- SDK API: `canSwitchCamera()`, `cameraFacingMode` and `switchCamera('user' | 'environment')`. Switching creates a new MediaPipe camera controller, stops old tracks, waits for frame progression, validates observed facing mode when exposed by the browser, and attempts rollback. If switching and rollback both fail, the UI attempts local stream recovery/engine restart before enabling studio tools.
+- First-run guidance: Arabic-first/English, permission/framing/lighting/core-tool hints, dismissible with start or skip buttons, persistent dismissal when storage is available, Escape/Android Back and focus management.
+- Presets: twelve maintainable data-defined looks in four localized groups, with category-validated shader settings and rollback if a layer fails.
+- Performance/resilience: conservative 640×480/DPR≤1/no antialias for constrained detected devices, balanced 960×540/DPR≤1.5 otherwise; live renderer uses `preserveDrawingBuffer: false`; photo capture uses a temporary WebGL render target; WebGL context loss/restoration triggers statuses and camera-recovery path.
+- Release pipeline: full npm dependency audit and production-only audit, TypeScript, 65-test suite, Vite bundle, Android asset packaging, debug plus unsigned release APKs, version/code checks, SHA-256 sums, artifact upload, full audit report and locked package metadata in the release-candidate artifact.
+
+### Automated evidence
+
+- [Run 39859079525](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39859079525): 65 tests passed, 0 failed; type-check, Vite build, local asset packaging, Gradle debug/release builds, version metadata, checksum and both artifact uploads passed.
+- Both full and production dependency audits reported zero vulnerabilities in the validated report.
+- The current final recovery-path commit and expanded assertions are being checked by [run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613).
+
+### Explicitly not verified
+
+- No physical Android device has been exercised here. Actual camera switching and rollback, repeated camera resume, Android 6/7 permission behavior, screen reader/contrast, capture mirror and color, gallery/share, WebGL recovery under real GPU resets and sustained thermal/frame stability remain unverified.
+- Runtime-derived resolution/antialias settings are defensive defaults. They are not benchmark measurements. The test matrix in ROADMAP.md is a plan, not proof that named devices have passed.
+- The release APK is unsigned; never generate or commit the owner's signing key.

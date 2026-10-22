@@ -136,6 +136,9 @@ const mk = new OpenMakeup(options);
 | Method | Description |
 |---|---|
 | `await mk.init(onReady?)` | Boot the engine, load assets, start the camera. |
+| `mk.canSwitchCamera()` | Report whether camera-facing constraints appear available in this runtime. The actual switch is still verified at runtime. |
+| `await mk.switchCamera('user' \\| 'environment')` | Switch front/rear camera, wait for fresh frames and attempt to restore the prior camera if switching fails. Call after `init()`. |
+| `mk.cameraFacingMode` | Read the current/requested facing mode (`user` or `environment`). |
 | `await mk.apply(category, opts)` | Apply/update a layer: `{ color, finish, pattern, intensity }`; intensity is 0–1 and defaults to 1. |
 | `mk.clear(category)` | Remove one makeup layer. |
 | `mk.clearAll()` | Remove all makeup. |
@@ -153,7 +156,7 @@ const mk = new OpenMakeup(options);
 
 **Face-morph weight range:** The SDK exports `MORPH_WEIGHT_MIN = -1` and `MORPH_WEIGHT_MAX = 1.5`. UI controls and session restoration use the same limits; out-of-range SDK requests are rejected.
 
-**Constructor options:** `video`, `renderCanvas`, `assetsBaseUrl`, `mediapipeBaseUrl`, `defaults`, `aiColor`, `onFaceTrackingChange`, `onWebGLContextChange`.
+**Constructor options:** `video`, `renderCanvas`, `assetsBaseUrl`, `mediapipeBaseUrl`, `defaults`, `aiColor`, `onFaceTrackingChange`, `onWebGLContextChange`. The graphics callback receives `lost`, `restored` or `restore-failed`; a consumer callback error is isolated from rendering.
 
 ---
 
