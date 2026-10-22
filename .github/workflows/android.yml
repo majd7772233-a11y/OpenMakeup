@@ -87,5 +87,6 @@ jobs:
             android/app/build/outputs/apk/APK-SHA256SUMS.txt
             RELEASE_NOTES.md
             npm-audit-full.json
+            package-lock.json
           if-no-files-found: error
           retention-days: 14
