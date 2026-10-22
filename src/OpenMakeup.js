@@ -176,6 +176,10 @@ export class OpenMakeup {
     if (!name) throw new Error(`OpenMakeup: unknown category "${category}"`);
     if (!this._ready) throw new Error('OpenMakeup: await init() before applying makeup.');
     const cfg = this._categories[name];
+    const intensity = opts.intensity == null ? 1 : opts.intensity;
+    if (typeof intensity !== 'number' || !Number.isFinite(intensity) || intensity < 0 || intensity > 1) {
+      throw new Error('OpenMakeup: intensity must be a finite number from 0 to 1.');
+    }
     const color = await this._resolveColor(name, opts);
     const colorMode = this._resolveColorMode(name, opts);
     const patternId = this._resolvePatternId(name, opts);
@@ -190,12 +194,14 @@ export class OpenMakeup {
       if (reset === false) throw new Error(`OpenMakeup: could not restore the default pattern for "${name}".`);
     }
     this.engine.setAR(cfg.engine, color, colorMode);
+    this.engine.setIntensity(cfg.engine, intensity);
 
     return {
       category: name,
       color,
       finish: cfg.supportsFinish ? (opts.finish ?? cfg.defaults.finish) : null,
       pattern: patternId,
+      intensity,
     };
   }
 

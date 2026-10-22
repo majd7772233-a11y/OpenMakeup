@@ -36,6 +36,8 @@ export interface ApplyOptions {
   color?: string;
   /** Finish (only honoured by categories that support one). */
   finish?: Finish;
+  /** Shader-backed effect opacity multiplier from 0 to 1 (defaults to 1). */
+  intensity?: number;
   /** Pattern: a 1-based `number` from `getPatterns`, or a listed pattern id. */
   pattern?: number | string | null;
   /** Explicit listed pattern id (must exist in the bundled manifest). */
@@ -48,6 +50,7 @@ export interface AppliedLook {
   color: string;
   finish: Finish | null;
   pattern: number | string | null;
+  intensity: number;
 }
 
 /** Provider that resolves a color for categories whose default color is AI-driven. */
@@ -199,6 +202,8 @@ export class MakeupEngine {
   stop(): void;
   dispose(): void;
   setAR(arType: string, color: string, colorMode: string | number): void;
+  /** Set a layer's shader-backed opacity multiplier (0..1). */
+  setIntensity(arType: string, intensity: number): number;
   setPattern(arType: string, patternId: number | string): Promise<void>;
   clearAll(): void;
   clearPart(arType: string): void;

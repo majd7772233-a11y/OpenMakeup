@@ -443,3 +443,33 @@ test('video and WebGL canvas retain the same front-camera mirror transform', () 
   assert.match(html, /#video\{[^}]*transform:scaleX\(-1\)/);
   assert.match(html, /#renderCanvas\{[^}]*transform:scaleX\(-1\)/);
 });
+
+
+test('public apply validates and forwards shader-backed intensity to the engine', async () => {
+  const { OpenMakeup } = await import('../src/OpenMakeup.js');
+  const { CATEGORIES } = await import('../src/categories.js');
+  const instance = new OpenMakeup({ video: {}, renderCanvas: {} });
+  instance._ready = true;
+  instance._patterns = {};
+  const writes = [];
+  instance.engine.setAR = (...args) => writes.push(['setAR', ...args]);
+  instance.engine.setIntensity = (...args) => writes.push(['intensity', ...args]);
+  const applied = await instance.apply('foundation', { color: '#123456', finish: 'matte', intensity: 0.35 });
+  assert.equal(applied.intensity, 0.35);
+  assert.deepEqual(writes[1], ['intensity', CATEGORIES.foundation.engine, 0.35]);
+  await assert.rejects(instance.apply('foundation', { color: '#123456', finish: 'matte', intensity: 1.1 }), /intensity.*0 to 1/i);
+  await assert.rejects(instance.apply('foundation', { color: '#123456', finish: 'matte', intensity: NaN }), /intensity.*0 to 1/i);
+});
+
+test('engine intensity enforces range, uniform presence, and all six layer mappings', async () => {
+  const { MakeupEngine } = await import('../src/core/MakeupEngine.js');
+  const engine = Object.create(MakeupEngine.prototype);
+  const props = { foundation:'foundationMat', blush:'blushMat', lipstick:'lipsMat', eyeshadow:'eyeShadowMat', eyeline:'eyeLineMat', mascara:'mascaraMat' };
+  for (const [name, prop] of Object.entries(props)) {
+    engine[prop] = { uniforms: { uIntensity: { value: 1 } } };
+    assert.equal(engine.setIntensity(name, 0.25), 0.25);
+    assert.equal(engine[prop].uniforms.uIntensity.value, 0.25);
+  }
+  assert.throws(() => engine.setIntensity('blush', -0.1), /0 to 1/);
+  assert.throws(() => engine.setIntensity('unknown', 0.4), /not ready|uIntensity/);
+});

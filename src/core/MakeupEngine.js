@@ -657,6 +657,22 @@ export class MakeupEngine {
         return true;
     }
 
+    /** Set the shader-backed opacity multiplier for a makeup layer. */
+    setIntensity(arType, intensity) {
+        if (typeof intensity !== 'number' || !Number.isFinite(intensity) || intensity < 0 || intensity > 1) {
+            throw new Error('Makeup intensity must be a finite number from 0 to 1.');
+        }
+        const materials = {
+            foundation: this.foundationMat, blush: this.blushMat, lipstick: this.lipsMat,
+            eyeshadow: this.eyeShadowMat, eyeline: this.eyeLineMat, mascara: this.mascaraMat,
+        };
+        const material = materials[arType];
+        const uniform = material && material.uniforms && material.uniforms.uIntensity;
+        if (!uniform) throw new Error(`The ${arType} effect is not ready or lacks the uIntensity shader uniform.`);
+        uniform.value = intensity;
+        return intensity;
+    }
+
     /** Hide every makeup layer. (was the `ClearAll` event) */
     clearAll() {
         for (const category of Object.keys(PATTERN_TARGETS)) this._resetPattern(category);
