@@ -3,11 +3,11 @@
 **Last updated:** 2026-10-23  
 **Repository:** https://github.com/majd7772233-a11y/OpenMakeup  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
-**Stage 5 implementation revision:** `7113616871ef499bf23d8010ece00a8e7c3bd361`  
-**Final recovery-path CI:** [Run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613) — **65 tests passed, 0 failed**.  
-**Latest complete Stage-5 CI:** [Run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613) — full/production audits, TypeScript, tests, Vite build, Android packaging, debug/release APKs and checksums passed.  
-**Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613/artifacts/12463528614).  
-**Unsigned release artifact:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613/artifacts/12463837776) — includes APK SHA-256 sums, full npm audit report, lockfile and release notes.  
+**Stage 5 implementation revision:** `64ae1eb7297e305ec458107996b9bb9123f3bbfc`  
+**Final recovery-path CI:** [Run 39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959) — **65 tests passed, 0 failed**.  
+**Latest complete Stage-5 CI:** [Run 39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959) — full/production audits, TypeScript, tests, Vite build, Android packaging, debug/release APKs and checksums passed.  
+**Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959/artifacts/12463304185).  
+**Unsigned release artifact:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959/artifacts/12463718570) — includes APK SHA-256 sums, full npm audit report, lockfile and release notes.  
 **Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3), still open/unmerged.  
 **Mandatory execution protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
 
@@ -218,7 +218,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 2. Fetch branch head and latest GitHub Actions run.
 3. Check `npm test`, type-check, Vite bundle, APK build and artifact upload.
 4. Stage 4 implementation and automated CI are complete on 96020600bcb3c72e3681470435bf3d5a0769bc70; run 39853574683 passed 51 tests and the full APK pipeline.
-5. Stage 5 implementation and release-candidate pipeline are delivered on the current branch. Run 39865743613 passed 65 tests plus the full debug/unsigned-release APK, type-check, bundle, asset, audit and checksum pipeline, including failed-camera-rollback recovery and added assertions.
+5. Stage 5 implementation and release-candidate pipeline are delivered on the current branch. Run 39866096959 passed 65 tests plus the full debug/unsigned-release APK, type-check, bundle, asset, audit and checksum pipeline, including failed-camera-rollback recovery and added assertions.
 6. Both full and production dependency audits reported zero vulnerabilities in the successful Stage-5 run.
 7. The combined physical Android 6/7 regression and sustained performance/thermal matrix remain **not performed**. Do not claim hardware success. This is the remaining release gate, not a code/CI failure.
 8. The release-candidate APK is unsigned; distribution requires the project owner's signing key. Keep PR #3 open/unmerged unless the user separately requests merging.
