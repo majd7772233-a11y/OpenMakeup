@@ -1,4 +1,18 @@
-import { RGBAFormat, UnsignedByteType, WebGLRenderTarget } from 'three';
+import { RGBAFormat, SRGBColorSpace, UnsignedByteType, WebGLRenderTarget } from 'three';
+
+export function rgbaPixelsTopOrigin(pixels, width, height) {
+  if (!ArrayBuffer.isView(pixels) || !Number.isInteger(width) || !Number.isInteger(height)
+      || width < 1 || height < 1 || pixels.length !== width * height * 4) {
+    throw new Error('Pixel data must contain exactly width × height × 4 RGBA values.');
+  }
+  const output = new Uint8Array(pixels.length);
+  const rowBytes = width * 4;
+  for (let y = 0; y < height; y += 1) {
+    const sourceOffset = (height - 1 - y) * rowBytes;
+    output.set(pixels.subarray(sourceOffset, sourceOffset + rowBytes), y * rowBytes);
+  }
+  return output;
+}
 
 export function renderSceneToPngDataUrl(engine, documentRef = document, maxDimension = 2560) {
   const renderer = engine && engine.renderer;
@@ -22,6 +36,7 @@ export function renderSceneToPngDataUrl(engine, documentRef = document, maxDimen
     depthBuffer: true,
     stencilBuffer: false,
   });
+  target.texture.colorSpace = SRGBColorSpace;
   const pixels = new Uint8Array(width * height * 4);
   const previousTarget = typeof renderer.getRenderTarget === 'function' ? renderer.getRenderTarget() : null;
   try {
@@ -39,11 +54,7 @@ export function renderSceneToPngDataUrl(engine, documentRef = document, maxDimen
   const pixelsContext = pixelsCanvas.getContext('2d');
   if (!pixelsContext) throw new Error('Could not create the photo pixel canvas.');
   const imageData = pixelsContext.createImageData(width, height);
-  const rowBytes = width * 4;
-  for (let y = 0; y < height; y += 1) {
-    const sourceOffset = (height - 1 - y) * rowBytes;
-    imageData.data.set(pixels.subarray(sourceOffset, sourceOffset + rowBytes), y * rowBytes);
-  }
+  imageData.data.set(rgbaPixelsTopOrigin(pixels, width, height));
   pixelsContext.putImageData(imageData, 0, 0);
 
   const mirrored = documentRef.createElement('canvas');
