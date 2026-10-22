@@ -36,6 +36,9 @@ import {
 import { loadFaceWarpMat } from './faceWarpMaterial.js';
 import { createAssetResolver, defaultConfig, resolveAsset } from '../config.js';
 import { calculateVideoBoxLayout } from './videoLayout.js';
+import { waitForCameraFrames } from './cameraReadiness.js';
+import { normalizeCameraFacingMode, supportsCameraFacingMode } from './camera-capabilities.js';
+import { resolvePerformanceProfile } from './performance-profile.js';
 import {
     MORPH_CONTROLS, MORPH_TARGETS_EXTRA, MORPH_WEIGHT_MIN, MORPH_WEIGHT_MAX, resolveMorphTarget,
 } from '../morphs.js';
@@ -114,6 +117,7 @@ export class MakeupEngine {
             faceMeshClass,
             cameraClass,
             onFaceTrackingChange = null,
+            onWebGLContextChange = null,
         } = options;
 
         if (!video) throw new Error('MakeupEngine: `video` element is required');
@@ -126,10 +130,17 @@ export class MakeupEngine {
 
         this.assets = createAssetResolver(assetsBaseUrl ?? defaultConfig.assetsBaseUrl);
         this.mediapipeBaseUrl = mediapipeBaseUrl ?? defaultConfig.mediapipeBaseUrl;
+        const deviceProfile = resolvePerformanceProfile({
+            devicePixelRatio: typeof window !== 'undefined' ? window.devicePixelRatio : 1,
+            hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : undefined,
+            deviceMemory: typeof navigator !== 'undefined' ? navigator.deviceMemory : undefined,
+        });
+        this.performanceProfile = deviceProfile;
         this.config = {
             faceMesh: { ...defaultConfig.faceMesh, ...(faceMesh || {}) },
-            camera: { ...defaultConfig.camera, ...(camera || {}) },
+            camera: { ...defaultConfig.camera, ...deviceProfile.camera, ...(camera || {}) },
         };
+        this._cameraFacingMode = normalizeCameraFacingMode(this.config.camera.facingMode) || 'user';
 
         // MediaPipe classes (injected or resolved from globals at init)
         this._FaceMeshClass = faceMeshClass || null;
@@ -178,6 +189,33 @@ export class MakeupEngine {
         this._noFaceFrames = 0;
         this._reportedFaceTrackingState = null;
         this.onFaceTrackingChange = typeof onFaceTrackingChange === 'function' ? onFaceTrackingChange : null;
+        this.onWebGLContextChange = typeof onWebGLContextChange === 'function' ? onWebGLContextChange : null;
+        this._webglContextLost = false;
+        this._onWebGLContextLost = (event) => {
+            if (event && typeof event.preventDefault === 'function') event.preventDefault();
+            if (this._webglContextLost) return;
+            this._webglContextLost = true;
+            if (this._rafId != null) cancelAnimationFrame(this._rafId);
+            this._rafId = null;
+            this._notifyWebGLContextChange('lost');
+        };
+        this._onWebGLContextRestored = () => {
+            if (!this.renderer) return;
+            this._webglContextLost = false;
+            try {
+                this.renderer.resetState();
+                if (this.videoTexture) this.videoTexture.needsUpdate = true;
+                for (const texture of this._defaultPatternTextures.values()) texture.needsUpdate = true;
+                for (const texture of this._activePatternTextures.values()) texture.needsUpdate = true;
+                this._sizeToVideoBox();
+                this._syncFaceLayerVisibility();
+                if (this._cameraRunning && this._rafId == null) this._animate();
+                this._notifyWebGLContextChange('restored');
+            } catch (error) {
+                console.error('OpenMakeupSDK: WebGL context restoration failed:', error);
+                this._notifyWebGLContextChange('restore-failed');
+            }
+        };
         this._wireframeEnabled = false;
         this._blurEnabled = false;
         this._defaultPatternTextures = new Map();
@@ -269,10 +307,12 @@ export class MakeupEngine {
         this.renderer = new WebGLRenderer({
             canvas: this.renderCanvas,
             alpha: true,
-            antialias: true,
+            antialias: this.performanceProfile.antialias,
             preserveDrawingBuffer: true,
         });
-        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.performanceProfile.maxPixelRatio));
+        this.renderCanvas.addEventListener('webglcontextlost', this._onWebGLContextLost, false);
+        this.renderCanvas.addEventListener('webglcontextrestored', this._onWebGLContextRestored, false);
 
         this.videoTexture = new VideoTexture(this.video);
         this.videoTexture.minFilter = LinearFilter;
@@ -302,7 +342,7 @@ export class MakeupEngine {
 
         this.sceneSize.set(targetWidth, targetHeight);
 
-        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, this.performanceProfile.maxPixelRatio));
         this.renderer.setPixelRatio(dpr);
         this.renderer.setSize(targetWidth, targetHeight, false);
 
@@ -508,6 +548,7 @@ export class MakeupEngine {
             },
             width: this.config.camera.width,
             height: this.config.camera.height,
+            facingMode: this._cameraFacingMode,
         });
     }
 
@@ -526,7 +567,7 @@ export class MakeupEngine {
                 if (this._faceVisible) { this._faceVisible = false; this._syncFaceLayerVisibility(); }
                 this._notifyFaceTrackingState(false);
             }
-            if (this.renderer) this.renderer.render(this.scene, this.camera3D);
+            if (this.renderer && !this._webglContextLost) this.renderer.render(this.scene, this.camera3D);
             return;
         }
 
@@ -543,7 +584,7 @@ export class MakeupEngine {
             if (this.mascaraLeftNurbs) updateFaceNurbsMesh(landmarks, this.mascaraLeftNurbs, this.sceneSize.x, this.sceneSize.y, true);
             if (this.mascaraRightNurbs) updateFaceNurbsMesh(landmarks, this.mascaraRightNurbs, this.sceneSize.x, this.sceneSize.y, false);
         }
-        if (this.renderer) this.renderer.render(this.scene, this.camera3D);
+        if (this.renderer && !this._webglContextLost) this.renderer.render(this.scene, this.camera3D);
     };
 
     _notifyFaceTrackingState(detected) {
@@ -572,9 +613,13 @@ export class MakeupEngine {
     };
 
     _animate = () => {
+        if (this._webglContextLost) {
+            this._rafId = null;
+            return;
+        }
         this._rafId = requestAnimationFrame(this._animate);
         this._updateCameraUniforms();
-        if (this.renderer) this.renderer.render(this.scene, this.camera3D);
+        if (this.renderer && !this._webglContextLost) this.renderer.render(this.scene, this.camera3D);
     };
 
     _updateCameraUniforms() {
@@ -930,6 +975,73 @@ export class MakeupEngine {
 
     /* ───────────────────────── lifecycle ───────────────────────── */
 
+    get cameraFacingMode() {
+        return this._cameraFacingMode;
+    }
+
+    canSwitchCamera() {
+        const mediaDevices = typeof navigator !== 'undefined' ? navigator.mediaDevices : null;
+        return !!this._CameraClass && supportsCameraFacingMode(mediaDevices);
+    }
+
+    _notifyWebGLContextChange(state) {
+        if (!this.onWebGLContextChange) return;
+        try { this.onWebGLContextChange(state); }
+        catch (error) { console.warn('OpenMakeupSDK: WebGL context callback failed:', error); }
+    }
+
+    async _startCameraWithFacingMode(mode) {
+        this.stop();
+        this._stopAttachedVideoTracks();
+        if (this._camera && typeof this._camera.stop === 'function') {
+            try { this._camera.stop(); } catch (_) {}
+        }
+        this._camera = null;
+        this._cameraFacingMode = mode;
+        this.config.camera = { ...this.config.camera, facingMode: mode };
+        this._setupCamera();
+        await this.start();
+        await waitForCameraFrames(this.video, { timeoutMs: 6000, pollIntervalMs: 150 });
+
+        const stream = this.video && this.video.srcObject;
+        const tracks = stream && typeof stream.getVideoTracks === 'function' ? stream.getVideoTracks() : [];
+        const settings = tracks[0] && typeof tracks[0].getSettings === 'function' ? tracks[0].getSettings() : null;
+        const actual = normalizeCameraFacingMode(settings && settings.facingMode);
+        if (actual && actual !== mode) {
+            throw new Error('Requested the ' + mode + '-facing camera, but the browser opened ' + actual + '.');
+        }
+    }
+
+    async switchCamera(facingMode) {
+        const target = normalizeCameraFacingMode(facingMode);
+        if (!target) throw new Error('Camera facing mode must be "user" or "environment".');
+        if (!this._ready) throw new Error('OpenMakeupSDK: initialize the engine before switching cameras.');
+        if (!this.canSwitchCamera()) throw new Error('Camera switching is not supported by this browser or device.');
+
+        const previous = this._cameraFacingMode || 'user';
+        if (target === previous && this._cameraRunning) return target;
+
+        let firstFailure;
+        try {
+            await this._startCameraWithFacingMode(target);
+            return target;
+        } catch (error) {
+            firstFailure = error;
+        }
+
+        if (previous !== target) {
+            try {
+                await this._startCameraWithFacingMode(previous);
+            } catch (rollbackError) {
+                const rollbackDetail = rollbackError && rollbackError.message ? rollbackError.message : String(rollbackError);
+                const failureDetail = firstFailure && firstFailure.message ? firstFailure.message : String(firstFailure);
+                throw new Error('Camera switch failed (' + failureDetail + '); restoring the previous camera also failed (' + rollbackDetail + ').');
+            }
+        }
+        const detail = firstFailure && firstFailure.message ? firstFailure.message : String(firstFailure);
+        throw new Error('Could not switch to the ' + target + ' camera; the ' + previous + ' camera was restored. ' + detail);
+    }
+
     async start() {
         if (!this._camera) throw new Error('Camera controller is not initialized.');
         if (this._cameraRunning) return this;
@@ -1000,6 +1112,10 @@ export class MakeupEngine {
             window.removeEventListener('resize', this._resizeOverlay);
         }
         if (this.video && this._sizeToVideoBox) this.video.removeEventListener('loadedmetadata', this._sizeToVideoBox);
+        if (this.renderCanvas) {
+            this.renderCanvas.removeEventListener('webglcontextlost', this._onWebGLContextLost, false);
+            this.renderCanvas.removeEventListener('webglcontextrestored', this._onWebGLContextRestored, false);
+        }
         if (this.video && this.video.srcObject && this.video.srcObject.getTracks) {
             this.video.srcObject.getTracks().forEach((track) => { try { track.stop(); } catch (_) {} });
             this.video.srcObject = null;

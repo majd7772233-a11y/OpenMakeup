@@ -94,12 +94,12 @@ export class OpenMakeup {
     const {
       video, renderCanvas, overlayCanvas,
       assetsBaseUrl, mediapipeBaseUrl, faceMesh, camera,
-      defaults = {}, aiColor = null, onFaceTrackingChange = null,
+      defaults = {}, aiColor = null, onFaceTrackingChange = null, onWebGLContextChange = null,
     } = options;
 
     this.engine = new MakeupEngine({
       video, renderCanvas, overlayCanvas,
-      assetsBaseUrl, mediapipeBaseUrl, faceMesh, camera, onFaceTrackingChange,
+      assetsBaseUrl, mediapipeBaseUrl, faceMesh, camera, onFaceTrackingChange, onWebGLContextChange,
     });
 
     this._aiColor = typeof aiColor === 'function' ? aiColor : null;
@@ -256,6 +256,15 @@ export class OpenMakeup {
   /** Show/hide the blur/refraction layer (off by default). */
   setBlur(on) {
     this.engine.setBlur(on);
+  }
+
+  get cameraFacingMode() { return this.engine.cameraFacingMode; }
+
+  canSwitchCamera() { return this.engine.canSwitchCamera(); }
+
+  switchCamera(facingMode) {
+    if (!this._ready) return Promise.reject(new Error('OpenMakeup: await init() before switching cameras.'));
+    return this.engine.switchCamera(facingMode).then(() => this);
   }
 
   start() { return this.engine.start().then(() => this); }

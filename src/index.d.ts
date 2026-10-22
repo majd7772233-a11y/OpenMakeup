@@ -78,6 +78,8 @@ export interface OpenMakeupOptions {
   aiColor?: AiColorProvider;
   /** Notified when the tracker stably detects a face or loses it. */
   onFaceTrackingChange?: (detected: boolean) => void;
+  /** Notified when the WebGL context is lost, restored, or cannot be restored. */
+  onWebGLContextChange?: (state: 'lost' | 'restored' | 'restore-failed') => void;
 }
 
 /** Lowest allowed face-morph influence weight for SDK and UI controls. */
@@ -143,6 +145,13 @@ export class OpenMakeup {
   /** Toggle the background blur layer. */
   setBlur(on: boolean): void;
 
+  /** Current camera direction requested by the engine. */
+  readonly cameraFacingMode: 'user' | 'environment';
+  /** Whether media APIs expose camera-facing constraints in this runtime. */
+  canSwitchCamera(): boolean;
+  /** Switch between front/user and rear/environment cameras, restoring the old camera if the switch fails. */
+  switchCamera(facingMode: 'user' | 'environment'): Promise<OpenMakeup>;
+
   /** Start the render loop / camera and resolve when the camera start operation completes. */
   start(): Promise<OpenMakeup>;
 
@@ -197,6 +206,9 @@ export class MakeupEngine {
   constructor(options: Record<string, unknown>);
   /** Global multiplier for reshape strength (default 1). */
   morphGain: number;
+  readonly cameraFacingMode: 'user' | 'environment';
+  canSwitchCamera(): boolean;
+  switchCamera(facingMode: 'user' | 'environment'): Promise<'user' | 'environment'>;
   init(): Promise<void>;
   start(): Promise<MakeupEngine>;
   stop(): void;
