@@ -2,7 +2,9 @@
 
 **Last updated:** 2026-10-23  
 **Stage 5 implementation revision:** `7113616871ef499bf23d8010ece00a8e7c3bd361`  
-**Latest implementation CI:** [Run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613) — the run is validating camera-switch rollback recovery plus the 65-test suite, TypeScript type-check, web bundle, production/full dependency audit, debug and unsigned release APKs, version metadata, and artifact checksums.  
+**Latest implementation CI:** [Run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613) — **65 tests passed, 0 failed**; TypeScript check, Vite build, Android asset packaging, full and production dependency audits, Gradle debug/unsigned-release builds, metadata/checksum checks and both artifact uploads passed.  
+**Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613/artifacts/12463528614) — ZIP 14,959,772 bytes; artifact ZIP digest `sha256:8ead9b71abd4127ebcbb3475ada3d7e2f9b8077974a5b93d55caacbd029d4103`.  
+**Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613/artifacts/12463837776) — ZIP 13,621,314 bytes; artifact ZIP digest `sha256:e86999c625897305203b675ab0efa70dbb53dd9d45710f58bdc6de9a72fa6ec6`. It includes APK SHA-256 sums, full audit report, lockfile and release notes.  
 **Current verified release line:** Android versionName `1.5.0`, versionCode `6`, application ID `com.magd.openmakeup`, minSdk `23`.  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
 **Related pull request:** [#3 — Arabic-first mobile UI, fullscreen preview, and camera recovery](https://github.com/majd7772233-a11y/OpenMakeup/pull/3) — open and unmerged.  
@@ -247,7 +249,7 @@ Acceptance criteria status:
 
 **Status:** Stage 5 source implementation and CI/release-candidate pipeline are delivered. **Physical-device compatibility, camera-switch behavior, and sustained thermal/performance measurement remain unverified**, so a production-release readiness claim is not made.  
 **Implementation revision under final CI:** `7113616871ef499bf23d8010ece00a8e7c3bd361`  
-**CI run:** [39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613).  
+**CI run:** [39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613) — **65/65 tests passed**, both audits reported zero vulnerabilities, and both APK artifacts uploaded.  
 **Release identity:** Android `1.5.0` / versionCode `6`; application ID and minSdk preserved.
 
 #### Delivered
@@ -262,7 +264,7 @@ Acceptance criteria status:
 
 #### Automated verification
 
-- The successful Stage-5 pipeline on the preceding implementation revision passed **65 tests, 0 failures**, SDK type-check, web build, Android asset packaging, Gradle debug/release builds, version metadata checks, SHA-256 generation and both artifact uploads. See [run 39859079525](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39859079525). The current final recovery/test revision is being checked in [run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613).
+- The final camera-rollback recovery and expanded assertions passed in [run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613): **65 tests, 0 failures**, SDK type-check, web build, Android asset packaging, Gradle debug/release builds, version metadata, SHA-256 generation and both artifact uploads. An earlier full pipeline also passed on [run 39859079525](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39859079525).
 - Both the full audit (including development tooling) and `npm audit --omit=dev --audit-level=high` reported **0 vulnerabilities** in the validated report.
 - Artifact names: `Open-Makeup-debug-apk` and `Open-Makeup-release-candidate`. The latter contains the unsigned APK, `APK-SHA256SUMS.txt`, `RELEASE_NOTES.md`, full npm audit report and lockfile.
 - An unsigned release APK must be signed with the project owner's release key before distribution. CI does not sign or invent a release key.
@@ -290,7 +292,7 @@ The matrix above is a **test plan**, not a record of tested devices. Record devi
 - [ ] Sustained performance/thermal impact measured on a defined physical device matrix.
 - [ ] Physical portrait/landscape, capture, accessibility, permission, gallery/share and Android 6/7 compatibility checks recorded before a production release.
 
-## 7. Project-Wide Quality Gates## 7. Project-Wide Quality Gates
+## 7. Project-Wide Quality Gates
 
 For every stage:
 - Inspect affected files and callers; successful compilation is not evidence of UI correctness.

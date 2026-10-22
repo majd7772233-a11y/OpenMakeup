@@ -137,7 +137,7 @@ const mk = new OpenMakeup(options);
 |---|---|
 | `await mk.init(onReady?)` | Boot the engine, load assets, start the camera. |
 | `mk.canSwitchCamera()` | Report whether camera-facing constraints appear available in this runtime. The actual switch is still verified at runtime. |
-| `await mk.switchCamera('user' \\| 'environment')` | Switch front/rear camera, wait for fresh frames and attempt to restore the prior camera if switching fails. Call after `init()`. |
+| `await mk.switchCamera('user' \| 'environment')` | Switch front/rear camera, wait for fresh frames and attempt to restore the prior camera if switching fails. Call after `init()`. |
 | `mk.cameraFacingMode` | Read the current/requested facing mode (`user` or `environment`). |
 | `await mk.apply(category, opts)` | Apply/update a layer: `{ color, finish, pattern, intensity }`; intensity is 0–1 and defaults to 1. |
 | `mk.clear(category)` | Remove one makeup layer. |
