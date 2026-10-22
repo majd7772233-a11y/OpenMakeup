@@ -177,7 +177,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - OpenMakeup.apply(category, { intensity }) validates finite intensity 0–1 (default 1), forwards it to MakeupEngine.setIntensity and returns it in the applied result. The engine requires a real uIntensity uniform mapped to foundation, blush, lipstick, eyeshadow, eyeliner and mascara; all six fragment shaders use it to scale effect alpha.
 - A per-layer category/color/intensity/finish editor has Arabic/English labels and disables finish for categories without finish support. Before/after hides the makeup renderer without changing the selected look.
 - Capture renders a fresh scene and exports a capped-size mirrored PNG preview. Android save uses MediaStore on Android Q+ and permission-gated Pictures storage on API 23–28. Android sharing writes to app cache and opens an explicit FileProvider ACTION_SEND chooser. Browser saves download the photo; file sharing uses Web Share when available, with a download fallback.
-- Custom looks use the openMakeupCustomLooksV1 schema, max 100 records and names up to 40 characters. Studio sessions migrate the previous unversioned schema. Corrupt records are isolated, recognized future schemas are not overwritten, and failed save/delete attempts roll back in-memory changes.
+- Custom looks use the openMakeupCustomLooksV1 schema, max 100 records and names up to 40 characters. Studio sessions migrate the previous unversioned schema. Corrupt records are isolated, recognized future schemas are not overwritten, and failed save/delete attempts roll back in-memory changes. A Stage-4 audit also fixed duplicate-name detection to collapse repeated whitespace before case-insensitive comparison.
 - Undo/redo stores up to 50 snapshots and restores makeup/morph/toggles together, reverting when applying a snapshot fails. Stage-4 controls participate in camera lifecycle disable/re-enable handling.
 - preserveDrawingBuffer is enabled for photo capture and may impose GPU/memory cost. Measure sustained impact on real devices; CI cannot validate performance.
 
@@ -209,7 +209,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 1. Read both project memory files.
 2. Fetch branch head and latest GitHub Actions run.
 3. Check `npm test`, type-check, Vite bundle, APK build and artifact upload.
-4. Stage 4 implementation and automated CI are complete on 96020600bcb3c72e3681470435bf3d5a0769bc70; run 39853574683 passed 50 tests and the full APK pipeline.
+4. Stage 4 implementation and automated CI are complete on 96020600bcb3c72e3681470435bf3d5a0769bc70; run 39853574683 passed 51 tests and the full APK pipeline.
 5. Stage 5 is the next implementation stage.
 6. The consolidated physical Android 6/7 regression for Stages 1–4 has **not been performed** because no physical device is attached to this connector session. Do not claim a device pass; run and document the full matrix before release/closing the hardware gate.
 7. Before any further work, inspect the latest branch head and CI. Keep PR #3 open and unmerged unless the user separately requests merging.
