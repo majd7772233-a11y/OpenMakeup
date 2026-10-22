@@ -306,7 +306,7 @@ For every stage:
 ## 8. Current Operational State
 
 - Current work remains on `feat/open-makeup-arabic-mobile-lifecycle`; PR #3 is open and unmerged.
-- Stage 5 implementation revision under final CI: `64ae1eb7297e305ec458107996b9bb9123f3bbfc`; [run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613) is the current successful camera-rollback recovery / updated-test run 39866096959.
+- Stage 5 implementation revision under final CI: `64ae1eb7297e305ec458107996b9bb9123f3bbfc`; [run 39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959) is the latest successful camera-rollback recovery / expanded-test run.
 - A preceding full Stage-5 run, [39859079525](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39859079525), passed **65 tests, 0 failures**, type-check, Vite build, Android asset packaging, Gradle debug and unsigned release APK builds, version validation, checksums and both artifact uploads.
 - The full dependency audit (including development tools) and production-only audit each reported **0 vulnerabilities** in run 39859079525. The new workflow preserves `npm-audit-full.json`, `package-lock.json`, `RELEASE_NOTES.md` and APK checksums in the release-candidate artifact.
 - Android version is `1.5.0` / code 6; package ID `com.magd.openmakeup` and minimum SDK 23 remain unchanged.
