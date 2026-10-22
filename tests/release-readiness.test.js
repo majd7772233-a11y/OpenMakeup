@@ -15,7 +15,7 @@ function localeHas(language, key) {
   const start = locales.indexOf('  ' + language + ': {');
   const next = language === 'ar' ? locales.indexOf('  en: {', start) : locales.indexOf('\n  }\n};', start);
   const section = locales.slice(start, next < 0 ? locales.length : next);
-  return new RegExp('(?:^|\n)\s*' + key + '\s*:').test(section);
+  return section.includes(key + ':');
 }
 
 test('release candidate Android identity and notes agree', () => {
