@@ -6,7 +6,7 @@ import { normalizeStudioState, emptyStudioState, StudioHistory, createCustomLook
 test('legacy sessions migrate into a versioned and defensively normalized schema', () => {
   const state = normalizeStudioState(JSON.stringify({
     makeup: { lipstick: { color: '#A12', finish: 'glossy', intensity: 0.42 },
-      unknownLayer: { color: '#000000' }, foundation: { color: 'bad', intensity: 9 },
+      unknownLayer: { color: '#000000' }, foundation: { color: 'not-a-color', intensity: 9 },
       mascara: { pattern: 1, finish: 'glitter' } },
     morphs: { noseSlim: 0.4, bogus: 1, jawWide: 50, cheeks: Infinity }, wireframe: true, blur: false, activeLook: 'rose',
   }));

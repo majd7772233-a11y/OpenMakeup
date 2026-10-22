@@ -251,6 +251,7 @@ test('SDK accepts an explicit listed pattern ID and rejects unknown IDs', async 
   const patternCalls = [];
   sdk.engine.setPattern = async (...args) => { patternCalls.push(args); return true; };
   sdk.engine.setAR = () => true;
+  sdk.engine.setIntensity = () => 1;
   const selected = manifest.categories.eyeshadow[2];
   const result = await sdk.apply('eyeshadow', { patternId: selected.id });
   assert.deepEqual(patternCalls, [['eyeshadow', selected.id]]);
@@ -265,6 +266,7 @@ test('SDK apply restores a supported category default pattern when omitted', asy
   let patternCall;
   sdk.engine.setPattern = async (...args) => { patternCall = args; };
   sdk.engine.setAR = () => true;
+  sdk.engine.setIntensity = () => 1;
   const result = await sdk.apply('blush', { color: '#123456' });
   assert.deepEqual(patternCall, ['blush', null]);
   assert.equal(result.pattern, null);
@@ -307,6 +309,7 @@ test('category configuration maps every public category to a live engine layer',
   const activations = [];
   const textureResets = [];
   sdk.engine.setAR = (category, color, finish) => { activations.push({ category, color, finish }); };
+  sdk.engine.setIntensity = () => 1;
   sdk.engine.setPattern = async (category, id) => { textureResets.push([category, id]); };
 
   for (const category of Object.keys(CATEGORIES)) await sdk.apply(category);
@@ -393,7 +396,8 @@ test('camera uniforms referenced by shaders exist and receive runtime updates', 
 test('normal UI uses only friendly morph controls, not raw GLB target names', () => {
   const mainSource = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
   assert.match(mainSource, /for \(const \[name, config\] of Object\.entries\(MORPH_CONTROLS \|\| \{\}\)\)/);
-  assert.match(mainSource, /validMorphs\.has\(name\)/);
+  const stateSource = readFileSync(new URL('../src/ui/studio-state.js', import.meta.url), 'utf8');
+  assert.match(stateSource, /MORPH_NAMES\.has\(name\)/);
   assert.doesNotMatch(mainSource, /makeSlider\(item \? item\.name : target/);
 });
 
