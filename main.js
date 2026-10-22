@@ -22,6 +22,8 @@ let isOriginalPreview = false;
 let lastCaptureDataUrl = null;
 let isApplyingHistory = false;
 let morphHistoryBefore = null;
+let sessionStateWriteBlocked = false;
+let customLooksWriteBlocked = false;
 
 function createEngine() {
   return new OpenMakeup({
@@ -48,8 +50,16 @@ const DEFAULT_LAYER_OPTIONS = {
 const FINISH_CATEGORIES = new Set(['lipstick', 'eyeshadow', 'blush', 'foundation']);
 
 function readSessionState() {
-  try { return normalizeStudioState(localStorage.getItem(SESSION_KEY)); }
-  catch (_) { return normalizeStudioState(null); }
+  let raw = null;
+  try { raw = localStorage.getItem(SESSION_KEY); } catch (_) { return normalizeStudioState(null); }
+  try { return normalizeStudioState(raw); }
+  catch (error) {
+    if (/Unsupported Open Makeup studio-state schema version/i.test(String(error && error.message))) {
+      sessionStateWriteBlocked = true;
+      console.warn('A newer studio-state schema was found; preserving it without overwriting.');
+    } else console.warn('Stored studio state was invalid; using safe defaults.', error);
+    return normalizeStudioState(null);
+  }
 }
 const sessionState = readSessionState();
 const studioHistory = new StudioHistory(50);
@@ -59,8 +69,10 @@ function studioStateChanged(before, after) { return JSON.stringify(before) !== J
 
 
 function persistSessionState() {
+  if (sessionStateWriteBlocked) return false;
   sessionState.schemaVersion = 1;
-  try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessionState)); } catch (_) {}
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessionState)); return true; }
+  catch (_) { return false; }
 }
 
 function updateLayerButtonStates() {
@@ -457,7 +469,9 @@ async function startEngine() {
     engineReady = true;
     setTrackingState(mk.engine && mk.engine._reportedFaceTrackingState === false ? 'noFace' : (mk.engine && mk.engine._faceVisible ? 'detected' : 'waiting'));
     actionButtons.forEach((button) => { button.disabled = false; });
-    if (restoreErrors.length) {
+    if (sessionStateWriteBlocked || customLooksWriteBlocked) {
+      setStatusKey('statusStoredSchemaUnsupported', 'error');
+    } else if (restoreErrors.length) {
       console.warn('Session restore failures:', restoreErrors);
       setStatus(t('statusSessionRestoreWarning', { count: restoreErrors.length }), 'error');
     } else {
@@ -532,11 +546,27 @@ $('apply-layer-settings').addEventListener('click', () => runAction('statusLayer
   await applyLayer(category, options);
 }));
 function readStoredCustomLooks() {
-  try { return parseCustomLooks(localStorage.getItem(CUSTOM_LOOKS_KEY)); } catch (_) { return []; }
+  let raw;
+  try { raw = localStorage.getItem(CUSTOM_LOOKS_KEY); } catch (_) { return []; }
+  if (!raw) return [];
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (_) { return []; }
+  if (parsed && Number.isFinite(Number(parsed.version)) && Number(parsed.version) > CUSTOM_LOOKS_VERSION) {
+    customLooksWriteBlocked = true;
+    console.warn('A newer custom-look schema was found; preserving it without overwriting.');
+    return [];
+  }
+  return parseCustomLooks(parsed);
 }
 function persistCustomLooks() {
-  try { localStorage.setItem(CUSTOM_LOOKS_KEY, JSON.stringify({ version: CUSTOM_LOOKS_VERSION, looks: customLooks })); }
-  catch (_) { setStatusKey('statusSaveFailure', 'error'); }
+  if (customLooksWriteBlocked) { setStatusKey('statusStoredSchemaUnsupported', 'error'); return false; }
+  try {
+    localStorage.setItem(CUSTOM_LOOKS_KEY, JSON.stringify({ version: CUSTOM_LOOKS_VERSION, looks: customLooks }));
+    return true;
+  } catch (_) {
+    setStatusKey('statusSaveFailure', 'error');
+    return false;
+  }
 }
 function renderCustomLooks() {
   const select = $('custom-look-select'); if (!select) return;
@@ -550,6 +580,7 @@ function renderCustomLooks() {
   $('load-custom-look').disabled = customLooks.length === 0; $('delete-custom-look').disabled = customLooks.length === 0;
 }
 $('save-custom-look').addEventListener('click', () => {
+  if (customLooksWriteBlocked) { setStatusKey('statusStoredSchemaUnsupported', 'error'); return; }
   if (!engineReady) { setStatusKey('statusWaiting', 'error'); return; }
   const name = $('custom-look-name').value.trim();
   if (!name) { setStatusKey('statusCustomLookNameRequired', 'error'); $('custom-look-name').focus(); return; }
@@ -559,8 +590,10 @@ $('save-custom-look').addEventListener('click', () => {
   try {
     const snapshot = getStudioSnapshot(); snapshot.activeLook = null;
     const look = createCustomLook(name, snapshot);
+    const previousLooks = customLooks;
     customLooks = [...customLooks, look].slice(-100);
-    persistCustomLooks(); renderCustomLooks(); $('custom-look-select').value = look.id; $('custom-look-name').value = '';
+    if (!persistCustomLooks()) { customLooks = previousLooks; renderCustomLooks(); return; }
+    renderCustomLooks(); $('custom-look-select').value = look.id; $('custom-look-name').value = '';
     setStatusKey('statusCustomLookSaved', 'success');
   } catch (error) { console.error('Could not save custom look:', error); setStatusKey('statusSaveFailure', 'error'); }
 });
@@ -573,7 +606,10 @@ $('delete-custom-look').addEventListener('click', () => {
   const look = customLooks.find((item) => item.id === $('custom-look-select').value);
   if (!look) { setStatusKey('statusCustomLookSelect', 'error'); return; }
   if (!window.confirm(t('confirmDeleteCustomLook', { name: look.name }))) return;
-  customLooks = customLooks.filter((item) => item.id !== look.id); persistCustomLooks(); renderCustomLooks();
+  const previousLooks = customLooks;
+  customLooks = customLooks.filter((item) => item.id !== look.id);
+  if (!persistCustomLooks()) { customLooks = previousLooks; renderCustomLooks(); return; }
+  renderCustomLooks();
   setStatusKey('statusCustomLookDeleted', 'success');
 });
 $('undo-action').addEventListener('click', async () => {

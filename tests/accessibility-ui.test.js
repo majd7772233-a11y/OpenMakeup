@@ -87,3 +87,29 @@ test('face tracking callback emits transitions once and isolates consumer callba
   engine.onFaceTrackingChange = () => { throw new Error('consumer callback'); };
   assert.doesNotThrow(() => engine._notifyFaceTrackingState(true));
 });
+
+
+test('stage-4 personalization, capture and history controls have accessible hooks', () => {
+  for (const id of ['personalization-panel','editor-category','editor-color','layer-intensity','layer-finish',
+    'apply-layer-settings','compare-toggle','capture-photo','save-photo','share-photo','capture-thumbnail',
+    'custom-looks-panel','custom-look-name','custom-look-select','save-custom-look','load-custom-look',
+    'delete-custom-look','undo-action','redo-action']) {
+    assert.match(html, new RegExp('id="' + id + '"'));
+  }
+  assert.match(html, /id="compare-toggle"[^>]*aria-pressed="false"/);
+  assert.match(html, /id="layer-intensity"[^>]*type="range"[^>]*min="0"[^>]*max="1"/);
+  assert.match(main, /renderer\.render\(mk\.engine\.scene, mk\.engine\.camera3D\)/);
+  assert.match(main, /context\.scale\(-1, 1\)/);
+  assert.match(main, /window\.OpenMakeupBridge/);
+  assert.match(main, /navigator\.share/);
+  assert.match(main, /studioHistory\.undo\(\)/);
+  assert.match(main, /studioHistory\.redo\(\)/);
+});
+
+test('future persistence schemas are preserved instead of overwritten', () => {
+  assert.match(main, /sessionStateWriteBlocked\) return false/);
+  assert.match(main, /customLooksWriteBlocked\) \{ setStatusKey\('statusStoredSchemaUnsupported'/);
+  assert.match(main, /Unsupported Open Makeup studio-state schema version/i);
+  assert.match(main, /Number\(parsed\.version\) > CUSTOM_LOOKS_VERSION/);
+  assert.match(main, /if \(!persistCustomLooks\(\)\) \{ customLooks = previousLooks; renderCustomLooks\(\); return; \}/);
+});
