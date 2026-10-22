@@ -61,7 +61,7 @@ test('About dialog traps focus, restores its opener and handles Escape/Android B
   assert.match(main, /function trapAboutFocus\(event\)/);
   assert.match(main, /event\.shiftKey/);
   assert.match(main, /function closeAbout\(\)[\s\S]*?target\.focus\(\)/);
-  assert.match(main, /function handleAndroidBack/);
+  assert.match(main, /window\.handleAndroidBack = \(\) =>/);
   assert.match(main, /if \(event\.key === 'Escape'\)/);
 });
 
