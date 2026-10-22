@@ -26,6 +26,11 @@ jobs:
       - name: Install web dependencies and synchronize the existing lockfile
         run: npm install
 
+      - name: Report full dependency audit (including development tooling)
+        run: |
+          npm audit --json > npm-audit-full.json || true
+          node --input-type=commonjs -e "const fs=require('node:fs'); try { const r=JSON.parse(fs.readFileSync('npm-audit-full.json','utf8')); const v=r.metadata?.vulnerabilities || {}; console.log('Full dependency audit summary:', JSON.stringify(v)); for (const [name,item] of Object.entries(r.vulnerabilities || {})) if (['high','critical'].includes(item.severity)) console.log('HIGH/CRITICAL AUDIT:', name, JSON.stringify({severity:item.severity,range:item.range,fixAvailable:item.fixAvailable,via:item.via})); } catch (e) { console.log('Full dependency audit report unavailable or unreadable:', e.message); }"
+
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
@@ -81,5 +86,6 @@ jobs:
             android/app/build/outputs/apk/release/app-release-unsigned.apk
             android/app/build/outputs/apk/APK-SHA256SUMS.txt
             RELEASE_NOTES.md
+            npm-audit-full.json
           if-no-files-found: error
           retention-days: 14
