@@ -270,6 +270,7 @@ export class MakeupEngine {
             canvas: this.renderCanvas,
             alpha: true,
             antialias: true,
+            preserveDrawingBuffer: true,
         });
         this.renderer.setPixelRatio(window.devicePixelRatio);
 
