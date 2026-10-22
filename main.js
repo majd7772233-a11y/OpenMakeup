@@ -579,7 +579,7 @@ async function refreshCameraSwitchAvailability() {
   try {
     const supported = !!(mk && typeof mk.canSwitchCamera === 'function' && mk.canSwitchCamera());
     const count = await countVideoInputDevices(typeof navigator !== 'undefined' ? navigator.mediaDevices : null);
-    cameraSwitchSupported = supported && (count == null || count === 0 || count >= 2);
+    cameraSwitchSupported = supported && (count == null || count >= 2);
   } catch (error) {
     console.warn('Could not query camera-switch capabilities:', error);
     cameraSwitchSupported = false;
