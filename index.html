@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#100d18" />
+  <meta name="description" content="استوديو مكياج افتراضي يعمل محليًا مع معاينة مباشرة للكاميرا وإطلالات قابلة للتجربة." />
   <meta name="color-scheme" content="dark" />
   <title>Open Makeup — مكياجي</title>
   <script src="./mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -53,31 +54,75 @@
     @media(max-width:380px){body{padding-inline:9px}.topbar{gap:6px}.brand-mark{width:39px;height:39px;border-radius:14px}.brand h1{font-size:20px}.tagline{font-size:10px}.top-actions{gap:5px}.lang-btn{padding:0 9px}.icon-btn{width:38px;height:38px}.preview-card{padding:6px}#stage{min-height:190px;border-radius:16px}.panel{padding:12px}.makeup-grid{gap:6px}.makeup-btn{min-height:68px}.about-card{padding:16px}.about-grid{gap:7px}.about-tile{padding:10px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
     @keyframes page-in{from{opacity:0}to{opacity:1}}@keyframes float-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes fade-in{from{opacity:0}to{opacity:1}}@keyframes about-in{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes tile-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%,100%{box-shadow:0 0 0 4px #ff689f20}50%{box-shadow:0 0 0 7px #ff689f0b}}@keyframes logo-glow{0%,100%{box-shadow:0 7px 24px #d94c8540}50%{box-shadow:0 8px 34px #b078ff7a}}
+    .skip-link{position:absolute;z-index:200;top:8px;inset-inline-start:8px;transform:translateY(-160%);padding:12px 16px;border-radius:12px;background:#fff0f6;color:#23101b;font-weight:800;text-decoration:none;box-shadow:0 8px 24px #0008}
+    .skip-link:focus{transform:translateY(0)}
+    button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #ffd1e4;outline-offset:3px}
+    .icon-btn,.lang-btn,.secondary,.primary,.close-btn{min-height:44px}
+    .icon-btn{min-width:44px}
+    .lang-btn,.secondary,.primary{padding-block:10px}
+    .tracking-chip{position:absolute;z-index:3;inset-inline-start:10px;bottom:10px;display:flex;align-items:center;gap:8px;max-width:calc(100% - 20px);padding:8px 11px;border:1px solid #ffffff2e;border-radius:13px;background:#100d18e8;color:#f7eaf3;font-size:12px;line-height:1.5;backdrop-filter:blur(12px);box-shadow:0 5px 18px #0005}
+    .tracking-indicator{width:8px;height:8px;flex:0 0 auto;border-radius:50%;background:#f0ba70;box-shadow:0 0 0 4px #f0ba701c}
+    .tracking-chip[data-state="detected"] .tracking-indicator{background:#83e5b0;box-shadow:0 0 0 4px #83e5b020}
+    .tracking-chip[data-state="noFace"]{border-color:#f0ba704d;color:#fff0d2}
+    .tracking-chip[data-state="detected"]{border-color:#83e5b044;color:#d1f7e2}
+    #status-text{min-width:0;overflow-wrap:anywhere}
+    .advanced-panel{padding:0;overflow:hidden}
+    .advanced-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:72px;padding:15px;list-style:none;cursor:pointer;touch-action:manipulation}
+    .advanced-summary::-webkit-details-marker{display:none}
+    .advanced-summary-copy{display:flex;align-items:center;gap:12px;min-width:0}
+    .advanced-badge{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;border-radius:14px;background:linear-gradient(145deg,#e85d9c30,#8863ef35);border:1px solid #ffffff1a;font-size:20px}
+    .advanced-summary-text{min-width:0}
+    .advanced-title{display:block;font-size:15px;font-weight:800;line-height:1.4}
+    .advanced-chevron{font-size:22px;flex:0 0 auto;transition:transform .18s ease;color:#ffe0ef}
+    .advanced-panel[open] .advanced-chevron{transform:rotate(180deg)}
+    .advanced-content{padding:0 15px 16px;border-top:1px solid #ffffff13}
+    .advanced-content .panel-head{margin-top:14px}
+    #morph-panel{max-height:none;overflow:visible;padding-block:3px 8px}
+    .slider{min-height:54px;grid-template-columns:minmax(84px,1fr) minmax(100px,1.35fr) 42px;font-size:12px}
+    .slider input{min-height:36px;padding-block:6px}
+    .slider-name i{font-size:11px;line-height:1.4;color:#c7b8ce}
+    .switch{min-height:44px;font-size:12px;flex:1 1 145px}
+    .switch input{width:20px;height:20px;flex:0 0 auto}
+    .look,.makeup-btn,.quick-actions button,.about-actions button,#camera-retry{min-height:44px}
+    .makeup-btn{font-size:12px}
+    .hint,.panel-subtitle{color:#d0c2d7}
+    .footer{color:#b5a7bd;font-size:11px}
+    .about-tile p{color:#d3c7da;font-size:11px}
+    .eyebrow{color:#f0c8df}
+    .about-footer{color:#c0b1c8;font-size:11px}
+    body.modal-open{overflow:hidden}
+    .about-card:focus{outline:none}
+    #about-modal[aria-hidden="true"]{visibility:hidden;pointer-events:none}
+    #about-modal[aria-hidden="false"]{visibility:visible;pointer-events:auto}
+    @media(max-width:380px){.advanced-summary{padding:13px}.advanced-content{padding:0 12px 13px}.slider{grid-template-columns:minmax(78px,.85fr) minmax(85px,1.3fr) 40px;gap:6px}.tracking-chip{font-size:11px;max-width:calc(100% - 16px);inset-inline-start:8px;bottom:8px}}
+    @media(max-width:330px){.top-actions{gap:4px}.lang-btn{font-size:11px;padding-inline:7px}.brand-mark{width:36px;height:36px}.brand h1{font-size:18px}.looks{gap:5px}.look{font-size:11px}.makeup-grid{gap:5px}.makeup-btn{font-size:11px}}
+    @media(orientation:landscape) and (max-height:520px) and (max-width:900px){body{padding-top:calc(5px + var(--safe-top));padding-bottom:calc(8px + var(--safe-bottom))}.app{gap:8px}.studio{gap:8px}.preview-card{padding:6px}#stage{aspect-ratio:16/9;min-height:120px;max-height:54vh}.panel{padding:11px}.makeup-btn{min-height:54px}.advanced-summary{min-height:58px;padding:10px}}
   </style>
 </head>
 <body>
-  <main class="app">
+  <a class="skip-link" href="#daily-controls" data-i18n="skipToMakeup">انتقل مباشرة إلى المكياج</a>
+  <main class="app" id="app-main">
     <header class="topbar">
       <div class="brand"><div class="brand-mark" aria-hidden="true">✦</div><div><h1>Open Makeup</h1><div class="tagline" data-i18n="tagline">جمالك، بطريقتك</div></div></div>
-      <div class="top-actions"><button class="lang-btn" id="language-toggle" aria-label="Switch language">EN · English</button><button class="icon-btn" id="open-about" aria-label="عن التطبيق" aria-haspopup="dialog" aria-controls="about-modal">ⓘ</button></div>
+      <div class="top-actions"><button class="lang-btn" id="language-toggle" aria-label="Switch language">EN · English</button><button class="icon-btn" id="open-about" data-i18n-aria="openAbout" aria-label="عن التطبيق" aria-haspopup="dialog" aria-controls="about-modal" type="button">ⓘ</button></div>
     </header>
 
     <div class="studio">
       <section class="preview-card">
-        <div class="preview-head"><div class="preview-title"><span class="live-dot"></span><span data-i18n="livePreview">المعاينة المباشرة</span></div></div>
-        <div id="stage"><div class="stage-chip" data-i18n="studioChip">✦ استوديو الجمال المباشر</div><button class="secondary" id="fullscreen-preview" data-i18n-title="fullscreenTitle" title="تكبير المعاينة" aria-label="تكبير المعاينة">⛶</button><video id="video" autoplay playsinline muted></video><canvas id="renderCanvas"></canvas></div>
-        <div id="status" role="status" aria-live="polite"><span id="status-icon">✦</span><span id="status-text" data-i18n="statusLoading">جارٍ تجهيز الاستوديو...</span><button id="camera-retry" data-i18n="retryCamera" type="button" hidden>إعادة محاولة الكاميرا</button></div>
+        <div class="preview-head"><div class="preview-title"><span class="live-dot" aria-hidden="true"></span><span data-i18n="livePreview">المعاينة المباشرة</span></div></div>
+        <div id="stage" role="group" data-i18n-aria="livePreview" aria-label="معاينة الكاميرا"><div class="stage-chip" data-i18n="studioChip">✦ استوديو الجمال المباشر</div><div class="tracking-chip" id="tracking-state" data-state="waiting" role="status" aria-live="polite" aria-atomic="true" aria-label="جارٍ البحث عن الوجه"><span class="tracking-indicator" aria-hidden="true"></span><span id="tracking-text" data-i18n="trackingWaiting">جارٍ البحث عن الوجه...</span></div><button class="secondary" id="fullscreen-preview" data-i18n-title="fullscreenTitle" title="تكبير المعاينة" aria-label="تكبير المعاينة" aria-pressed="false" type="button">⛶</button><video id="video" autoplay playsinline muted aria-hidden="true"></video><canvas id="renderCanvas" aria-hidden="true"></canvas></div>
+        <div id="status" class="status-message"><span id="status-icon" aria-hidden="true">✦</span><span id="status-text" data-i18n="statusLoading" role="status" aria-live="polite" aria-atomic="true">جارٍ تجهيز الاستوديو...</span><button id="camera-retry" data-i18n="retryCamera" aria-describedby="status-text" type="button" hidden>إعادة محاولة الكاميرا</button></div>
       </section>
 
       <div class="controls-column">
-        <section class="panel">
-          <div class="panel-head"><div><h2 class="panel-title" data-i18n="looksTitle">إطلالات سريعة</h2><div class="panel-subtitle" data-i18n="looksSubtitle">اختاري ألوانك بلمسة واحدة</div></div><span aria-hidden="true">✧</span></div>
+        <section class="panel" id="daily-controls" aria-labelledby="looks-title">
+          <div class="panel-head"><div><h2 class="panel-title" id="looks-title" data-i18n="looksTitle">إطلالات سريعة</h2><div class="panel-subtitle" data-i18n="looksSubtitle">اختاري ألوانك بلمسة واحدة</div></div><span aria-hidden="true">✧</span></div>
           <div class="looks">
             <button class="look" id="look-rose" style="--dot:#e76c91"><span class="dot"></span><span data-i18n="rose">وردي</span></button>
             <button class="look" id="look-berry" style="--dot:#9c315f"><span class="dot"></span><span data-i18n="berry">توتي</span></button>
             <button class="look" id="look-nude" style="--dot:#bd927b"><span class="dot"></span><span data-i18n="nude">طبيعي</span></button>
           </div>
-          <div class="section-label" data-i18n="makeupTitle">مستحضرات التجميل</div>
+          <h3 class="section-label" id="makeup-title" data-i18n="makeupTitle">مستحضرات التجميل</h3>
           <div class="makeup-grid">
             <button class="makeup-btn" id="lipstick"><span class="emoji">💋</span><span data-i18n="lipstick">ملمع الشفاه</span></button>
             <button class="makeup-btn" id="eyeshadow"><span class="emoji">✨</span><span data-i18n="eyeshadow">ظلال لامعة</span></button>
@@ -86,24 +131,41 @@
             <button class="makeup-btn" id="foundation"><span class="emoji">🪞</span><span data-i18n="foundation">كريم الأساس</span></button>
             <button class="makeup-btn" id="mascara"><span class="emoji">🪄</span><span data-i18n="mascara">ماسكارا</span></button>
           </div>
-          <div class="quick-actions"><button class="secondary" id="clear" data-i18n="clear">مسح المكياج</button><button class="secondary" id="reset-morph" data-i18n="reset">إعادة ضبط الملامح</button></div>
+          <div class="quick-actions"><button class="secondary" id="clear" data-i18n="clear" type="button">مسح المكياج</button></div>
         </section>
 
-        <section class="panel">
-          <div class="panel-head"><div><h2 class="panel-title" data-i18n="sculptTitle">تعديل ملامح الوجه</h2><div class="panel-subtitle" data-i18n="sculptSubtitle">تحكم دقيق بالتغييرات</div></div><span aria-hidden="true">◈</span></div>
-          <div id="morph-panel"><p class="hint" data-i18n="morphLoading">جارٍ تحميل أدوات تعديل الوجه...</p></div>
-          <div class="switches"><label class="switch"><input type="checkbox" id="wireframe"><span data-i18n="wireframe">عرض الشبكة</span></label><label class="switch"><input type="checkbox" id="blur"><span data-i18n="blur">تنعيم ناعم</span></label></div>
-          <div class="privacy-note"><span>🔒</span><span data-i18n="privacy">تتم معالجة معاينة الكاميرا على جهازك. لا يرفع التطبيق بث الكاميرا إلى خادم.</span></div>
+        <details class="panel advanced-panel" id="advanced-controls">
+          <summary class="advanced-summary">
+            <span class="advanced-summary-copy">
+              <span class="advanced-badge" aria-hidden="true">◈</span>
+              <span class="advanced-summary-text">
+                <span class="advanced-title" data-i18n="advancedTitle">أدوات متقدمة</span>
+                <span class="panel-subtitle" data-i18n="advancedSubtitle">تشكيل الوجه وخيارات العرض</span>
+              </span>
+            </span>
+            <span class="advanced-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="advanced-content">
+            <div class="panel-head"><div><h2 class="panel-title" id="sculpt-title" data-i18n="sculptTitle">تعديل ملامح الوجه</h2><div class="panel-subtitle" data-i18n="sculptSubtitle">تحكم دقيق بالتغييرات</div></div></div>
+            <p class="hint" data-i18n="advancedHint">هذه الخيارات اختيارية؛ يمكنك تجربة المكياج دون تغيير ملامح الوجه.</p>
+            <div id="morph-panel" aria-labelledby="sculpt-title"><p class="hint" data-i18n="morphLoading">جارٍ تحميل أدوات تعديل الوجه...</p></div>
+            <div class="quick-actions"><button class="secondary" id="reset-morph" data-i18n="reset" type="button">إعادة ضبط الملامح</button></div>
+            <div class="switches"><label class="switch"><input type="checkbox" id="wireframe" /><span data-i18n="wireframe">عرض الشبكة</span></label><label class="switch"><input type="checkbox" id="blur" /><span data-i18n="blur">تنعيم ناعم</span></label></div>
+            <div class="privacy-note"><span aria-hidden="true">🔒</span><span data-i18n="privacy">تتم معالجة معاينة الكاميرا على جهازك. لا يرفع التطبيق بث الكاميرا إلى خادم.</span></div>
+          </div>
+        </details>
+
+
         </section>
       </div>
     </div>
     <footer class="footer" data-i18n="footer">Open Makeup · صُنع للإبداع ✦</footer>
   </main>
 
-  <div class="modal-backdrop" id="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-title" aria-hidden="true">
+  <div class="modal-backdrop" id="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-title" aria-describedby="about-intro" aria-hidden="true" tabindex="-1">
     <section class="about-card">
-      <div class="about-top"><div class="about-hero"><div class="about-logo" aria-hidden="true">✦</div><div><h2 class="about-title" id="about-title">Open Makeup</h2><p class="about-subtitle" data-i18n="aboutSubtitle">لمسة من السحر، بتقنيات مفتوحة المصدر.</p></div></div><button class="icon-btn close-btn" id="close-about" data-i18n-aria="closeAbout" aria-label="إغلاق">×</button></div>
-      <p class="about-copy" data-i18n="aboutIntro">استوديو تجميل افتراضي تفاعلي يتيح لك تجربة ألوان المكياج واستكشاف تعديل ملامح الوجه عبر الكاميرا، بواجهة زجاجية أنيقة.</p>
+      <div class="about-top"><div class="about-hero"><div class="about-logo" aria-hidden="true">✦</div><div><h2 class="about-title" id="about-title">Open Makeup</h2><p class="about-subtitle" data-i18n="aboutSubtitle">لمسة من السحر، بتقنيات مفتوحة المصدر.</p></div></div><button class="icon-btn close-btn" id="close-about" data-i18n-aria="closeAbout" aria-label="إغلاق" type="button">×</button></div>
+      <p class="about-copy" id="about-intro" data-i18n="aboutIntro">استوديو تجميل افتراضي تفاعلي يتيح لك تجربة ألوان المكياج واستكشاف تعديل ملامح الوجه عبر الكاميرا، بواجهة زجاجية أنيقة.</p>
       <div class="about-grid">
         <article class="about-tile"><strong>◉ MediaPipe Face Mesh</strong><p data-i18n="aboutMediaPipe">يتتبع نقاط الوجه داخل الصورة لتتحرك التأثيرات معه لحظيًا.</p></article>
         <article class="about-tile"><strong>✧ Three.js + WebGL</strong><p data-i18n="aboutWebGL">رسوم ثلاثية الأبعاد وتأثيرات تظليل تُعرض باستخدام معالج الرسوميات.</p></article>

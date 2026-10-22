@@ -1,5 +1,6 @@
 import { OpenMakeup, MORPH_CONTROLS, MORPH_WEIGHT_MIN, MORPH_WEIGHT_MAX } from './src/index.js';
 import { hasLiveCameraTrack, waitForCameraFrames } from './src/core/cameraReadiness.js';
+import { dictionaries, translate } from './src/ui/locales.js';
 
 const $ = (id) => document.getElementById(id);
 const statusText = $('status-text');
@@ -13,89 +14,12 @@ let isFullscreenPreview = false;
 let resumeInProgress = false;
 let hiddenAt = 0;
 let lastStatusKey = 'statusLoading';
-
-const dictionaries = {
-  ar: {
-    tagline:'جمالك، بطريقتك', livePreview:'المعاينة المباشرة', fullscreenTitle:'تكبير المعاينة إلى ملء الشاشة',
-    studioChip:'✦ استوديو الجمال المباشر', statusLoading:'جارٍ تجهيز الاستوديو...', looksTitle:'إطلالات سريعة',
-    looksSubtitle:'اختاري ألوانك بلمسة واحدة', rose:'وردي', berry:'توتي', nude:'طبيعي', makeupTitle:'مستحضرات التجميل',
-    lipstick:'ملمع الشفاه', eyeshadow:'ظلال لامعة', eyeline:'كحل العين', blush:'أحمر الخدود',
-    foundation:'كريم الأساس', mascara:'ماسكارا', clear:'مسح المكياج', reset:'إعادة ضبط الملامح',
-    sculptTitle:'تعديل ملامح الوجه', sculptSubtitle:'تحكم دقيق بالتغييرات', morphLoading:'جارٍ تحميل أدوات تعديل الوجه...',
-    wireframe:'عرض الشبكة', blur:'تنعيم ناعم', privacy:'تتم معالجة معاينة الكاميرا على جهازك. لا يرفع التطبيق بث الكاميرا إلى خادم.',
-    footer:'Open Makeup · صُنع للإبداع ✦', aboutSubtitle:'لمسة من السحر، بتقنيات مفتوحة المصدر.',
-    closeAbout:'إغلاق شاشة عن التطبيق', aboutIntro:'استوديو تجميل افتراضي تفاعلي يتيح لك تجربة ألوان المكياج واستكشاف تعديل ملامح الوجه عبر الكاميرا، بواجهة زجاجية أنيقة.',
-    aboutMediaPipe:'يتتبع نقاط الوجه داخل الصورة لتتحرك التأثيرات معه لحظيًا.',
-    aboutWebGL:'رسوم ثلاثية الأبعاد وتأثيرات تظليل تُعرض باستخدام معالج الرسوميات.',
-    aboutLocalTitle:'⌁ معالجة محلية', aboutLocal:'المعاينة تُعالج محليًا ضمن التطبيق، ويُطلب إذن الكاميرا من أندرويد.',
-    aboutAndroidTitle:'◇ أندرويد 6.0+', aboutAndroid:'مصمم لأندرويد 6.0 وما بعده، بحسب دعم WebView والرسوميات في الجهاز.',
-    creatorLabel:'تطوير', aboutDetails:'MediaPipe إطار مفتوح المصدر من Google لتقنيات الإدراك والتعلم الآلي. يستخدم التطبيق حل Face Mesh مع رسوم WebGL. قد تختلف النتائج بحسب الإضاءة والكاميرا وأداء الجهاز وإصدار Android System WebView.',
-    projectButton:'المشروع على GitHub ↗', contactButton:'تواصل مع المطوّر ↗', version:'Open Makeup · الإصدار 1.2.0',
-    aboutFooter:'للإبداع، لا للكمال.', statusWaiting:'محرك الوجه غير جاهز بعد. انتظر قليلًا من فضلك.',
-    statusActionError:'تعذّر تنفيذ الإجراء', statusReady:'الكاميرا تعمل والاستوديو جاهز. جرّب إطلالة.',
-    statusNoCamera:'المحرك جاهز. إذا لم تظهر المعاينة، تحقق من إذن الكاميرا وAndroid System WebView.',
-    statusEngineError:'تعذّر تشغيل محرك الوجه. تحقق من إذن الكاميرا ودعم WebGL وحدّث Android System WebView.',
-    statusStudio:'الاستوديو جاهز', statusRose:'تم تطبيق الإطلالة الوردية.', statusBerry:'تم تطبيق الإطلالة التوتية.',
-    statusNude:'تم تطبيق الإطلالة الطبيعية.', statusLipstick:'تم تطبيق ملمع الشفاه.', statusEyeshadow:'تم تطبيق ظلال العيون.',
-    statusEyeline:'تم تطبيق كحل العين.', statusBlush:'تم تطبيق أحمر الخدود.', statusFoundation:'تم تطبيق كريم الأساس.',
-    statusMascara:'تم تطبيق الماسكارا.', statusClear:'تم مسح المكياج.', statusReset:'تمت إعادة ضبط ملامح الوجه.',
-    statusWireframe:'تم تحديث عرض الشبكة.', statusBlur:'تم تحديث التنعيم.', statusErrorFallback:'حدث خطأ غير متوقع.',
-    statusFullscreen:'تم تفعيل المعاينة بملء الشاشة.', statusCameraResume:'جارٍ استئناف الكاميرا...',
-    statusCameraResumeError:'تعذّر استئناف الكاميرا. يمكنك إعادة المحاولة دون فقد الإطلالة.',
-    retryCamera:'إعادة محاولة الكاميرا',
-    statusSessionRestoreWarning:'عاد الاستوديو للعمل، لكن تعذّر استعادة بعض التأثيرات المحفوظة.',
-    fullscreenExit:'إنهاء ملء الشاشة',
-    morphFallback:'لا توجد أدوات لتعديل الوجه في النموذج المضمّن.', liftBrow:'رفع الحاجب', plumpLips:'امتلاء الشفاه',
-    plumpLipsVariant:'امتلاء الشفاه (بديل)', slimNose:'تنحيف الأنف', noseBridge:'تعديل جسر الأنف',
-    fullerCheeks:'امتلاء الخدين', jawAngle:'تحديد زاوية الفك', jawWide:'عرض الفك',
-    liftBrowAbout:'رفع الطرف الخارجي للحاجب', plumpLipsAbout:'زيادة امتلاء الشفاه',
-    plumpLipsVariantAbout:'نسخة بديلة لامتلاء الشفاه', slimNoseAbout:'تضييق الأنف', noseBridgeAbout:'تعديل المنطقة بين العينين',
-    fullerCheeksAbout:'إضافة امتلاء للخدين', jawAngleAbout:'إبراز زاوية الفك', jawWideAbout:'توسيع زاوية الفك',
-    advancedControl:'تحكم متقدم', switchLanguage:'EN · English'
-  },
-  en: {
-    tagline:'Your look, your rules', livePreview:'Live preview', fullscreenTitle:'Expand preview to full screen',
-    studioChip:'✦ LIVE BEAUTY STUDIO', statusLoading:'Preparing your studio...', looksTitle:'Quick looks',
-    looksSubtitle:'Try a color story in one tap', rose:'Rose', berry:'Berry', nude:'Nude', makeupTitle:'Makeup',
-    lipstick:'Lip gloss', eyeshadow:'Glitter shadow', eyeline:'Eyeliner', blush:'Blush',
-    foundation:'Foundation', mascara:'Mascara', clear:'Clear makeup', reset:'Reset face shape',
-    sculptTitle:'Face sculpt', sculptSubtitle:'Fine-tune your features', morphLoading:'Loading face controls...',
-    wireframe:'Mesh view', blur:'Soft focus', privacy:'Your camera preview is processed on this device. The app does not upload your camera feed to a server.',
-    footer:'Open Makeup · Made for creativity ✦', aboutSubtitle:'A little magic, powered by open technology.',
-    closeAbout:'Close About screen', aboutIntro:'An interactive virtual beauty studio to explore makeup colors and face-shaping controls through your camera, wrapped in a polished glass-inspired interface.',
-    aboutMediaPipe:'Tracks facial landmarks so makeup effects can follow your face in real time.',
-    aboutWebGL:'GPU-powered 3D rendering and shader effects create the virtual makeup layers.',
-    aboutLocalTitle:'⌁ On-device processing', aboutLocal:'The preview is processed locally in the app; Android asks for camera permission.',
-    aboutAndroidTitle:'◇ Android 6.0+', aboutAndroid:'Designed for Android 6.0 and newer, depending on device WebView and graphics support.',
-    creatorLabel:'Created with care by', aboutDetails:'MediaPipe is Google’s open-source framework for machine-learning perception. This app uses Face Mesh with WebGL rendering. Results vary with lighting, camera quality, device performance, and Android System WebView.',
-    projectButton:'View project on GitHub ↗', contactButton:'Contact the creator ↗', version:'Open Makeup · Version 1.2.0',
-    aboutFooter:'Made for creativity, not perfection.', statusWaiting:'The face engine is not ready yet. Please wait a moment.',
-    statusActionError:'Could not complete action', statusReady:'Camera is live and the studio is ready. Try a look.',
-    statusNoCamera:'Engine ready. If the preview is blank, check camera permission and Android System WebView.',
-    statusEngineError:'Could not start the face engine. Check camera permission, WebGL support, and Android System WebView.',
-    statusStudio:'Studio ready', statusRose:'Rose look applied.', statusBerry:'Berry look applied.',
-    statusNude:'Nude look applied.', statusLipstick:'Lip gloss applied.', statusEyeshadow:'Eyeshadow applied.',
-    statusEyeline:'Eyeliner applied.', statusBlush:'Blush applied.', statusFoundation:'Foundation applied.',
-    statusMascara:'Mascara applied.', statusClear:'Makeup cleared.', statusReset:'Face shape reset.',
-    statusWireframe:'Mesh view updated.', statusBlur:'Soft focus updated.', statusErrorFallback:'Something unexpected went wrong.',
-    statusFullscreen:'Full-screen preview enabled.', statusCameraResume:'Resuming camera...',
-    statusCameraResumeError:'Could not resume the camera. Retry without losing your saved look.',
-    retryCamera:'Retry camera',
-    statusSessionRestoreWarning:'The studio resumed, but some saved effects could not be restored.',
-    fullscreenExit:'Exit full screen',
-    morphFallback:'No face-shape controls were found in the bundled model.', liftBrow:'Brow lift', plumpLips:'Lip plump',
-    plumpLipsVariant:'Lip plump (variant)', slimNose:'Nose slim', noseBridge:'Nose bridge',
-    fullerCheeks:'Fuller cheeks', jawAngle:'Jaw angle', jawWide:'Jaw width',
-    liftBrowAbout:'Lift the outer brow corner', plumpLipsAbout:'Add fullness to the lips',
-    plumpLipsVariantAbout:'Alternative lip fullness control', slimNoseAbout:'Narrow the nose',
-    noseBridgeAbout:'Adjust the bridge between the eyes', fullerCheeksAbout:'Add fullness to the cheeks',
-    jawAngleAbout:'Define the jaw angle', jawWideAbout:'Widen the jaw angle',
-    advancedControl:'Advanced control', switchLanguage:'عربي · العربية'
-  }
-};
+let lastTrackingState = 'waiting';
+let aboutOpener = null;
 
 function createEngine() {
   return new OpenMakeup({
+    onFaceTrackingChange: (detected) => setTrackingState(detected ? 'detected' : 'noFace'),
     video: $('video'),
     renderCanvas: $('renderCanvas'),
     assetsBaseUrl: './assets',
@@ -203,7 +127,26 @@ async function restoreMakeupSnapshot(snapshot) {
   for (const [category, options] of Object.entries(snapshot)) await mk.apply(category, options || {});
 }
 
-function t(key) { return dictionaries[currentLanguage][key] || dictionaries.en[key] || key; }
+function t(key, values = {}) { return translate(currentLanguage, key, values); }
+
+function setTrackingState(state) {
+  lastTrackingState = ['waiting', 'noFace', 'detected'].includes(state) ? state : 'waiting';
+  const chip = $('tracking-state'), label = $('tracking-text');
+  if (!chip || !label) return;
+  const key = { waiting: 'trackingWaiting', noFace: 'trackingNoFace', detected: 'trackingDetected' }[lastTrackingState];
+  chip.dataset.state = lastTrackingState;
+  label.textContent = t(key);
+  chip.setAttribute('aria-label', t(key));
+}
+
+function describeError(error) {
+  const raw = [error && error.name, error && error.message, error].filter(Boolean).join(' ');
+  if (/NotAllowedError|PermissionDeniedError|permission denied|access denied|not allowed/i.test(raw)) return t('errorCameraPermission');
+  if (/timed?\s*out|timeout|no frames|frame progression/i.test(raw)) return t('errorCameraTimeout');
+  if (/webgl|graphics context|renderer.*(fail|create)|context lost/i.test(raw)) return t('errorWebGL');
+  if (/manifest|shader|texture|model|\.glb|asset|failed to fetch|http \d{3}/i.test(raw)) return t('errorAssets');
+  return t('errorGeneric');
+}
 
 function setStatus(message, kind = 'info') {
   if (message !== t(lastStatusKey)) lastStatusKey = null;
@@ -211,6 +154,7 @@ function setStatus(message, kind = 'info') {
   statusBox.classList.toggle('status-error', kind === 'error');
   statusBox.classList.toggle('status-success', kind === 'success');
   statusIcon.textContent = kind === 'error' ? '⚠' : kind === 'success' ? '✓' : '✦';
+  statusBox.setAttribute('aria-busy', String(['statusLoading', 'statusCameraResume'].includes(lastStatusKey)));
 }
 
 function setStatusKey(key, kind = 'info') { lastStatusKey = key; setStatus(t(key), kind); }
@@ -219,6 +163,9 @@ function applyLanguage(language) {
   currentLanguage = language === 'en' ? 'en' : 'ar';
   document.documentElement.lang = currentLanguage;
   document.documentElement.dir = currentLanguage === 'ar' ? 'rtl' : 'ltr';
+  document.title = t('documentTitle');
+  const description = document.querySelector('meta[name="description"]');
+  if (description) description.setAttribute('content', t('metaDescription'));
   document.querySelectorAll('[data-i18n]').forEach((element) => {
     const key = element.getAttribute('data-i18n');
     if (dictionaries[currentLanguage][key]) element.textContent = dictionaries[currentLanguage][key];
@@ -230,10 +177,11 @@ function applyLanguage(language) {
     element.setAttribute('aria-label', t(element.getAttribute('data-i18n-aria')));
   });
   $('language-toggle').textContent = t('switchLanguage');
-  $('language-toggle').setAttribute('aria-label', currentLanguage === 'ar' ? 'Switch to English' : 'التبديل إلى العربية');
+  $('language-toggle').setAttribute('aria-label', t('switchLanguageAria'));
   $('fullscreen-preview').setAttribute('aria-label', t(isFullscreenPreview ? 'fullscreenExit' : 'fullscreenTitle'));
   $('fullscreen-preview').title = t(isFullscreenPreview ? 'fullscreenExit' : 'fullscreenTitle');
   renderMorphLabels();
+  setTrackingState(lastTrackingState);
   const statusKind = statusBox.classList.contains('status-error') ? 'error' : statusBox.classList.contains('status-success') ? 'success' : 'info';
   if (lastStatusKey) setStatus(t(lastStatusKey), statusKind);
   else setStatus(t(statusKind === 'error' ? 'statusActionError' : statusKind === 'success' ? 'statusReady' : 'statusLoading'), statusKind);
@@ -257,7 +205,7 @@ async function runAction(labelKey, action) {
     return true;
   } catch (error) {
     console.error(error);
-    setStatus(t('statusActionError') + ' — ' + (error && error.message ? error.message : t('statusErrorFallback')), 'error');
+    setStatus(t('statusActionError') + ' — ' + describeError(error), 'error');
     return false;
   }
 }
@@ -292,15 +240,35 @@ async function applyLook({ name, lipstick, blush, shadow }) {
 
 function openAbout() {
   const modal = $('about-modal');
+  if (modal.classList.contains('open')) return;
+  aboutOpener = document.activeElement;
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
   $('close-about').focus();
 }
 function closeAbout() {
   const modal = $('about-modal');
+  if (!modal.classList.contains('open')) return;
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  $('open-about').focus();
+  document.body.classList.remove('modal-open');
+  const target = aboutOpener && typeof aboutOpener.focus === 'function' ? aboutOpener : $('open-about');
+  aboutOpener = null;
+  target.focus();
+}
+function trapAboutFocus(event) {
+  const modal = $('about-modal');
+  if (!modal.classList.contains('open') || event.key !== 'Tab') return;
+  const focusable = [...modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((element) => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
+  if (!focusable.length) { event.preventDefault(); modal.focus(); return; }
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (event.shiftKey && (document.activeElement === first || document.activeElement === modal)) {
+    event.preventDefault(); last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault(); first.focus();
+  }
 }
 $('open-about').addEventListener('click', openAbout);
 $('close-about').addEventListener('click', closeAbout);
@@ -308,10 +276,12 @@ $('about-modal').addEventListener('click', (event) => {
   if (event.target === $('about-modal')) closeAbout();
 });
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') {
-    if ($('about-modal').classList.contains('open')) closeAbout();
-    else if (isFullscreenPreview) exitFullscreenPreview();
+  if ($('about-modal').classList.contains('open')) {
+    if (event.key === 'Escape') { event.preventDefault(); closeAbout(); return; }
+    trapAboutFocus(event);
+    return;
   }
+  if (event.key === 'Escape' && isFullscreenPreview) { event.preventDefault(); exitFullscreenPreview(); }
 });
 $('about-source').addEventListener('click', () => { window.location.href = 'https://github.com/majd7772233-a11y/OpenMakeup'; });
 $('about-email').addEventListener('click', () => { window.location.href = 'mailto:majd7772233@gmail.com?subject=Open%20Makeup'; });
@@ -323,6 +293,7 @@ function enterFullscreenPreview() {
   document.body.classList.add('preview-fullscreen');
   $('fullscreen-preview').textContent = '⤢';
   $('fullscreen-preview').setAttribute('aria-label', t('fullscreenExit'));
+  $('fullscreen-preview').setAttribute('aria-pressed', 'true');
   $('fullscreen-preview').title = t('fullscreenExit');
   setStatusKey('statusFullscreen', 'success');
   try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (_) {}
@@ -338,6 +309,7 @@ function exitFullscreenPreview() {
   document.body.classList.remove('preview-fullscreen');
   $('fullscreen-preview').textContent = '⛶';
   $('fullscreen-preview').setAttribute('aria-label', t('fullscreenTitle'));
+  $('fullscreen-preview').setAttribute('aria-pressed', 'false');
   $('fullscreen-preview').title = t('fullscreenTitle');
   try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (_) {}
   if (window.mk && window.mk.engine && window.mk.engine._sizeToVideoBox) {
@@ -366,9 +338,11 @@ async function startEngine() {
     buildMorphSliders();
     const restoreErrors = await restoreSessionState();
     engineReady = true;
+    setTrackingState(mk.engine && mk.engine._reportedFaceTrackingState === false ? 'noFace' : (mk.engine && mk.engine._faceVisible ? 'detected' : 'waiting'));
     actionButtons.forEach((button) => { button.disabled = false; });
     if (restoreErrors.length) {
-      setStatus(t('statusSessionRestoreWarning') + ' ' + restoreErrors.join(' · '), 'error');
+      console.warn('Session restore failures:', restoreErrors);
+      setStatus(t('statusSessionRestoreWarning', { count: restoreErrors.length }), 'error');
     } else {
       setStatusKey('statusReady', 'success');
     }
@@ -383,7 +357,8 @@ async function startEngine() {
       $('video').srcObject = null;
     }
     actionButtons.forEach((button) => { button.disabled = true; });
-    setStatus(t('statusEngineError') + ' ' + (error && error.message ? error.message : t('statusErrorFallback')), 'error');
+    setTrackingState('waiting');
+    setStatus(t('statusEngineError') + ' ' + describeError(error), 'error');
     $('morph-panel').textContent = t('morphFallback');
     $('camera-retry').hidden = false;
     return false;
@@ -540,6 +515,7 @@ async function recoverCamera() {
   if (document.hidden || !engineReady || resumeInProgress) return false;
   resumeInProgress = true;
   hiddenAt = 0;
+  setTrackingState('waiting');
   actionButtons.forEach((button) => { button.disabled = true; });
   setStatusKey('statusCameraResume');
   try {
