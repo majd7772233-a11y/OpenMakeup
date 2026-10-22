@@ -1,9 +1,9 @@
 # Open Makeup — Project Roadmap
 
 **Last updated:** 2026-10-22  
-**Stage 4 code revision validated by CI:** defe336265a24f9720b6283c1bddfb6b749a195c  
-**CI run:** [39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915) — 50 tests passed, 0 failed; type-check, Vite build, Android asset packaging, debug APK build and artifact upload passed.  
-**APK artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915/artifacts/12456698785) — 14,952,872 bytes; SHA-256 295198706052fb40b8f5932d794ecece48e9efa218d8896e481665b035446d09.  
+**Stage 4 code revision validated by CI:** 96020600bcb3c72e3681470435bf3d5a0769bc70  
+**CI run:** [39853574683](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683) — 51 tests passed, 0 failed; type-check, Vite build, Android asset packaging, debug APK build and artifact upload passed.  
+**APK artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683/artifacts/12458157274) — 14,952,886 bytes; SHA-256 a64042d50bff5b7ca07cca91178268c57176ec38f921773011affb8b07f774fe.  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
 **Related pull request:** [#3 — Arabic-first mobile UI, fullscreen preview, and camera recovery](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
 **Engineering protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
@@ -202,9 +202,9 @@ Acceptance criteria:
 ### Stage 4 — Personalization, Color/Strength, Capture and History
 
 **Status:** Source implementation and automated CI complete. The consolidated physical-device matrix is **not yet performed**; this connector session has no attached Android 6/7 handset or configured physical-device runner. Hardware acceptance remains an explicit blocker, not a claimed pass.  
-**Code revision validated by CI:** defe336265a24f9720b6283c1bddfb6b749a195c  
-**CI run:** [39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915) — 50 tests passed, zero failed; type-check, Vite build, Android asset packaging, APK build and upload passed.  
-**APK artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915/artifacts/12456698785)
+**Code revision validated by CI:** 96020600bcb3c72e3681470435bf3d5a0769bc70  
+**CI run:** [39853574683](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683) — 51 tests passed, zero failed; type-check, Vite build, Android asset packaging, APK build and upload passed.  
+**APK artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683/artifacts/12458157274)
 
 #### Delivered
 
@@ -213,17 +213,17 @@ Acceptance criteria:
 3. **Original/applied comparison:** the control temporarily hides the rendered makeup canvas to expose the original camera preview beneath it. It does not clear or rewrite selected engine/session state.
 4. **Photo capture:** capture requests a fresh renderer frame and exports a mirrored PNG into a capped-size canvas, then shows a preview before save/share actions are enabled. preserveDrawingBuffer is enabled for capture; its sustained GPU/memory cost still needs target-device measurement.
 5. **Explicit saving and sharing:** browser mode downloads the PNG and uses Web Share files when available, with download fallback. Android saves through MediaStore on Android Q+ and permission-gated Pictures storage on Android 6–9; sharing uses an app-cache FileProvider URI and an explicit ACTION_SEND chooser. Captured images are not uploaded automatically.
-6. **Versioned local state and named looks:** studio state migrates the older unversioned session schema, validates categories/colors/intensity/finish/morph values and avoids overwriting recognized future session versions. Named looks use openMakeupCustomLooksV1, allow at most 100 entries, cap names at 40 characters, prevent case-insensitive duplicates and isolate corrupt records.
+6. **Versioned local state and named looks:** studio state migrates the older unversioned session schema, validates categories/colors/intensity/finish/morph values and avoids overwriting recognized future session versions. Named looks use openMakeupCustomLooksV1, allow at most 100 entries, cap names at 40 characters, prevent case-insensitive duplicates after collapsing repeated whitespace before comparison and isolate corrupt records.
 7. **Undo/redo:** bounded 50-step before/after history covers actions wrapped through the studio action runner and committed morph-slider gestures. Applying a saved snapshot reverts to the prior snapshot if an application fails.
 8. **Truthful persistence/lifecycle states:** failed named-look writes roll back in-memory save/delete operations instead of announcing success. Stage-4 controls join the camera restart disable/enable gating. Storage permission denial and capture/save/share failures have localized status messages.
 9. **Android build identity:** versionCode 5 / versionName 1.4.0; application ID and minSdk remain unchanged. FileProvider configuration is constrained to the local image-sharing cache path.
 
 #### Automated verification
 
-- Added tests/studio-state.test.js for schema migration/validation, future-version rejection, history semantics and custom-look parsing.
+- Added tests/studio-state.test.js for schema migration/validation, future-version rejection, history semantics, custom-look parsing, and a regression proving repeated whitespace cannot bypass case-insensitive duplicate checks.
 - Extended tests/effect-contracts.test.js for SDK intensity validation/forwarding and all six engine-uniform mappings.
 - Extended tests/accessibility-ui.test.js for the stage-4 controls, comparison/capture/share/history wiring, future-schema protection and camera lifecycle control state.
-- CI run [39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915) passed **50 tests, 0 failures**, followed by type-check, web bundle, Android asset packaging, debug APK build and artifact upload.
+- CI run [39853574683](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683) passed **51 tests, 0 failures**, followed by type-check, web bundle, Android asset packaging, debug APK build and artifact upload.
 - CI does not verify an actual device camera frame, physical mirror/orientation, legacy storage permission prompts, gallery visibility, system share chooser, face tracking under live lighting or GPU performance.
 
 #### Consolidated physical-device matrix — pending
@@ -234,7 +234,7 @@ Acceptance criteria status:
 - [x] Shader-backed intensity wired to all six layer shaders.
 - [x] Color/finish/intensity editor, before/after comparison, capture/save/share path, named looks and undo/redo implemented.
 - [x] Versioned state validation and persistence failure handling avoid overwriting recognized future data or showing false success.
-- [x] 50 automated tests and full CI build/package/APK/artifact pipeline passed.
+- [x] 51 automated tests and full CI build/package/APK/artifact pipeline passed.
 - [ ] Physical Android 6/7 regression has not been performed; camera alignment, old-version permission flow, gallery/share behavior and sustained GPU cost remain unverified.
 - [ ] Run and document the consolidated Stages 1–4 device matrix before closing the hardware release gate.
 
@@ -276,6 +276,6 @@ For every stage:
 - CI does not simulate physical camera behavior, real Android WebView or shader appearance under live lighting. Per the user's time-saving instruction, Stages 1–4 use one combined physical-device matrix. It is **still pending/not performed** because this connector session has no physical Android 6/7 target; keep camera/image orientation, storage permission, gallery/share and sustained GPU performance as unverified release checks.
 - PR #3 remains open and unmerged. The APK artifact `Open-Makeup-debug-apk` is attached to run [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807).
 - Stage 3 revision 9d9029a0e397627c624d49294d1f835808de2a12 passed CI run [39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293): 41 tests passed, zero failed.
-- Stage 4 revision defe336265a24f9720b6283c1bddfb6b749a195c passed CI run [39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915): 50 tests passed, zero failed; type-check, web build, Android packaging, APK build and artifact upload passed. Version is 1.4.0 / version code 5.
+- Stage 4 revision 96020600bcb3c72e3681470435bf3d5a0769bc70 passed CI run [39853574683](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683): 51 tests passed, zero failed; type-check, web build, Android packaging, APK build and artifact upload passed. Version is 1.4.0 / version code 5.
 - Physical Android 6/7 testing for Stages 1–4 is **not performed** because no physical target is attached to this connector session. Camera and image orientation, legacy permissions, gallery/share and GPU performance remain unverified.
 - Next implementation stage: Stage 5 — Camera Switching, Onboarding, Preset Library, Performance and Release. Total roadmap stages: **5**.

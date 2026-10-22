@@ -3,9 +3,9 @@
 **Last updated:** 2026-10-22  
 **Repository:** https://github.com/majd7772233-a11y/OpenMakeup  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
-**Stage 4 code revision validated by CI:** defe336265a24f9720b6283c1bddfb6b749a195c  
-**CI run:** [39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915) — 50 tests passed, zero failed  
-**APK artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915/artifacts/12456698785)  
+**Stage 4 code revision validated by CI:** 96020600bcb3c72e3681470435bf3d5a0769bc70  
+**CI run:** [39853574683](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683) — 51 tests passed, zero failed  
+**APK artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683/artifacts/12458157274)  
 **Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
 **Mandatory execution protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
 
@@ -168,9 +168,9 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 ## 9. Stage-4 Personalization, Capture, Local Looks and History
 
 ### Current revision and verification
-- Code revision: defe336265a24f9720b6283c1bddfb6b749a195c.
-- CI [run 39851101915](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915) passed **50 tests, 0 failures**, TypeScript type-check, Vite build, Android asset packaging, Gradle debug APK and artifact upload.
-- Artifact: [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39851101915/artifacts/12456698785), 14,952,872 bytes; SHA-256 295198706052fb40b8f5932d794ecece48e9efa218d8896e481665b035446d09.
+- Code revision: 96020600bcb3c72e3681470435bf3d5a0769bc70.
+- CI [run 39853574683](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683) passed **51 tests, 0 failures**, TypeScript type-check, Vite build, Android asset packaging, Gradle debug APK and artifact upload.
+- Artifact: [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39853574683/artifacts/12458157274), 14,952,886 bytes; SHA-256 a64042d50bff5b7ca07cca91178268c57176ec38f921773011affb8b07f774fe.
 - Android versionCode 5 / versionName 1.4.0; package id and minimum SDK unchanged.
 
 ### Implementation
@@ -209,7 +209,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 1. Read both project memory files.
 2. Fetch branch head and latest GitHub Actions run.
 3. Check `npm test`, type-check, Vite bundle, APK build and artifact upload.
-4. Stage 4 implementation and automated CI are complete on defe336265a24f9720b6283c1bddfb6b749a195c; run 39851101915 passed 50 tests and the full APK pipeline.
+4. Stage 4 implementation and automated CI are complete on 96020600bcb3c72e3681470435bf3d5a0769bc70; run 39853574683 passed 50 tests and the full APK pipeline.
 5. Stage 5 is the next implementation stage.
 6. The consolidated physical Android 6/7 regression for Stages 1–4 has **not been performed** because no physical device is attached to this connector session. Do not claim a device pass; run and document the full matrix before release/closing the hardware gate.
 7. Before any further work, inspect the latest branch head and CI. Keep PR #3 open and unmerged unless the user separately requests merging.
