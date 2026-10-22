@@ -9,6 +9,7 @@ uniform sampler2D _Mask;
 uniform vec4 _Mask_ST; // xy = scale, zw = offset
 uniform float _shedat;
 uniform float _noise;
+uniform float uIntensity;
 uniform vec3 uCameraPosition;
 
 float hash21(vec2 p) {
@@ -32,7 +33,7 @@ void main() {
     float maskVal = texture(_Mask, uvMask).r;
 
     // Alpha remains bounded by the face mask and view angle.
-    float alpha = maskVal * fresnel;
+    float alpha = maskVal * fresnel * uIntensity;
 
     // Finish modes share a subtle procedural surface: matte is clean, shimmer
     // adds sparse highlights, and the higher value strengthens those flecks.

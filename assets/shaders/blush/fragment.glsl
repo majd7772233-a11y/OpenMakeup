@@ -13,6 +13,7 @@ uniform sampler2D _EyeShadowTexture;
 uniform sampler2D _FaceMaskE;
 uniform float _noise;
 uniform float _transparency;
+uniform float uIntensity;
 
 // --- Simplex Noise Implementation (2D) ---
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -69,6 +70,6 @@ void main() {
     // خروجی نهایی
     float alpha = texColor.a * mask.r * _ShadowColor.a * _transparency * fresnel;
 
-    fragColor = vec4(baseColor , alpha*0.7);
+    fragColor = vec4(baseColor , alpha*0.7*uIntensity);
     //fragColor = vec4(vec3(fresnel,fresnel,fresnel), 1);
 }

@@ -111,6 +111,7 @@ export async function loadLipMats(assets) {
         _gradientSize:         { value: 2.6 },
         _lipOpen:              { value: 0.7074125 },
         _opacity:              { value: 0.81 },
+        uIntensity:            { value: 1.0 },
         _shine:                { value: 0.81 },
         _bright:               { value: 0.0 },
         cameraPosition:        { value: new Vector3() },
@@ -193,6 +194,7 @@ export async function loadEyeShadowMat(assets) {
             _FaceMaskE: { value: faceMask },
             _noise: { value: 0.0 },
             _transparency: { value: 1.0 },
+            uIntensity: { value: 1.0 },
         },
     });
 }
@@ -226,6 +228,7 @@ export async function loadBlushMat(assets) {
             _FaceMaskE: { value: faceMask },
             _noise: { value: 0.0 },
             _transparency: { value: 1.0 },
+            uIntensity: { value: 1.0 },
         },
     });
 }
@@ -254,6 +257,7 @@ export async function loadFoundationMat(assets) {
             _Mask_ST: { value: new Vector4(1.0, 1.0, 0.0, 0.0) },
             _shedat: { value: 0.2 },
             _noise: { value: 0.0 },
+            uIntensity: { value: 1.0 },
         },
     });
 }
