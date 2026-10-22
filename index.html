@@ -66,6 +66,17 @@
     .tracking-chip[data-state="noFace"]{border-color:#f0ba704d;color:#fff0d2}
     .tracking-chip[data-state="detected"]{border-color:#83e5b044;color:#d1f7e2}
     #status-text{min-width:0;overflow-wrap:anywhere}
+    .studio-tool-panel .panel-head{margin-bottom:12px}
+    .editor-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .editor-field{display:grid;gap:7px;min-width:0;color:#e9d7e7;font-size:12px;font-weight:700}
+    .editor-field select,.editor-field input[type="text"]{width:100%;min-width:0;min-height:44px;border:1px solid #ffffff24;border-radius:12px;background:#171221;color:#fff5fb;padding:9px 10px}
+    .editor-field input[type="color"]{width:100%;height:46px;border:1px solid #ffffff24;border-radius:12px;background:#171221;padding:5px}
+    .editor-field input[type="range"]{width:100%;min-height:34px;accent-color:var(--pink)}
+    .editor-span{grid-column:1/-1}.strength-readout{font-variant-numeric:tabular-nums;color:#f4cde0}
+    .tool-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.tool-row button{flex:1 1 100px;min-height:44px}
+    .tool-row button:disabled{opacity:.45}
+    .capture-thumbnail{display:block;width:min(100%,420px);max-height:280px;object-fit:contain;margin:13px auto 0;border:1px solid #ffffff24;border-radius:16px;background:#09070e}
+    .capture-thumbnail[hidden]{display:none}
     .advanced-panel{padding:0;overflow:hidden}
     .advanced-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:72px;padding:15px;list-style:none;cursor:pointer;touch-action:manipulation}
     .advanced-summary::-webkit-details-marker{display:none}
@@ -131,7 +142,48 @@
             <button class="makeup-btn" id="foundation"><span class="emoji">🪞</span><span data-i18n="foundation">كريم الأساس</span></button>
             <button class="makeup-btn" id="mascara"><span class="emoji">🪄</span><span data-i18n="mascara">ماسكارا</span></button>
           </div>
-          <div class="quick-actions"><button class="secondary" id="clear" data-i18n="clear" type="button">مسح المكياج</button></div>
+          <div class="quick-actions">
+            <button class="secondary" id="clear" data-i18n="clear" type="button">مسح المكياج</button>
+            <button class="secondary" id="undo-action" data-i18n="undo" type="button" disabled>تراجع</button>
+            <button class="secondary" id="redo-action" data-i18n="redo" type="button" disabled>إعادة</button>
+          </div>
+        </section>
+
+        <section class="panel studio-tool-panel" id="personalization-panel" aria-labelledby="editor-title">
+          <div class="panel-head"><div><h2 class="panel-title" id="editor-title" data-i18n="editorTitle">تخصيص التأثير</h2><div class="panel-subtitle" data-i18n="editorSubtitle">اختاري اللون والشدة واللمسة ثم طبّقيها على الطبقة المحددة.</div></div></div>
+          <div class="editor-fields">
+            <label class="editor-field editor-span" for="editor-category"><span data-i18n="editorCategoryLabel">طبقة المكياج</span>
+              <select id="editor-category">
+                <option value="lipstick" data-i18n="lipstick">ملمع الشفاه</option><option value="eyeshadow" data-i18n="eyeshadow">ظلال لامعة</option>
+                <option value="eyeline" data-i18n="eyeline">كحل العين</option><option value="blush" data-i18n="blush">أحمر الخدود</option>
+                <option value="foundation" data-i18n="foundation">كريم الأساس</option><option value="mascara" data-i18n="mascara">ماسكارا</option>
+              </select>
+            </label>
+            <label class="editor-field" for="editor-color"><span data-i18n="colorLabel">اللون</span><input id="editor-color" type="color" value="#c21f4d" /></label>
+            <label class="editor-field" for="layer-finish"><span data-i18n="finishLabel">اللمسة</span>
+              <select id="layer-finish"><option value="matte" data-i18n="finishMatte">مطفي</option><option value="shimmer" data-i18n="finishShimmer">لمعان ناعم</option><option value="glossy" data-i18n="finishGlossy">لامع</option><option value="glitter" data-i18n="finishGlitter">بريق</option></select>
+            </label>
+            <label class="editor-field editor-span" for="layer-intensity"><span><span data-i18n="intensityLabel">شدة التأثير</span> · <output class="strength-readout" id="layer-intensity-value">100%</output></span><input id="layer-intensity" type="range" min="0" max="1" step="0.05" value="1" /></label>
+          </div>
+          <div class="tool-row"><button class="primary" id="apply-layer-settings" data-i18n="applyLayerSettings" type="button">تطبيق التعديلات</button></div>
+          <div class="tool-row">
+            <button class="secondary" id="compare-toggle" aria-pressed="false" type="button"><span id="compare-label" data-i18n="compareBeforeAfter">عرض قبل المكياج</span></button>
+            <button class="secondary" id="capture-photo" data-i18n="capturePhoto" type="button">التقاط صورة</button>
+            <button class="secondary" id="save-photo" data-i18n="savePhoto" type="button" disabled>حفظ الصورة</button>
+            <button class="secondary" id="share-photo" data-i18n="sharePhoto" type="button" disabled>مشاركة الصورة</button>
+          </div>
+          <img class="capture-thumbnail" id="capture-thumbnail" alt="معاينة الصورة الملتقطة" data-i18n-alt="captureThumbnailAlt" data-i18n-aria="captureThumbnailAlt" hidden />
+          <div class="privacy-note"><span aria-hidden="true">🔒</span><span data-i18n="privacy">تتم معالجة معاينة الكاميرا على جهازك. لا يرفع التطبيق بث الكاميرا إلى خادم.</span></div>
+        </section>
+
+        <section class="panel studio-tool-panel" id="custom-looks-panel" aria-labelledby="custom-looks-title">
+          <div class="panel-head"><div><h2 class="panel-title" id="custom-looks-title" data-i18n="customLooksTitle">إطلالاتك المحفوظة</h2></div></div>
+          <div class="editor-fields">
+            <label class="editor-field editor-span" for="custom-look-name"><span data-i18n="lookNameLabel">اسم الإطلالة</span><input id="custom-look-name" type="text" maxlength="40" autocomplete="off" data-i18n-placeholder="lookNamePlaceholder" placeholder="مثلاً: وردي المساء" /></label>
+            <label class="editor-field editor-span" for="custom-look-select"><span data-i18n="savedLookLabel">إطلالة محفوظة</span><select id="custom-look-select"><option value="" data-i18n="savedLookPlaceholder">اختاري إطلالة محفوظة</option></select></label>
+          </div>
+          <div class="tool-row"><button class="primary" id="save-custom-look" data-i18n="saveCustomLook" type="button">حفظ الإطلالة</button><button class="secondary" id="load-custom-look" data-i18n="loadCustomLook" type="button" disabled>تحميل</button><button class="secondary" id="delete-custom-look" data-i18n="deleteCustomLook" type="button" disabled>حذف</button></div>
+          <p class="hint" data-i18n="privacy">تتم معالجة معاينة الكاميرا على جهازك. لا يرفع التطبيق بث الكاميرا إلى خادم.</p>
         </section>
 
         <details class="panel advanced-panel" id="advanced-controls">
@@ -154,9 +206,6 @@
             <div class="privacy-note"><span aria-hidden="true">🔒</span><span data-i18n="privacy">تتم معالجة معاينة الكاميرا على جهازك. لا يرفع التطبيق بث الكاميرا إلى خادم.</span></div>
           </div>
         </details>
-
-
-        </section>
       </div>
     </div>
     <footer class="footer" data-i18n="footer">Open Makeup · صُنع للإبداع ✦</footer>

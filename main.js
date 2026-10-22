@@ -1,6 +1,7 @@
 import { OpenMakeup, MORPH_CONTROLS, MORPH_WEIGHT_MIN, MORPH_WEIGHT_MAX } from './src/index.js';
 import { hasLiveCameraTrack, waitForCameraFrames } from './src/core/cameraReadiness.js';
 import { dictionaries, translate } from './src/ui/locales.js';
+import { normalizeStudioState, StudioHistory, createCustomLook, parseCustomLooks, CUSTOM_LOOKS_VERSION } from './src/ui/studio-state.js';
 
 const $ = (id) => document.getElementById(id);
 const statusText = $('status-text');
@@ -16,6 +17,11 @@ let hiddenAt = 0;
 let lastStatusKey = 'statusLoading';
 let lastTrackingState = 'waiting';
 let aboutOpener = null;
+let currentEditorCategory = 'lipstick';
+let isOriginalPreview = false;
+let lastCaptureDataUrl = null;
+let isApplyingHistory = false;
+let morphHistoryBefore = null;
 
 function createEngine() {
   return new OpenMakeup({
@@ -30,37 +36,30 @@ function createEngine() {
 
 let mk = createEngine();
 const SESSION_KEY = 'openMakeupSessionState';
+const CUSTOM_LOOKS_KEY = 'openMakeupCustomLooksV1';
+const DEFAULT_LAYER_OPTIONS = {
+  lipstick: { color: '#c21f4d', finish: 'glossy', intensity: 1 },
+  eyeshadow: { color: '#7a3b9d', finish: 'glitter', pattern: 1, intensity: 1 },
+  eyeline: { color: '#000000', pattern: 1, intensity: 1 },
+  blush: { color: '#e26d7a', finish: 'matte', intensity: 1 },
+  foundation: { color: '#d9b89c', finish: 'matte', intensity: 1 },
+  mascara: { color: '#000000', pattern: 1, intensity: 1 },
+};
+const FINISH_CATEGORIES = new Set(['lipstick', 'eyeshadow', 'blush', 'foundation']);
 
 function readSessionState() {
-  const fallback = { makeup: {}, morphs: {}, activeLook: null, wireframe: false, blur: false };
-  try {
-    const parsed = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
-    if (!parsed || typeof parsed !== 'object') return fallback;
-    const makeup = parsed.makeup && typeof parsed.makeup === 'object' ? parsed.makeup : {};
-    const rawMorphs = parsed.morphs && typeof parsed.morphs === 'object' ? parsed.morphs : {};
-    const validMorphs = new Set(Object.keys(MORPH_CONTROLS || {}));
-    const morphs = {};
-    for (const [name, value] of Object.entries(rawMorphs)) {
-      // Previous builds exposed raw Blender target names. Only restore stable,
-      // friendly controls in the everyday studio UI.
-      if (validMorphs.has(name) && Number.isFinite(Number(value))) {
-        morphs[name] = Math.max(MORPH_WEIGHT_MIN, Math.min(MORPH_WEIGHT_MAX, Number(value)));
-      }
-    }
-    return {
-      makeup,
-      morphs,
-      activeLook: typeof parsed.activeLook === 'string' ? parsed.activeLook : null,
-      wireframe: parsed.wireframe === true,
-      blur: parsed.blur === true,
-    };
-  } catch (_) {
-    return fallback;
-  }
+  try { return normalizeStudioState(localStorage.getItem(SESSION_KEY)); }
+  catch (_) { return normalizeStudioState(null); }
 }
 const sessionState = readSessionState();
+const studioHistory = new StudioHistory(50);
+let customLooks = readStoredCustomLooks();
+function getStudioSnapshot() { return normalizeStudioState(sessionState); }
+function studioStateChanged(before, after) { return JSON.stringify(before) !== JSON.stringify(after); }
+
 
 function persistSessionState() {
+  sessionState.schemaVersion = 1;
   try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessionState)); } catch (_) {}
 }
 
@@ -109,15 +108,21 @@ async function restoreSessionState() {
     }
   }
   updateLayerButtonStates();
+  refreshLayerEditor();
+  renderCustomLooks();
+  updateHistoryButtons();
   persistSessionState();
   return restoreErrors;
 }
 
 async function applyLayer(category, options) {
-  const result = await mk.apply(category, options);
-  sessionState.makeup[category] = JSON.parse(JSON.stringify(options || {}));
+  const appliedOptions = { ...(options || {}), intensity: options && options.intensity != null ? options.intensity : 1 };
+  const result = await mk.apply(category, appliedOptions);
+  sessionState.makeup[category] = JSON.parse(JSON.stringify(appliedOptions));
   sessionState.activeLook = null;
+  currentEditorCategory = category;
   updateLayerButtonStates();
+  refreshLayerEditor();
   persistSessionState();
   return result;
 }
@@ -125,6 +130,107 @@ async function applyLayer(category, options) {
 async function restoreMakeupSnapshot(snapshot) {
   mk.clearAll();
   for (const [category, options] of Object.entries(snapshot)) await mk.apply(category, options || {});
+}
+
+async function applyStudioSnapshot(nextValue) {
+  const next = normalizeStudioState(nextValue), previous = getStudioSnapshot();
+  const applyValues = async (state) => {
+    await restoreMakeupSnapshot(state.makeup);
+    mk.resetMorph();
+    for (const [name, value] of Object.entries(state.morphs)) mk.setMorph(name, value);
+    mk.setWireframe(state.wireframe); mk.setBlur(state.blur);
+    Object.assign(sessionState, normalizeStudioState(state));
+    $('wireframe').checked = sessionState.wireframe; $('blur').checked = sessionState.blur;
+    for (const item of sliders) {
+      const value = Object.prototype.hasOwnProperty.call(sessionState.morphs, item.name) ? sessionState.morphs[item.name] : 0;
+      item.input.value = String(value); item.output.textContent = Number(value).toFixed(2);
+    }
+    updateLayerButtonStates(); refreshLayerEditor(); persistSessionState();
+  };
+  try { await applyValues(next); }
+  catch (error) {
+    try { await applyValues(previous); } catch (rollbackError) { console.error('Studio rollback failed:', rollbackError); }
+    throw error;
+  }
+}
+
+function updateHistoryButtons() {
+  const undo = $('undo-action'), redo = $('redo-action');
+  if (undo) undo.disabled = !studioHistory.canUndo || !engineReady;
+  if (redo) redo.disabled = !studioHistory.canRedo || !engineReady;
+}
+function invalidateCapture() {
+  lastCaptureDataUrl = null;
+  const thumbnail = $('capture-thumbnail');
+  if (thumbnail) { thumbnail.removeAttribute('src'); thumbnail.hidden = true; }
+  const save = $('save-photo'), share = $('share-photo');
+  if (save) save.disabled = true;
+  if (share) share.disabled = true;
+}
+function downloadCapture(dataUrl) {
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = 'Open-Makeup-' + new Date().toISOString().replace(/[:.]/g, '-') + '.png';
+  link.rel = 'noopener'; document.body.appendChild(link); link.click(); link.remove();
+}
+function captureCurrentFrame() {
+  if (!engineReady || !mk.engine || !mk.engine.renderer || !mk.engine.scene || !mk.engine.camera3D) {
+    throw new Error('Capture is unavailable before the camera and renderer are ready.');
+  }
+  // Read a fresh frame from the WebGL buffer. The compare switch only hides the
+  // canvas element; it never changes or clears the chosen look.
+  mk.engine.renderer.render(mk.engine.scene, mk.engine.camera3D);
+  const source = $('renderCanvas');
+  const scale = Math.min(1, 2560 / Math.max(source.width, source.height, 1));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(source.width * scale));
+  canvas.height = Math.max(1, Math.round(source.height * scale));
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Could not create a canvas for photo capture.');
+  context.translate(canvas.width, 0); context.scale(-1, 1);
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/png');
+  if (!dataUrl || !dataUrl.startsWith('data:image/png;base64,') || dataUrl.length < 1000) throw new Error('Photo capture returned an empty image.');
+  lastCaptureDataUrl = dataUrl;
+  $('capture-thumbnail').src = dataUrl; $('capture-thumbnail').hidden = false;
+  $('save-photo').disabled = false; $('share-photo').disabled = false;
+  return dataUrl;
+}
+function ensureCapture() { return lastCaptureDataUrl || captureCurrentFrame(); }
+function nativeImageResult(operation, result) {
+  if (operation === 'save') {
+    if (result === 'saved') setStatusKey('statusCaptureSaved', 'success');
+    else if (result === 'permission_denied') setStatusKey('statusStoragePermissionDenied', 'error');
+    else setStatusKey('statusSaveFailure', 'error');
+  } else if (operation === 'share' && result === 'failed') setStatusKey('statusShareFailure', 'error');
+}
+window.onNativeImageResult = nativeImageResult;
+function saveCurrentPhoto() {
+  const image = ensureCapture(), bridge = window.OpenMakeupBridge;
+  if (bridge && typeof bridge.saveImage === 'function') {
+    const result = bridge.saveImage(image, 'Open-Makeup-' + Date.now() + '.png');
+    if (result === 'saved') setStatusKey('statusCaptureSaved', 'success');
+    else if (result === 'permission_required') setStatusKey('statusStoragePermission', 'info');
+    else if (result === 'failed') setStatusKey('statusSaveFailure', 'error');
+    return;
+  }
+  downloadCapture(image); setStatusKey('statusDownloadSaved', 'success');
+}
+async function shareCurrentPhoto() {
+  const image = ensureCapture(), bridge = window.OpenMakeupBridge;
+  if (bridge && typeof bridge.shareImage === 'function') {
+    const result = bridge.shareImage(image, 'Open-Makeup-' + Date.now() + '.png');
+    setStatusKey(result === 'share_started' ? 'statusShareStarted' : 'statusShareFailure', result === 'share_started' ? 'info' : 'error');
+    return;
+  }
+  try {
+    const blob = await (await fetch(image)).blob();
+    const file = new File([blob], 'Open-Makeup.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ title: 'Open Makeup', files: [file] }); setStatusKey('statusShareStarted', 'info'); }
+      catch (error) { if (error && error.name === 'AbortError') setStatusKey('statusShareCancelled', 'info'); else throw error; }
+    } else { downloadCapture(image); setStatusKey('statusShareUnsupported', 'error'); }
+  } catch (error) { console.error('Photo sharing failed:', error); setStatusKey('statusShareFailure', 'error'); }
 }
 
 function t(key, values = {}) { return translate(currentLanguage, key, values); }
@@ -176,12 +282,19 @@ function applyLanguage(language) {
   document.querySelectorAll('[data-i18n-aria]').forEach((element) => {
     element.setAttribute('aria-label', t(element.getAttribute('data-i18n-aria')));
   });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+    element.setAttribute('placeholder', t(element.getAttribute('data-i18n-placeholder')));
+  });
+  document.querySelectorAll('[data-i18n-alt]').forEach((element) => {
+    element.setAttribute('alt', t(element.getAttribute('data-i18n-alt')));
+  });
   $('language-toggle').textContent = t('switchLanguage');
   $('language-toggle').setAttribute('aria-label', t('switchLanguageAria'));
   $('fullscreen-preview').setAttribute('aria-label', t(isFullscreenPreview ? 'fullscreenExit' : 'fullscreenTitle'));
   $('fullscreen-preview').title = t(isFullscreenPreview ? 'fullscreenExit' : 'fullscreenTitle');
   renderMorphLabels();
   setTrackingState(lastTrackingState);
+  refreshLayerEditor(); renderCustomLooks(); updateHistoryButtons();
   const statusKind = statusBox.classList.contains('status-error') ? 'error' : statusBox.classList.contains('status-success') ? 'success' : 'info';
   if (lastStatusKey) setStatus(t(lastStatusKey), statusKind);
   else setStatus(t(statusKind === 'error' ? 'statusActionError' : statusKind === 'success' ? 'statusReady' : 'statusLoading'), statusKind);
@@ -195,17 +308,21 @@ try {
 $('language-toggle').addEventListener('click', () => applyLanguage(currentLanguage === 'ar' ? 'en' : 'ar'));
 
 async function runAction(labelKey, action) {
-  if (!engineReady) {
-    setStatusKey('statusWaiting', 'error');
-    return false;
-  }
+  if (!engineReady) { setStatusKey('statusWaiting', 'error'); return false; }
+  const before = getStudioSnapshot();
   try {
     await action();
+    const after = getStudioSnapshot();
+    if (!isApplyingHistory && studioStateChanged(before, after)) {
+      studioHistory.record(before, after); invalidateCapture();
+    }
+    updateHistoryButtons();
     setStatus(t(labelKey), 'success');
     return true;
   } catch (error) {
     console.error(error);
     setStatus(t('statusActionError') + ' — ' + describeError(error), 'error');
+    updateHistoryButtons();
     return false;
   }
 }
@@ -391,6 +508,106 @@ $('look-rose').onclick = () => runAction('statusRose', () => applyLook({ name: '
 $('look-berry').onclick = () => runAction('statusBerry', () => applyLook({ name: 'berry', lipstick: '#9c315f', blush: '#b84e76', shadow: '#633b87' }));
 $('look-nude').onclick = () => runAction('statusNude', () => applyLook({ name: 'nude', lipstick: '#bd927b', blush: '#d4a18d', shadow: '#927d9b' }));
 
+function refreshLayerEditor() {
+  const categoryInput = $('editor-category'), colorInput = $('editor-color');
+  const intensityInput = $('layer-intensity'), intensityOutput = $('layer-intensity-value'), finishInput = $('layer-finish');
+  if (!categoryInput || !colorInput || !intensityInput || !finishInput) return;
+  categoryInput.value = currentEditorCategory;
+  const layer = sessionState.makeup[currentEditorCategory] || DEFAULT_LAYER_OPTIONS[currentEditorCategory] || {};
+  const defaults = DEFAULT_LAYER_OPTIONS[currentEditorCategory] || {};
+  colorInput.value = /^#[0-9a-f]{6}$/i.test(layer.color || '') ? layer.color : defaults.color || '#c21f4d';
+  const intensity = Number.isFinite(Number(layer.intensity)) ? Math.max(0, Math.min(1, Number(layer.intensity))) : 1;
+  intensityInput.value = String(intensity); intensityOutput.textContent = Math.round(intensity * 100) + '%';
+  finishInput.disabled = !FINISH_CATEGORIES.has(currentEditorCategory);
+  finishInput.value = layer.finish || defaults.finish || 'matte';
+}
+$('editor-category').addEventListener('change', (event) => { currentEditorCategory = event.target.value; refreshLayerEditor(); });
+$('layer-intensity').addEventListener('input', (event) => {
+  $('layer-intensity-value').textContent = Math.round(Number(event.target.value) * 100) + '%';
+});
+$('apply-layer-settings').addEventListener('click', () => runAction('statusLayerCustomized', async () => {
+  const category = $('editor-category').value, previous = sessionState.makeup[category] || {};
+  const options = { ...previous, color: $('editor-color').value, intensity: Number($('layer-intensity').value) };
+  if (FINISH_CATEGORIES.has(category)) options.finish = $('layer-finish').value; else delete options.finish;
+  await applyLayer(category, options);
+}));
+function readStoredCustomLooks() {
+  try { return parseCustomLooks(localStorage.getItem(CUSTOM_LOOKS_KEY)); } catch (_) { return []; }
+}
+function persistCustomLooks() {
+  try { localStorage.setItem(CUSTOM_LOOKS_KEY, JSON.stringify({ version: CUSTOM_LOOKS_VERSION, looks: customLooks })); }
+  catch (_) { setStatusKey('statusSaveFailure', 'error'); }
+}
+function renderCustomLooks() {
+  const select = $('custom-look-select'); if (!select) return;
+  const selected = select.value;
+  while (select.firstChild) select.removeChild(select.firstChild);
+  const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = t('savedLookPlaceholder'); select.appendChild(placeholder);
+  for (const look of customLooks) {
+    const option = document.createElement('option'); option.value = look.id; option.textContent = look.name; select.appendChild(option);
+  }
+  select.value = customLooks.some((look) => look.id === selected) ? selected : '';
+  $('load-custom-look').disabled = customLooks.length === 0; $('delete-custom-look').disabled = customLooks.length === 0;
+}
+$('save-custom-look').addEventListener('click', () => {
+  if (!engineReady) { setStatusKey('statusWaiting', 'error'); return; }
+  const name = $('custom-look-name').value.trim();
+  if (!name) { setStatusKey('statusCustomLookNameRequired', 'error'); $('custom-look-name').focus(); return; }
+  if (customLooks.some((look) => look.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+    setStatusKey('statusCustomLookDuplicate', 'error'); return;
+  }
+  try {
+    const snapshot = getStudioSnapshot(); snapshot.activeLook = null;
+    const look = createCustomLook(name, snapshot);
+    customLooks = [...customLooks, look].slice(-100);
+    persistCustomLooks(); renderCustomLooks(); $('custom-look-select').value = look.id; $('custom-look-name').value = '';
+    setStatusKey('statusCustomLookSaved', 'success');
+  } catch (error) { console.error('Could not save custom look:', error); setStatusKey('statusSaveFailure', 'error'); }
+});
+$('load-custom-look').addEventListener('click', () => {
+  const look = customLooks.find((item) => item.id === $('custom-look-select').value);
+  if (!look) { setStatusKey('statusCustomLookSelect', 'error'); return; }
+  runAction('statusCustomLookLoaded', () => applyStudioSnapshot(look.state));
+});
+$('delete-custom-look').addEventListener('click', () => {
+  const look = customLooks.find((item) => item.id === $('custom-look-select').value);
+  if (!look) { setStatusKey('statusCustomLookSelect', 'error'); return; }
+  if (!window.confirm(t('confirmDeleteCustomLook', { name: look.name }))) return;
+  customLooks = customLooks.filter((item) => item.id !== look.id); persistCustomLooks(); renderCustomLooks();
+  setStatusKey('statusCustomLookDeleted', 'success');
+});
+$('undo-action').addEventListener('click', async () => {
+  if (!studioHistory.canUndo || !engineReady) return;
+  const target = studioHistory.undo(); isApplyingHistory = true;
+  try { await applyStudioSnapshot(target); setStatusKey('statusUndo', 'success'); invalidateCapture(); }
+  catch (error) { console.error('Undo failed:', error); studioHistory.redo(); setStatusKey('statusActionError', 'error'); }
+  finally { isApplyingHistory = false; updateHistoryButtons(); }
+});
+$('redo-action').addEventListener('click', async () => {
+  if (!studioHistory.canRedo || !engineReady) return;
+  const target = studioHistory.redo(); isApplyingHistory = true;
+  try { await applyStudioSnapshot(target); setStatusKey('statusRedo', 'success'); invalidateCapture(); }
+  catch (error) { console.error('Redo failed:', error); studioHistory.undo(); setStatusKey('statusActionError', 'error'); }
+  finally { isApplyingHistory = false; updateHistoryButtons(); }
+});
+$('compare-toggle').addEventListener('click', () => {
+  isOriginalPreview = !isOriginalPreview;
+  $('renderCanvas').style.visibility = isOriginalPreview ? 'hidden' : 'visible';
+  $('compare-toggle').setAttribute('aria-pressed', String(isOriginalPreview));
+  $('compare-label').textContent = t(isOriginalPreview ? 'compareAfter' : 'compareBeforeAfter');
+  $('compare-toggle').title = t(isOriginalPreview ? 'compareAfter' : 'compareBeforeAfter');
+  setStatusKey(isOriginalPreview ? 'statusCompareOriginal' : 'statusCompareApplied');
+});
+$('capture-photo').addEventListener('click', () => {
+  try { captureCurrentFrame(); setStatusKey('statusCaptureReady', 'success'); }
+  catch (error) { console.error('Photo capture failed:', error); setStatusKey('statusCaptureFailure', 'error'); }
+});
+$('save-photo').addEventListener('click', () => {
+  try { saveCurrentPhoto(); } catch (error) { console.error('Photo save failed:', error); setStatusKey('statusSaveFailure', 'error'); }
+});
+$('share-photo').addEventListener('click', () => { shareCurrentPhoto(); });
+
+
 const morphNames = {
   browLift:['liftBrow','liftBrowAbout'], lipPlump:['plumpLips','plumpLipsAbout'],
   lipPlump2:['plumpLipsVariant','plumpLipsVariantAbout'], noseSlim:['slimNose','slimNoseAbout'],
@@ -446,14 +663,28 @@ function makeSlider(name, about) {
   row.appendChild(title);
   row.appendChild(input);
   row.appendChild(output);
+  input.addEventListener('pointerdown', () => { morphHistoryBefore = getStudioSnapshot(); });
+  input.addEventListener('keydown', (event) => {
+    if (!morphHistoryBefore && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key)) morphHistoryBefore = getStudioSnapshot();
+  });
   input.addEventListener('input', () => {
+    if (!morphHistoryBefore) morphHistoryBefore = getStudioSnapshot();
+    invalidateCapture();
     output.textContent = Number(input.value).toFixed(2);
     const value = Number(input.value);
     sessionState.morphs[name] = value;
     persistSessionState();
     try { mk.setMorph(name, value); } catch (error) {
       console.warn('Could not update face shape:', error);
-      setStatus(t('statusActionError') + ' — ' + (error.message || t('statusErrorFallback')), 'error');
+      setStatus(t('statusActionError') + ' — ' + describeError(error), 'error');
+    }
+    updateHistoryButtons();
+  });
+  input.addEventListener('change', () => {
+    if (morphHistoryBefore) {
+      const after = getStudioSnapshot();
+      if (studioStateChanged(morphHistoryBefore, after)) studioHistory.record(morphHistoryBefore, after);
+      morphHistoryBefore = null; updateHistoryButtons();
     }
   });
   $('morph-panel').appendChild(row);
