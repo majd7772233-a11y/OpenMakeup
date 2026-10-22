@@ -108,6 +108,27 @@
     @media(max-width:380px){.advanced-summary{padding:13px}.advanced-content{padding:0 12px 13px}.slider{grid-template-columns:minmax(78px,.85fr) minmax(85px,1.3fr) 40px;gap:6px}.tracking-chip{font-size:11px;max-width:calc(100% - 16px);inset-inline-start:8px;bottom:8px}}
     @media(max-width:330px){.top-actions{gap:4px}.lang-btn{font-size:11px;padding-inline:7px}.brand-mark{width:36px;height:36px}.brand h1{font-size:18px}.looks{gap:5px}.look{font-size:11px}.makeup-grid{gap:5px}.makeup-btn{font-size:11px}}
     @media(orientation:landscape) and (max-height:520px) and (max-width:900px){body{padding-top:calc(5px + var(--safe-top));padding-bottom:calc(8px + var(--safe-bottom))}.app{gap:8px}.studio{gap:8px}.preview-card{padding:6px}#stage{aspect-ratio:16/9;min-height:120px;max-height:54vh}.panel{padding:11px}.makeup-btn{min-height:54px}.advanced-summary{min-height:58px;padding:10px}}
+    .preset-library{display:grid;gap:15px;min-width:0}
+    .preset-group{display:grid;gap:8px;min-width:0}
+    .preset-group-title{margin:0 2px;color:#f2d8e8;font-size:12px;font-weight:800}
+    .preset-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0}
+    .preset-button{min-width:0;min-height:54px;border-color:#ffffff1e;background:linear-gradient(145deg,color-mix(in srgb,var(--preset-color) 19%,transparent),#ffffff05);overflow-wrap:anywhere}
+    .preset-button .preset-name{line-height:1.45;overflow-wrap:anywhere}
+    .preset-button.active{border-color:var(--preset-color);background:linear-gradient(145deg,color-mix(in srgb,var(--preset-color) 30%,transparent),#ffffff08);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--preset-color) 50%,transparent)}
+    .preset-button .dot{box-shadow:0 0 0 3px color-mix(in srgb,var(--preset-color) 20%,transparent)}
+    .preview-tools .icon-btn{width:auto;min-width:44px;padding-inline:10px}
+    .onboarding-steps{display:grid;gap:9px;margin:15px 0}
+    .onboarding-step{display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;align-items:start;padding:11px;border:1px solid #ffffff18;border-radius:15px;background:#ffffff08}
+    .onboarding-step-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:linear-gradient(145deg,#e85d9c2b,#8863ef30);font-size:18px}
+    .onboarding-step strong{display:block;font-size:12px;margin-bottom:3px}
+    .onboarding-step span:last-child{display:block;color:#d3c5db;font-size:11px;line-height:1.65}
+    .onboarding-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+    .onboarding-actions button{min-height:46px}
+    #onboarding-modal[aria-hidden="true"]{visibility:hidden;pointer-events:none}
+    #onboarding-modal[aria-hidden="false"]{visibility:visible;pointer-events:auto}
+    .onboarding-card{max-width:560px}
+    @media(max-width:380px){.preset-grid{gap:6px}.preset-button{font-size:11px;padding-inline:4px}.onboarding-step{padding:9px}}
+    @media(max-width:330px){.preset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.preset-button{font-size:11px}.onboarding-actions{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -120,7 +141,7 @@
 
     <div class="studio">
       <section class="preview-card">
-        <div class="preview-head"><div class="preview-title"><span class="live-dot" aria-hidden="true"></span><span data-i18n="livePreview">المعاينة المباشرة</span></div></div>
+        <div class="preview-head"><div class="preview-title"><span class="live-dot" aria-hidden="true"></span><span data-i18n="livePreview">المعاينة المباشرة</span></div><div class="preview-tools"><button class="icon-btn" id="switch-camera" data-i18n-title="switchCamera" data-i18n-aria="switchCamera" aria-label="تبديل الكاميرا" title="تبديل الكاميرا" type="button" disabled>↻</button></div></div>
         <div id="stage" role="group" data-i18n-aria="livePreview" aria-label="معاينة الكاميرا"><div class="stage-chip" data-i18n="studioChip">✦ استوديو الجمال المباشر</div><div class="tracking-chip" id="tracking-state" data-state="waiting" role="status" aria-live="polite" aria-atomic="true" aria-label="جارٍ البحث عن الوجه"><span class="tracking-indicator" aria-hidden="true"></span><span id="tracking-text" data-i18n="trackingWaiting">جارٍ البحث عن الوجه...</span></div><button class="secondary" id="fullscreen-preview" data-i18n-title="fullscreenTitle" title="تكبير المعاينة" aria-label="تكبير المعاينة" aria-pressed="false" type="button">⛶</button><video id="video" autoplay playsinline muted aria-hidden="true"></video><canvas id="renderCanvas" aria-hidden="true"></canvas></div>
         <div id="status" class="status-message"><span id="status-icon" aria-hidden="true">✦</span><span id="status-text" data-i18n="statusLoading" role="status" aria-live="polite" aria-atomic="true">جارٍ تجهيز الاستوديو...</span><button id="camera-retry" data-i18n="retryCamera" aria-describedby="status-text" type="button" hidden>إعادة محاولة الكاميرا</button></div>
       </section>
@@ -128,11 +149,7 @@
       <div class="controls-column">
         <section class="panel" id="daily-controls" aria-labelledby="looks-title">
           <div class="panel-head"><div><h2 class="panel-title" id="looks-title" data-i18n="looksTitle">إطلالات سريعة</h2><div class="panel-subtitle" data-i18n="looksSubtitle">اختاري ألوانك بلمسة واحدة</div></div><span aria-hidden="true">✧</span></div>
-          <div class="looks">
-            <button class="look" id="look-rose" style="--dot:#e76c91"><span class="dot"></span><span data-i18n="rose">وردي</span></button>
-            <button class="look" id="look-berry" style="--dot:#9c315f"><span class="dot"></span><span data-i18n="berry">توتي</span></button>
-            <button class="look" id="look-nude" style="--dot:#bd927b"><span class="dot"></span><span data-i18n="nude">طبيعي</span></button>
-          </div>
+          <div id="preset-library" class="preset-library" aria-labelledby="looks-title"></div>
           <h3 class="section-label" id="makeup-title" data-i18n="makeupTitle">مستحضرات التجميل</h3>
           <div class="makeup-grid">
             <button class="makeup-btn" id="lipstick"><span class="emoji">💋</span><span data-i18n="lipstick">ملمع الشفاه</span></button>
@@ -211,6 +228,18 @@
     <footer class="footer" data-i18n="footer">Open Makeup · صُنع للإبداع ✦</footer>
   </main>
 
+  <div class="modal-backdrop" id="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" aria-describedby="onboarding-intro" aria-hidden="true" tabindex="-1">
+    <section class="about-card onboarding-card">
+      <div class="about-top"><div class="about-hero"><div class="about-logo" aria-hidden="true">✦</div><div><h2 class="about-title" id="onboarding-title" data-i18n="onboardingTitle">مرحبًا بك في استوديو مكياجي</h2><p class="about-subtitle" id="onboarding-intro" data-i18n="onboardingIntro">دليل سريع — لن تظهر هذه الشاشة مجددًا بعد المتابعة.</p></div></div></div>
+      <div class="onboarding-steps">
+        <div class="onboarding-step"><span class="onboarding-step-icon" aria-hidden="true">◉</span><div><strong data-i18n="onboardingPermissionTitle">إذن الكاميرا</strong><span data-i18n="onboardingPermission">اسمح للكاميرا عند الطلب؛ المعالجة تتم على جهازك.</span></div></div>
+        <div class="onboarding-step"><span class="onboarding-step-icon" aria-hidden="true">☼</span><div><strong data-i18n="onboardingLightingTitle">الإضاءة والتموضع</strong><span data-i18n="onboardingLighting">اجعل الوجه أمام الكاميرا في إضاءة متوازنة، وتجنب الضوء الخلفي القوي.</span></div></div>
+        <div class="onboarding-step"><span class="onboarding-step-icon" aria-hidden="true">◇</span><div><strong data-i18n="onboardingFramingTitle">تأطير الوجه</strong><span data-i18n="onboardingFraming">أبقِ الوجه داخل الإطار وثبّت الجهاز أثناء اكتشاف الوجه.</span></div></div>
+        <div class="onboarding-step"><span class="onboarding-step-icon" aria-hidden="true">✧</span><div><strong data-i18n="onboardingToolsTitle">جرّب الإطلالات</strong><span data-i18n="onboardingTools">اختر إطلالة جاهزة، خصص اللون والشدة، ثم التقط صورة أو احفظها عند رغبتك.</span></div></div>
+      </div>
+      <div class="onboarding-actions"><button class="primary" id="onboarding-start" data-i18n="onboardingStart" type="button">ابدأ الكاميرا</button><button class="secondary" id="onboarding-skip" data-i18n="onboardingSkip" type="button">تخطي الدليل وفتح الاستوديو</button></div>
+    </section>
+  </div>
   <div class="modal-backdrop" id="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-title" aria-describedby="about-intro" aria-hidden="true" tabindex="-1">
     <section class="about-card">
       <div class="about-top"><div class="about-hero"><div class="about-logo" aria-hidden="true">✦</div><div><h2 class="about-title" id="about-title">Open Makeup</h2><p class="about-subtitle" data-i18n="aboutSubtitle">لمسة من السحر، بتقنيات مفتوحة المصدر.</p></div></div><button class="icon-btn close-btn" id="close-about" data-i18n-aria="closeAbout" aria-label="إغلاق" type="button">×</button></div>
