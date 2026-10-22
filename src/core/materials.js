@@ -281,6 +281,7 @@ export async function loadMascaraMat(assets) {
             color: { value: new Color(0x000000) },
             map: { value: texture || null },
             useMap: { value: !!texture },
+            uIntensity: { value: 1.0 },
         },
         transparent: true,
         depthTest: true,
@@ -307,6 +308,7 @@ export async function loadEyeLineMat(assets) {
         uniforms: {
             color: { value: new Vector4(0, 0, 0, 1) },
             map: { value: texture || null },
+            uIntensity: { value: 1.0 },
         },
         transparent: true,
         depthTest: true,
