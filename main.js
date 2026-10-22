@@ -1,5 +1,8 @@
 import { OpenMakeup, MORPH_CONTROLS, MORPH_WEIGHT_MIN, MORPH_WEIGHT_MAX } from './src/index.js';
 import { hasLiveCameraTrack, waitForCameraFrames } from './src/core/cameraReadiness.js';
+import { countVideoInputDevices, nextCameraFacingMode } from './src/core/camera-capabilities.js';
+import { LOOK_PRESETS, LOOK_PRESET_GROUPS } from './src/ui/look-presets.js';
+import { renderSceneToPngDataUrl } from './src/core/capture-frame.js';
 import { dictionaries, translate } from './src/ui/locales.js';
 import { normalizeStudioState, StudioHistory, createCustomLook, parseCustomLooks, normalizeCustomLookName, hasCustomLookName, CUSTOM_LOOKS_VERSION } from './src/ui/studio-state.js';
 
@@ -7,7 +10,8 @@ const $ = (id) => document.getElementById(id);
 const statusText = $('status-text');
 const statusBox = $('status');
 const statusIcon = $('status-icon');
-const actionButtons = [...document.querySelectorAll('.makeup-grid button, .looks button, .quick-actions button, .switches input, .studio-tool-panel button, .studio-tool-panel input, .studio-tool-panel select')];
+const actionButtonSelector = '.makeup-grid button, .preset-library button, .looks button, .quick-actions button, .switches input, .studio-tool-panel button, .studio-tool-panel input, .studio-tool-panel select, .preview-tools button';
+const getActionButtons = () => [...document.querySelectorAll(actionButtonSelector)];
 const sliders = [];
 let engineReady = false;
 let currentLanguage = 'ar';
@@ -24,10 +28,19 @@ let isApplyingHistory = false;
 let morphHistoryBefore = null;
 let sessionStateWriteBlocked = false;
 let customLooksWriteBlocked = false;
+let currentCameraFacingMode = 'user';
+let cameraSwitchInProgress = false;
+let cameraSwitchSupported = false;
+let webglContextLost = false;
+let onboardingDismissedThisSession = false;
+let onboardingOpener = null;
+const ONBOARDING_KEY = 'openMakeupOnboardingDismissedV1';
 
 function createEngine() {
   return new OpenMakeup({
     onFaceTrackingChange: (detected) => setTrackingState(detected ? 'detected' : 'noFace'),
+    onWebGLContextChange: (state) => handleWebGLContextChange(state),
+    camera: { facingMode: currentCameraFacingMode },
     video: $('video'),
     renderCanvas: $('renderCanvas'),
     assetsBaseUrl: './assets',
@@ -84,12 +97,11 @@ function updateLayerButtonStates() {
     button.classList.toggle('active', active);
     button.setAttribute('aria-pressed', String(active));
   }
-  for (const look of ['rose', 'berry', 'nude']) {
-    const button = $('look-' + look);
-    const active = sessionState.activeLook === look;
+  document.querySelectorAll('[data-preset-id]').forEach((button) => {
+    const active = sessionState.activeLook === button.dataset.presetId;
     button.classList.toggle('active', active);
     button.setAttribute('aria-pressed', String(active));
-  }
+  });
 }
 
 async function restoreSessionState() {
@@ -168,8 +180,8 @@ async function applyStudioSnapshot(nextValue) {
 
 function updateHistoryButtons() {
   const undo = $('undo-action'), redo = $('redo-action');
-  if (undo) undo.disabled = !studioHistory.canUndo || !engineReady;
-  if (redo) redo.disabled = !studioHistory.canRedo || !engineReady;
+  if (undo) undo.disabled = !studioHistory.canUndo || !engineReady || webglContextLost;
+  if (redo) redo.disabled = !studioHistory.canRedo || !engineReady || webglContextLost;
 }
 function invalidateCapture() {
   lastCaptureDataUrl = null;
@@ -186,23 +198,12 @@ function downloadCapture(dataUrl) {
   link.rel = 'noopener'; document.body.appendChild(link); link.click(); link.remove();
 }
 function captureCurrentFrame() {
-  if (!engineReady || !mk.engine || !mk.engine.renderer || !mk.engine.scene || !mk.engine.camera3D) {
+  if (!engineReady || !mk.engine || !mk.engine.renderer || !mk.engine.scene || !mk.engine.camera3D || webglContextLost) {
     throw new Error('Capture is unavailable before the camera and renderer are ready.');
   }
-  // Read a fresh frame from the WebGL buffer. The compare switch only hides the
-  // canvas element; it never changes or clears the chosen look.
-  mk.engine.renderer.render(mk.engine.scene, mk.engine.camera3D);
-  const source = $('renderCanvas');
-  const scale = Math.min(1, 2560 / Math.max(source.width, source.height, 1));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(source.width * scale));
-  canvas.height = Math.max(1, Math.round(source.height * scale));
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('Could not create a canvas for photo capture.');
-  context.translate(canvas.width, 0); context.scale(-1, 1);
-  context.drawImage(source, 0, 0, canvas.width, canvas.height);
-  const dataUrl = canvas.toDataURL('image/png');
-  if (!dataUrl || !dataUrl.startsWith('data:image/png;base64,') || dataUrl.length < 1000) throw new Error('Photo capture returned an empty image.');
+  // A temporary render target keeps preserveDrawingBuffer disabled in live
+  // rendering, avoiding a permanent mobile GPU/memory penalty.
+  const { dataUrl } = renderSceneToPngDataUrl(mk.engine, document, 2560);
   lastCaptureDataUrl = dataUrl;
   $('capture-thumbnail').src = dataUrl; $('capture-thumbnail').hidden = false;
   $('save-photo').disabled = false; $('share-photo').disabled = false;
@@ -306,7 +307,7 @@ function applyLanguage(language) {
   $('fullscreen-preview').title = t(isFullscreenPreview ? 'fullscreenExit' : 'fullscreenTitle');
   renderMorphLabels();
   setTrackingState(lastTrackingState);
-  refreshLayerEditor(); renderCustomLooks(); updateHistoryButtons();
+  refreshLayerEditor(); renderPresetLibrary(); renderCustomLooks(); updateHistoryButtons();
   const statusKind = statusBox.classList.contains('status-error') ? 'error' : statusBox.classList.contains('status-success') ? 'success' : 'info';
   if (lastStatusKey) setStatus(t(lastStatusKey), statusKind);
   else setStatus(t(statusKind === 'error' ? 'statusActionError' : statusKind === 'success' ? 'statusReady' : 'statusLoading'), statusKind);
@@ -320,7 +321,7 @@ try {
 $('language-toggle').addEventListener('click', () => applyLanguage(currentLanguage === 'ar' ? 'en' : 'ar'));
 
 async function runAction(labelKey, action) {
-  if (!engineReady) { setStatusKey('statusWaiting', 'error'); return false; }
+  if (!engineReady || webglContextLost) { setStatusKey(webglContextLost ? 'statusGraphicsLost' : 'statusWaiting', 'error'); return false; }
   const before = getStudioSnapshot();
   try {
     await action();
@@ -367,6 +368,54 @@ async function applyLook({ name, lipstick, blush, shadow }) {
   persistSessionState();
 }
 
+function hasDismissedOnboarding() {
+  if (onboardingDismissedThisSession) return true;
+  try { return localStorage.getItem(ONBOARDING_KEY) === '1'; }
+  catch (_) { return false; }
+}
+
+function openOnboarding() {
+  const modal = $('onboarding-modal');
+  if (!modal || hasDismissedOnboarding()) { startEngine(); return; }
+  onboardingOpener = document.activeElement;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+  $('onboarding-start').focus();
+}
+
+function dismissOnboardingAndStart() {
+  const modal = $('onboarding-modal');
+  if (modal && modal.classList.contains('open')) {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+  }
+  onboardingDismissedThisSession = true;
+  try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (_) {}
+  if (onboardingOpener && onboardingOpener !== document.body && typeof onboardingOpener.focus === 'function') {
+    onboardingOpener.focus();
+  }
+  onboardingOpener = null;
+  startEngine();
+}
+
+function trapOnboardingFocus(event) {
+  const modal = $('onboarding-modal');
+  if (!modal || !modal.classList.contains('open') || event.key !== 'Tab') return;
+  const focusable = [...modal.querySelectorAll('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')]
+    .filter((element) => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
+  if (!focusable.length) { event.preventDefault(); modal.focus(); return; }
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (event.shiftKey && (document.activeElement === first || document.activeElement === modal)) {
+    event.preventDefault(); last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault(); first.focus();
+  }
+}
+$('onboarding-start').addEventListener('click', dismissOnboardingAndStart);
+$('onboarding-skip').addEventListener('click', dismissOnboardingAndStart);
+
 function openAbout() {
   const modal = $('about-modal');
   if (modal.classList.contains('open')) return;
@@ -405,6 +454,11 @@ $('about-modal').addEventListener('click', (event) => {
   if (event.target === $('about-modal')) closeAbout();
 });
 document.addEventListener('keydown', (event) => {
+  if ($('onboarding-modal').classList.contains('open')) {
+    if (event.key === 'Escape') { event.preventDefault(); dismissOnboardingAndStart(); return; }
+    trapOnboardingFocus(event);
+    return;
+  }
   if ($('about-modal').classList.contains('open')) {
     if (event.key === 'Escape') { event.preventDefault(); closeAbout(); return; }
     trapAboutFocus(event);
@@ -450,6 +504,7 @@ $('fullscreen-preview').addEventListener('click', () => isFullscreenPreview ? ex
 window.isPreviewFullscreen = () => isFullscreenPreview;
 window.handleAndroidBack = () => {
   if (isFullscreenPreview) { exitFullscreenPreview(); return true; }
+  if ($('onboarding-modal').classList.contains('open')) { dismissOnboardingAndStart(); return true; }
   if ($('about-modal').classList.contains('open')) { closeAbout(); return true; }
   return false;
 };
@@ -459,7 +514,7 @@ async function startEngine() {
   if (engineStarting) return false;
   engineStarting = true;
   $('camera-retry').hidden = true;
-  actionButtons.forEach((button) => { button.disabled = true; });
+  getActionButtons().forEach((button) => { button.disabled = true; });
   setStatusKey('statusLoading');
   try {
     await mk.init();
@@ -468,9 +523,11 @@ async function startEngine() {
     const restoreErrors = await restoreSessionState();
     engineReady = true;
     setTrackingState(mk.engine && mk.engine._reportedFaceTrackingState === false ? 'noFace' : (mk.engine && mk.engine._faceVisible ? 'detected' : 'waiting'));
-    actionButtons.forEach((button) => { button.disabled = false; });
+    getActionButtons().forEach((button) => { button.disabled = false; });
     renderCustomLooks();
     updateHistoryButtons();
+    await refreshCameraSwitchAvailability();
+    $('camera-retry').textContent = t('retryCamera');
     if (sessionStateWriteBlocked || customLooksWriteBlocked) {
       setStatusKey('statusStoredSchemaUnsupported', 'error');
     } else if (restoreErrors.length) {
@@ -489,7 +546,7 @@ async function startEngine() {
       failedStream.getTracks().forEach((track) => { try { track.stop(); } catch (_) {} });
       $('video').srcObject = null;
     }
-    actionButtons.forEach((button) => { button.disabled = true; });
+    getActionButtons().forEach((button) => { button.disabled = true; });
     setTrackingState('waiting');
     setStatus(t('statusEngineError') + ' ' + describeError(error), 'error');
     $('morph-panel').textContent = t('morphFallback');
@@ -502,6 +559,8 @@ async function startEngine() {
 
 async function reinitializeEngine() {
   if (engineStarting) return false;
+  webglContextLost = false;
+  cameraSwitchInProgress = false;
   try { if (mk) mk.dispose(); } catch (error) { console.warn('Engine disposal before retry failed:', error); }
   mk = createEngine();
   window.mk = mk;
@@ -509,7 +568,92 @@ async function reinitializeEngine() {
   return startEngine();
 }
 
-$('camera-retry').addEventListener('click', () => { reinitializeEngine(); });
+$('camera-retry').addEventListener('click', () => {
+  $('camera-retry').hidden = true;
+  reinitializeEngine();
+});
+
+async function refreshCameraSwitchAvailability() {
+  const button = $('switch-camera');
+  if (!button) return;
+  try {
+    const supported = !!(mk && typeof mk.canSwitchCamera === 'function' && mk.canSwitchCamera());
+    const count = await countVideoInputDevices(typeof navigator !== 'undefined' ? navigator.mediaDevices : null);
+    cameraSwitchSupported = supported && (count == null || count === 0 || count >= 2);
+  } catch (error) {
+    console.warn('Could not query camera-switch capabilities:', error);
+    cameraSwitchSupported = false;
+  }
+  button.disabled = !engineReady || !cameraSwitchSupported || cameraSwitchInProgress || webglContextLost;
+  button.setAttribute('aria-disabled', String(button.disabled));
+  button.setAttribute('aria-label', t('switchCamera'));
+  button.title = cameraSwitchSupported ? t('switchCamera') : t('cameraSwitchUnsupported');
+}
+
+async function switchCameraFromButton() {
+  if (!engineReady || !cameraSwitchSupported || cameraSwitchInProgress || webglContextLost) return;
+  cameraSwitchInProgress = true;
+  const previous = currentCameraFacingMode;
+  const priorStates = new Map(getActionButtons().map((button) => [button, button.disabled]));
+  getActionButtons().forEach((button) => { button.disabled = true; });
+  setStatusKey('statusCameraSwitching');
+  try {
+    await mk.switchCamera(nextCameraFacingMode(previous));
+    currentCameraFacingMode = mk.cameraFacingMode || nextCameraFacingMode(previous);
+    invalidateCapture();
+    setTrackingState('waiting');
+    setStatusKey(currentCameraFacingMode === 'environment' ? 'statusCameraRear' : 'statusCameraFront', 'success');
+  } catch (error) {
+    console.warn('Camera switch failed:', error);
+    currentCameraFacingMode = (mk && mk.cameraFacingMode) || previous;
+    setStatusKey('statusCameraSwitchFailure', 'error');
+  } finally {
+    cameraSwitchInProgress = false;
+    getActionButtons().forEach((button) => {
+      button.disabled = (priorStates.get(button) === true) || !engineReady || webglContextLost;
+    });
+    updateHistoryButtons();
+    await refreshCameraSwitchAvailability();
+  }
+}
+
+$('switch-camera').addEventListener('click', switchCameraFromButton);
+
+function handleWebGLContextChange(state) {
+  if (state === 'lost') {
+    webglContextLost = true;
+    getActionButtons().forEach((button) => { button.disabled = true; });
+    setStatusKey('statusGraphicsLost', 'error');
+    $('camera-retry').hidden = true;
+    try { if (mk) mk.stop(); } catch (_) {}
+    stopAndDetachCamera();
+    window.setTimeout(() => {
+      if (!webglContextLost) return;
+      $('camera-retry').textContent = t('retryGraphics');
+      $('camera-retry').hidden = false;
+      setStatusKey('statusGraphicsRestoreFailed', 'error');
+      refreshCameraSwitchAvailability();
+    }, 5000);
+    return;
+  }
+  if (state === 'restored') {
+    webglContextLost = false;
+    $('camera-retry').textContent = t('retryCamera');
+    $('camera-retry').hidden = true;
+    refreshCameraSwitchAvailability();
+    if (engineReady) {
+      setStatusKey('statusGraphicsRestored');
+      recoverCamera();
+    }
+    return;
+  }
+  webglContextLost = true;
+  getActionButtons().forEach((button) => { button.disabled = true; });
+  $('camera-retry').textContent = t('retryGraphics');
+  $('camera-retry').hidden = false;
+  setStatusKey('statusGraphicsRestoreFailed', 'error');
+  refreshCameraSwitchAvailability();
+}
 
 
 
@@ -520,9 +664,65 @@ $('blush').onclick = () => runAction('statusBlush', () => applyLayer('blush', { 
 $('foundation').onclick = () => runAction('statusFoundation', () => applyLayer('foundation', { color: '#d9b89c', finish: 'matte' }));
 $('mascara').onclick = () => runAction('statusMascara', () => applyLayer('mascara', {}));
 $('clear').onclick = () => runAction('statusClear', () => { mk.clearAll(); sessionState.makeup = {}; sessionState.activeLook = null; updateLayerButtonStates(); persistSessionState(); });
-$('look-rose').onclick = () => runAction('statusRose', () => applyLook({ name: 'rose', lipstick: '#e76c91', blush: '#e88a9d', shadow: '#a55a98' }));
-$('look-berry').onclick = () => runAction('statusBerry', () => applyLook({ name: 'berry', lipstick: '#9c315f', blush: '#b84e76', shadow: '#633b87' }));
-$('look-nude').onclick = () => runAction('statusNude', () => applyLook({ name: 'nude', lipstick: '#bd927b', blush: '#d4a18d', shadow: '#927d9b' }));
+async function applyLookPreset(preset) {
+  const previousMakeup = JSON.parse(JSON.stringify(sessionState.makeup));
+  const nextMakeup = JSON.parse(JSON.stringify(preset.layers));
+  try {
+    await restoreMakeupSnapshot(nextMakeup);
+  } catch (error) {
+    try { await restoreMakeupSnapshot(previousMakeup); }
+    catch (rollbackError) { console.error('Could not restore makeup after preset failure:', rollbackError); }
+    throw error;
+  }
+  sessionState.makeup = nextMakeup;
+  sessionState.activeLook = preset.id;
+  currentEditorCategory = Object.prototype.hasOwnProperty.call(nextMakeup, 'lipstick')
+    ? 'lipstick' : (Object.keys(nextMakeup)[0] || 'lipstick');
+  updateLayerButtonStates();
+  refreshLayerEditor();
+  persistSessionState();
+}
+
+function renderPresetLibrary() {
+  const root = $('preset-library');
+  if (!root) return;
+  while (root.firstChild) root.removeChild(root.firstChild);
+  for (const group of LOOK_PRESET_GROUPS) {
+    const section = document.createElement('section');
+    section.className = 'preset-group';
+    section.setAttribute('aria-labelledby', 'preset-group-' + group.id);
+    const heading = document.createElement('h3');
+    heading.className = 'preset-group-title';
+    heading.id = 'preset-group-' + group.id;
+    heading.textContent = t(group.labelKey);
+    section.appendChild(heading);
+    const grid = document.createElement('div');
+    grid.className = 'preset-grid';
+    for (const preset of LOOK_PRESETS.filter((item) => item.group === group.id)) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'look preset-button';
+      button.id = 'preset-' + preset.id;
+      button.dataset.presetId = preset.id;
+      button.style.setProperty('--dot', preset.accent);
+      button.style.setProperty('--preset-color', preset.accent);
+      button.setAttribute('aria-label', t(preset.labelKey));
+      button.setAttribute('aria-pressed', String(sessionState.activeLook === preset.id));
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.setAttribute('aria-hidden', 'true');
+      const label = document.createElement('span');
+      label.className = 'preset-name';
+      label.textContent = t(preset.labelKey);
+      button.append(dot, label);
+      button.addEventListener('click', () => runAction('statusPresetApplied', () => applyLookPreset(preset)));
+      grid.appendChild(button);
+    }
+    section.appendChild(grid);
+    root.appendChild(section);
+  }
+  updateLayerButtonStates();
+}
 
 function refreshLayerEditor() {
   const categoryInput = $('editor-category'), colorInput = $('editor-color');
@@ -785,14 +985,14 @@ async function recoverCamera() {
   resumeInProgress = true;
   hiddenAt = 0;
   setTrackingState('waiting');
-  actionButtons.forEach((button) => { button.disabled = true; });
+  getActionButtons().forEach((button) => { button.disabled = true; });
   setStatusKey('statusCameraResume');
   try {
     try { mk.stop(); } catch (error) { console.warn('Camera pause before recovery failed:', error); }
     stopAndDetachCamera();
     await mk.start();
     await waitForCameraFrames($('video'), { timeoutMs: 6000, pollIntervalMs: 150 });
-    actionButtons.forEach((button) => { button.disabled = false; });
+    getActionButtons().forEach((button) => { button.disabled = false; });
     renderCustomLooks();
     updateHistoryButtons();
     setStatusKey('statusReady', 'success');
@@ -869,5 +1069,6 @@ window.handleOpenMakeupResume = async () => {
   }
 };
 applyLanguage(currentLanguage);
+renderPresetLibrary();
 updateLayerButtonStates();
-startEngine();
+if (hasDismissedOnboarding()) startEngine(); else openOnboarding();
