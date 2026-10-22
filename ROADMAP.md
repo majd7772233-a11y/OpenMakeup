@@ -1,8 +1,8 @@
 # Open Makeup — Project Roadmap
 
 **Last updated:** 2026-10-22  
-**Stage 2 code revision validated by CI:** `a3f4f89a5e40c9a26ea882b58185057b5cb2f743`  
-**CI run:** [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807)  
+**Stage 3 code revision validated by CI:** `9d9029a0e397627c624d49294d1f835808de2a12`  
+**CI run:** [39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293) — 41 tests passed; type-check, web bundle, Android packaging, debug APK and upload passed.  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
 **Related pull request:** [#3 — Arabic-first mobile UI, fullscreen preview, and camera recovery](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
 **Engineering protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
@@ -32,6 +32,7 @@ The product is judged by real user behavior, not only compilation. A visible act
 
 - `index.html`: responsive studio UI, Arabic/English labels, preview, makeup controls, morph controls, settings, About dialog, fullscreen preview and camera-retry affordance.
 - `main.js`: UI orchestration, language switching, status feedback, makeup/session state, Android Back/pause/resume hooks and camera recovery.
+- `src/ui/locales.js`: independently testable Arabic/English dictionaries and safe count interpolation.
 - `src/OpenMakeup.js`: public SDK wrapper, category/finish/color resolution, pattern selection and face morph API.
 - `src/categories.js`, `src/morphs.js`, `src/config.js`: effect categories/defaults, morph mappings and runtime asset URLs.
 - `src/core/MakeupEngine.js`: Three.js scene/renderer, video texture, model/material loading, MediaPipe tracking, effect layers, morphing and camera lifecycle/disposal.
@@ -165,24 +166,35 @@ Acceptance criteria:
 
 ### Stage 3 — Complete Mobile UI/UX, Localization and Accessibility
 
-**Dependencies:** Stages 1 and 2.  
-**Primary files:** `index.html`, `main.js`, Android resources, UI modules/styles and UI-verification documentation.
+**Status:** Implementation and automated CI complete. Physical Android/WebView/GPU validation remains deliberately batched after Stage 4 per user direction.  
+**Code revision validated by CI:** `9d9029a0e397627c624d49294d1f835808de2a12`  
+**CI run:** [39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293)
 
-Required work:
-- Organize the phone workflow around preview and daily-use makeup. Put advanced face-shaping and debug controls behind clear sections/views.
-- Add durable selection, progress/error states and reset/undo affordances tied to actual engine state.
-- Refine phone/tablet, narrow screen, portrait/landscape and fullscreen layouts, including camera/canvas alignment.
-- Complete Arabic/English localization for dynamic labels, errors, retry UI, accessibility labels, dialogs, About content and metadata.
-- Improve focus trapping/return, Back/Escape behavior, accessible zoom, contrast, touch targets and reduced-motion support.
-- Keep the glass-inspired design without crowding common interactions.
-- Distinguish camera failure, no detected face, poor lighting, unsupported graphics and missing assets.
+#### Delivered
+
+1. **Daily mobile workflow:** preview and makeup/quick-look choices stay in the main path; face-shaping sliders, wireframe and blur moved into a native expandable Advanced section.
+2. **Small-screen and landscape layout:** added styles for widths at or below 380px/330px and short landscape screens; expanded the morph list instead of trapping it in a short nested scroller; safe areas remain respected.
+3. **Localization:** moved dictionaries to `src/ui/locales.js`; 48 HTML-bound translation keys have both Arabic and English values. Language changes update document title/description, direction, status/error copy, tracking state and accessibility labels. Restore warnings interpolate the number of settings that could not be restored.
+4. **Truthful face-tracking feedback:** added a distinct polite live region for “looking for a face / no face detected / face detected”, driven from stable engine callbacks after missing-face grace frames. Consumer callback failures are isolated and do not break tracking.
+5. **Actionable errors:** camera permission, timeout/frame progression, WebGL and bundled-asset failures map to Arabic/English guidance rather than showing raw internal exceptions in the interface.
+6. **Keyboard and dialog accessibility:** skip-to-makeup link, semantic section heading, visible focus rings, 44px primary controls, `aria-pressed` fullscreen state, separate polite status regions, About dialog description, focus trapping/return, Escape/Android Back handling, body scroll lock, and reduced-motion rules.
+7. **Android build identity:** updated app version to 1.3.0.
+
+#### Automated verification
+
+- Added 9 accessibility/localization/UI contract tests in `tests/accessibility-ui.test.js`; the existing 32 runtime/effect tests remain intact.
+- CI run [39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293) passed **41 tests, 0 failures**, SDK type-check, Vite bundle, Android asset packaging, debug APK build and artifact upload.
+- This run validates code contracts and build output. It does not verify actual screen-reader behavior, contrast on every display profile, physical-device layout, touch feel or live camera/GPU output on Android 6/7.
 
 Acceptance criteria:
-- Visible and accessible text follows language and direction.
-- No overlapping/clipped controls at supported breakpoints.
-- Selected/loading/error states match actual engine state.
-- Fullscreen and normal preview remain aligned across the tested aspect-ratio matrix.
-- The main flow is understandable without knowledge of SDK or debug names.
+1. Daily makeup stays primary; sculpting/debug controls are grouped in an expandable section.
+2. Arabic and English cover every HTML-bound visible/accessibility string and runtime error/tracking state; locale updates direction and metadata.
+3. Camera feedback distinguishes startup, no face and face detected without removing selected makeup.
+4. About focus stays in the dialog while open, returns to its opener on close, and Escape/Android Back close the top surface.
+5. Main touch controls use 44px targets, focus remains visible, skip navigation works, and reduced-motion preferences disable decorative motion.
+6. Narrow-phone and short-landscape layouts have responsive rules and no authored duplicate HTML IDs.
+7. `npm test` (41 tests), type-check, web build, Android asset packaging, debug APK build and upload pass at the recorded revision.
+8. Target-device screen reader, contrast, portrait/landscape, camera-resume and shader appearance are not claimed verified; run the combined Stages 1–4 physical-device matrix after Stage 4.
 
 ### Stage 4 — Personalization, Color/Strength, Capture and History
 
@@ -242,4 +254,6 @@ For every stage:
 - Stage 2 revision `a3f4f89a5e40c9a26ea882b58185057b5cb2f743` passed GitHub Actions run [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807): 32 tests pass, zero fail, plus type-check, web bundle, Android asset packaging, debug APK build and artifact upload.
 - CI does not simulate physical camera behavior, real Android WebView or shader appearance under live lighting. Per the user's time-saving instruction, physical Android 6/7 testing for Stages 1–4 is scheduled as one combined pass after Stage 4.
 - PR #3 remains open and unmerged. The APK artifact `Open-Makeup-debug-apk` is attached to run [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807).
-- Next eligible stage: Stage 3 — Complete Mobile UI/UX, Localization and Accessibility. The roadmap contains five stages total.
+- Stage 3 revision `9d9029a0e397627c624d49294d1f835808de2a12` passed CI run [39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293): 41 tests passed, zero failed; type-check, web bundle, Android packaging, debug APK build and artifact upload passed.
+- Device-specific camera, screen-reader, contrast and GPU checks remain unverified until the combined after-Stage-4 pass.
+- Next eligible stage: Stage 4 — Personalization, Color/Strength, Capture and History. The roadmap contains five stages total.

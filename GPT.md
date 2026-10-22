@@ -3,8 +3,8 @@
 **Last updated:** 2026-10-22  
 **Repository:** https://github.com/majd7772233-a11y/OpenMakeup  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
-**Stage 2 code revision validated by CI:** `a3f4f89a5e40c9a26ea882b58185057b5cb2f743`  
-**CI run:** [39680814807](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39680814807)  
+**Stage 3 code revision validated by CI:** `9d9029a0e397627c624d49294d1f835808de2a12`  
+**CI run:** [39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293)  
 **Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3)  
 **Mandatory execution protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
 
@@ -28,7 +28,8 @@ The user's workflow requires complete stage execution rather than partial delive
 ## 3. Architecture and Ownership
 
 - `index.html`: responsive UI, translated labels, preview, camera-retry action, About dialog and fullscreen controls.
-- `main.js`: translations, engine creation, state messages, makeup and preset actions, local session, Android Back/pause/resume hooks and camera recovery.
+- `main.js`: UI orchestration, language switching, localized state/error messages, makeup/session state, accessible About dialog, fullscreen, Android Back/pause/resume hooks and camera recovery.
+- `src/ui/locales.js`: Arabic/English dictionaries and safe string/count interpolation, imported by the app and directly covered by tests.
 - `src/OpenMakeup.js`: public SDK wrapper, category/color/finish/pattern handling and morph APIs.
 - `src/categories.js`, `src/morphs.js`, `src/config.js`: category/default definitions, morph mapping and asset URLs.
 - `src/core/MakeupEngine.js`: render scene, camera/video texture, GLTF/material orchestration, MediaPipe, effect layers, morphing, lifecycle and disposal.
@@ -139,7 +140,30 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - Target-device camera/shader appearance/performance tests are deliberately batched until after Stage 4. Do not describe them as passed before an actual device matrix is executed.
 - Next stage: Stage 3 — Complete Mobile UI/UX, Localization and Accessibility. Total roadmap stages: **5**.
 
-## 8. Build and Test Commands
+## 8. Stage-3 Mobile UI, Localization and Accessibility Changes
+
+### Source revisions and scope
+- `a58e52614ff33fbb9a51628b7ff43626823f4fe5`: reorganized the mobile first-run path, extracted locale strings, localized runtime copy, introduced face-tracking UI, focus-managed About dialog, responsive/accessibility CSS and localized error categories.
+- `89ca2ae7ab45997ac7e5846b9d9b3110c759e6cf`: added the typed `onFaceTrackingChange` SDK option and engine callback for stable face/no-face transitions, 9 UI/accessibility tests, and Android version 1.3.0.
+- `9d9029a0e397627c624d49294d1f835808de2a12`: corrected the Android Back test to inspect the actual `window.handleAndroidBack` host bridge. The previous test failed because it expected a function declaration while the app intentionally exports a window arrow callback.
+- PR #3 remains open and unmerged.
+
+### Behavior contracts delivered
+- The home path emphasizes live preview, quick looks and makeup categories; optional sculpt/mesh/blur options sit inside native `details/summary`.
+- `src/ui/locales.js` exports `dictionaries` and `translate(language, key, values)`. Tests assert both locales exist for every HTML `data-i18n`, `data-i18n-title` and `data-i18n-aria` key. Dynamic locale switching updates `lang`, `dir`, title/description and live UI labels.
+- Status messages use classified localized categories. Raw engine exception text is logged for diagnosis but not shown in the main status region.
+- Face tracking reports a detected state on stable detection, waits through three missing-face results before reporting loss, and suppresses repeated identical notifications. A consumer callback cannot crash the render callback.
+- About dialog captures/restores opener focus, traps Tab/Shift+Tab, closes on Escape/Android Back and locks body scrolling while open.
+- Skip navigation, semantic headings, visible keyboard focus, separate polite status live regions, 44px touch controls, narrow/short-landscape styles and `prefers-reduced-motion` support are present.
+- Android app version is `1.3.0`; application ID and minSdk are unchanged.
+
+### Validation evidence
+- CI [run 39833650293](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39833650293): **41 tests passed, 0 failed**, SDK type-check, Vite build, Android asset packaging, debug APK build and artifact upload passed.
+- This is source/CI verification, not an assistive-technology or physical-device audit. Installed WebView/GPU behavior, touch feel, screen-reader output and device contrast stay unverified.
+- Per user direction, run the combined physical-device matrix for Stages 1–4 after Stage 4, before Stage 5. Do not schedule separate device checks after every earlier stage.
+- Next eligible stage: Stage 4 — Personalization, Color/Strength, Capture and History. Total roadmap stages: **5**.
+
+## 9. Build and Test Commands
 
 - `npm install`
 - `npm test`
@@ -147,7 +171,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - `npm run build`
 - CI also packages web assets into Android and runs `gradle --no-daemon -p android assembleDebug`; the debug APK is uploaded as workflow artifact `Open-Makeup-debug-apk`.
 
-## 9. Permanent Engineering Rules
+## 10. Permanent Engineering Rules
 
 - Never store tokens/passwords/private keys in this repository or either memory file.
 - Don't claim functionality from class existence, green compilation, or a swallowed SDK error.
@@ -157,11 +181,11 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - Distinguish automated verification from physical-device verification.
 - Update both `ROADMAP.md` and `GPT.md` after implementation and test results.
 
-## 10. Exact Resume Procedure
+## 11. Exact Resume Procedure
 
 1. Read both project memory files.
 2. Fetch branch head and latest GitHub Actions run.
 3. Check `npm test`, type-check, Vite bundle, APK build and artifact upload.
-4. Continue with Stage 3, then Stage 4, fixing in-scope regressions within each stage.
+4. Stage 3 UI/UX/localization/accessibility implementation and CI are complete at revision `9d9029a0e397627c624d49294d1f835808de2a12`. Continue with Stage 4 and fix in-scope regressions.
 5. At the end of Stage 4, run and document one combined physical-device regression pass for Stages 1–4.
-6. Until that pass occurs, mark hardware-specific camera/rendering/performance behavior unverified. Do not block Stages 2–4 solely because device tests are deferred.
+6. Until that pass occurs, mark camera/rendering, screen-reader, device layout and performance unverified; do not block Stage 4 solely because device tests are deferred.

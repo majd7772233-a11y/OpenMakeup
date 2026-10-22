@@ -60,6 +60,12 @@ It's a real-time AR makeup mirror **and** a beauty face-reshape engine, built on
 ### 🧬 Face reshape (morph / blend shapes)
 Project the live camera image onto a morphable 3D mesh so the user's **actual face** reshapes in real time — brow, lips, nose, cheeks, and jaw. The editable Blender rig is included.
 
+### 📱 Android studio experience
+- Arabic-first phone interface with a persistent English switch and RTL/LTR direction.
+- Quick looks and makeup tools stay in the main flow; sculpting, wireframe and blur are grouped under expandable advanced controls.
+- Localized camera/tracking status, clear retry/error guidance, keyboard skip navigation, visible focus, 44px touch targets and reduced-motion support.
+- About dialog handles keyboard focus and Escape/Android Back; physical Android/WebView/GPU support still depends on the device and is verified separately.
+
 ### 🧰 Developer experience
 - **Drop-in, framework-agnostic** — plain ES modules, works with any stack.
 - **Zero backend** — everything runs client-side.
