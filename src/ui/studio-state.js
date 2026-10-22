@@ -5,6 +5,19 @@ export const STUDIO_STATE_VERSION = 1;
 export const CUSTOM_LOOKS_VERSION = 1;
 export const CUSTOM_LOOKS_LIMIT = 100;
 export const CUSTOM_LOOK_NAME_LIMIT = 40;
+
+/** Canonicalize user-entered names consistently before validation and duplicate checks. */
+export function normalizeCustomLookName(name) {
+  return String(name == null ? '' : name).trim().replace(/\s+/g, ' ');
+}
+
+/** Case-insensitive duplicate detection after canonical whitespace normalization. */
+export function hasCustomLookName(looks, name) {
+  const normalized = normalizeCustomLookName(name).toLocaleLowerCase();
+  if (!normalized || !Array.isArray(looks)) return false;
+  return looks.some((look) => look
+    && normalizeCustomLookName(look.name).toLocaleLowerCase() === normalized);
+}
 const PATTERN_CATEGORIES = new Set(['blush', 'eyeshadow', 'eyeline', 'mascara']);
 const FINISHES = new Set(['matte', 'shimmer', 'glossy', 'glitter']);
 const MORPH_NAMES = new Set(Object.keys(MORPH_CONTROLS || {}));
@@ -104,7 +117,7 @@ export class StudioHistory {
 }
 
 export function createCustomLook(name, state, id = null, updatedAt = Date.now()) {
-  const cleanName = String(name == null ? '' : name).trim().replace(/\s+/g, ' ');
+  const cleanName = normalizeCustomLookName(name);
   if (!cleanName) throw new Error('A custom look needs a name.');
   if (cleanName.length > CUSTOM_LOOK_NAME_LIMIT) throw new Error('Custom-look name is too long.');
   const lookId = id == null ? 'look-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9) : String(id);

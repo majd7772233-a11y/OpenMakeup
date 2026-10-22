@@ -1,7 +1,7 @@
 import { OpenMakeup, MORPH_CONTROLS, MORPH_WEIGHT_MIN, MORPH_WEIGHT_MAX } from './src/index.js';
 import { hasLiveCameraTrack, waitForCameraFrames } from './src/core/cameraReadiness.js';
 import { dictionaries, translate } from './src/ui/locales.js';
-import { normalizeStudioState, StudioHistory, createCustomLook, parseCustomLooks, CUSTOM_LOOKS_VERSION } from './src/ui/studio-state.js';
+import { normalizeStudioState, StudioHistory, createCustomLook, parseCustomLooks, normalizeCustomLookName, hasCustomLookName, CUSTOM_LOOKS_VERSION } from './src/ui/studio-state.js';
 
 const $ = (id) => document.getElementById(id);
 const statusText = $('status-text');
@@ -584,9 +584,9 @@ function renderCustomLooks() {
 $('save-custom-look').addEventListener('click', () => {
   if (customLooksWriteBlocked) { setStatusKey('statusStoredSchemaUnsupported', 'error'); return; }
   if (!engineReady) { setStatusKey('statusWaiting', 'error'); return; }
-  const name = $('custom-look-name').value.trim();
+  const name = normalizeCustomLookName($('custom-look-name').value);
   if (!name) { setStatusKey('statusCustomLookNameRequired', 'error'); $('custom-look-name').focus(); return; }
-  if (customLooks.some((look) => look.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+  if (hasCustomLookName(customLooks, name)) {
     setStatusKey('statusCustomLookDuplicate', 'error'); return;
   }
   try {

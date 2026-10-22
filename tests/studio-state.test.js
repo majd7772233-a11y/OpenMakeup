@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeStudioState, emptyStudioState, StudioHistory, createCustomLook, parseCustomLooks,
-  STUDIO_STATE_VERSION, CUSTOM_LOOKS_VERSION } from '../src/ui/studio-state.js';
+  normalizeCustomLookName, hasCustomLookName, STUDIO_STATE_VERSION, CUSTOM_LOOKS_VERSION } from '../src/ui/studio-state.js';
 
 test('legacy sessions migrate into a versioned and defensively normalized schema', () => {
   const state = normalizeStudioState(JSON.stringify({
@@ -53,4 +53,12 @@ test('custom looks validate names, normalize snapshots, and ignore duplicate/cor
   assert.deepEqual(look.state.makeup.blush, { color: '#ff0066', intensity: 0.75, finish: 'matte' });
   assert.equal(parseCustomLooks({ version: CUSTOM_LOOKS_VERSION, looks: [look, look, { id: 'bad', name: '', state }] }).length, 1);
   assert.deepEqual(parseCustomLooks({ version: 99, looks: [look] }), []);
+});
+
+test('custom-look duplicate detection normalizes whitespace before case folding', () => {
+  const saved = createCustomLook('Rose Evening', emptyStudioState(), 'rose-evening');
+  assert.equal(normalizeCustomLookName('  ROSE   evening  '), 'ROSE evening');
+  assert.equal(hasCustomLookName([saved], '  rose    EVENING  '), true);
+  assert.equal(hasCustomLookName([saved], 'Rose Day'), false);
+  assert.equal(hasCustomLookName([saved], '   '), false);
 });
