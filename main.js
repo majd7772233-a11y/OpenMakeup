@@ -606,6 +606,17 @@ async function switchCameraFromButton() {
   } catch (error) {
     console.warn('Camera switch failed:', error);
     currentCameraFacingMode = (mk && mk.cameraFacingMode) || previous;
+
+    // If the requested camera AND rollback both failed, recover the previous
+    // stream (or rebuild the local engine) before re-enabling studio controls.
+    const cameraStillRunning = !!(mk && mk.engine && mk.engine._cameraRunning);
+    if (!cameraStillRunning) {
+      try {
+        await recoverCamera();
+      } catch (recoveryError) {
+        console.error('Camera recovery after a failed switch also failed:', recoveryError);
+      }
+    }
     setStatusKey('statusCameraSwitchFailure', 'error');
   } finally {
     cameraSwitchInProgress = false;
