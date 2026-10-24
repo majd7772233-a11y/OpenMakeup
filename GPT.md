@@ -4,11 +4,11 @@
 
 - **Repository:** https://github.com/majd7772233-a11y/OpenMakeup
 - **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`
-- **Last verified full-pipeline HEAD before this handoff-only refresh:** `d08c55718d19129937147756e6bfdcee63e76767`. Workflow 40100571899 passed on that exact revision (71/71 tests; full and production audits zero vulnerabilities; typecheck, Vite, local runtime assets, Android packaging, debug/unsigned-release builds, metadata/checksums and both uploads all green). This handoff refresh advances HEAD; fetch live HEAD before acting.
-- **Latest verified full CI:** [Run 40100571899](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899) on `d08c55718d19129937147756e6bfdcee63e76767`: **71 tests passed, 0 failed**, full and production dependency audits reported zero vulnerabilities, typecheck/Vite/source+dist local asset checks/Android packaging/debug and unsigned-release builds/checksums/artifact uploads all passed.
-- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899/artifacts/12562239590), ZIP 14,959,763 bytes, ZIP SHA-256 `d5049505761effa44b64f5ac3af9ad20ff292342c09fbc1030718c7295f58ca4`.
-- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899/artifacts/12562731750), ZIP 13,621,519 bytes, ZIP SHA-256 `599fc7d8cb73d172fe864851878452079d9c2a384cb560b7bf4b15e21b615ff0`.
-- **Next required action:** after any new chat, fetch the live HEAD, PR #3 and newest Actions run/jobs/logs/artifacts before acting. The five planned stages have code and CI evidence; the only open acceptance gate is physical-device testing. This handoff refresh triggers another run, so do not infer its result.
+- **Latest code-bearing HEAD verified by CI:** `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`. Run 40102119131 passed on that exact code revision.
+- **Latest verified full CI:** [Run 40102119131](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131): **74 tests passed, 0 failed**, full and production dependency audits each reported zero vulnerabilities, type-check/Vite/source+dist local asset checks/Android packaging/debug and unsigned-release builds/metadata/checksums/both artifact uploads all passed.
+- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12562958707), ZIP 14,959,841 bytes, ZIP SHA-256 `44143d6d16ff8d4c162c3f796be75f7e47bb33de2c9f90adcbf18204f1559353`.
+- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12563113048), ZIP 13,621,537 bytes, ZIP SHA-256 `cc1f6f13aa512fdc5e6ccc82780974dd0faee855897f6df64b728ffd586051c1`.
+- **Next required action:** after any new chat, fetch live HEAD, PR #3 and newest Actions run/jobs/logs/artifacts before acting. The five planned stages have code and CI evidence; physical-device testing remains the only open acceptance gate. This docs-only synchronization triggers a new run, so do not infer its result.
 - **Android identity:** 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23.
 - **PR #3:** https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — open and unmerged.
 - **Device acceptance:** not performed. Physical Android 6/7 and broader camera/lifecycle/orientation/storage/share/accessibility/WebGL/thermal checks remain the release gate. CI does not prove these behaviors; the release candidate is unsigned.
@@ -235,18 +235,18 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 - Presets: twelve maintainable data-defined looks in four localized groups, with category-validated shader settings and rollback if a layer fails.
 - Performance/resilience: conservative 640×480/DPR≤1/no antialias for constrained detected devices, balanced 960×540/DPR≤1.5 otherwise; live renderer uses `preserveDrawingBuffer: false`; photo capture uses a temporary WebGL render target; WebGL context loss/restoration triggers statuses and camera-recovery path.
 - Local camera utility: a first-party offline adapter supplies the Camera API surface referenced by `index.html`; it handles facing-mode constraints, decoded-frame scheduling, stop/track cleanup and late permission cancellation. CI checks the file before and after Vite packaging.
-- Release pipeline: full npm dependency audit and production-only audit, TypeScript, 71-test suite, Vite bundle, Android asset checks, Android packaging, debug plus unsigned release APKs, version/code checks, SHA-256 sums, artifact upload, full audit report and locked package metadata in the release-candidate artifact.
+- Release pipeline: full npm dependency audit and production-only audit, TypeScript, 74-test suite, Vite bundle, Android asset checks, Android packaging, debug plus unsigned release APKs, version/code checks, SHA-256 sums, artifact upload, full audit report and locked package metadata in the release-candidate artifact.
 
 ### Automated evidence
 
-- Latest verified complete pipeline at this checkpoint: [Run 40100571899](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899) on `d08c55718d19129937147756e6bfdcee63e76767`: 71 tests passed, 0 failed; full and production audits reported zero vulnerabilities; type-check, source/dist local camera/model asset checks, Vite, Android packaging, Gradle debug/unsigned-release builds, metadata, checksum generation and both artifact uploads passed. Earlier implementation validation is retained in git history.
-- Both full and production dependency audits reported zero vulnerabilities in that run. Artifact ZIP digests and the APK checksum file are attached to the linked artifacts.
+- Latest verified complete code pipeline: [Run 40102119131](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131) on `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`: 74 tests passed, 0 failed; full and production audits reported zero vulnerabilities; type-check, source/dist local camera/model asset checks, Vite, Android packaging, Gradle debug/unsigned-release builds, metadata, checksum generation and both artifact uploads passed. Earlier implementation validation is retained in git history.
+- Both full and production dependency audits reported zero vulnerabilities in that run. The artifact ZIP digests and APK checksum file are attached to the linked artifacts.
 
-### Post-checkpoint lifecycle reliability follow-up (CI pending)
+### Post-checkpoint lifecycle reliability follow-up (CI verified)
 
 - Source review found that `Camera.stop()` did not release an unresolved `_starting` promise or per-frame processing lock. A later permission result/frame callback could stall or clobber the restarted camera.
 - The bundled camera adapter now clears its start slot and processing lock on stop, and stale generations cannot reset the newer generation's running/frame state.
-- `MakeupEngine.start()` now owns a per-start token; `stop()` invalidates that token immediately and stale completion cannot clear or stop a newer start. Regression tests exercise these races. CI remains pending for this follow-up until a completed run on the new HEAD is inspected.
+- `MakeupEngine.start()` now owns a per-start token; `stop()` invalidates that token immediately and stale completion cannot clear or stop a newer start. Regression tests cover these races; run 40102119131 confirms all 74 tests passed and the complete Android artifact pipeline succeeded.
 
 ### Explicitly not verified
 

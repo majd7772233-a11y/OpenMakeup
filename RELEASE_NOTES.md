@@ -11,6 +11,7 @@
 - Twelve data-driven looks grouped into Everyday, Soft/Romantic, Bold and Evening collections.
 - Conservative camera/render profiles for limited-memory or low-core devices, capped renderer pixel ratio, and photo capture through a temporary WebGL render target.
 - WebGL context-loss/restoration handling with a frame-progression check and a visible recovery action if automatic restoration fails.
+- Camera lifecycle restart hardening: unresolved permission requests and pending frame callbacks from an old generation can no longer block or overwrite a restarted camera; stale engine-start promises cannot clear or stop the newer start.
 
 ## Retained
 - All six makeup layers and their validated intensity/color/finish contracts.
@@ -18,6 +19,6 @@
 - Bundled MediaPipe runtime/model/shader/pattern assets and on-device face processing.
 
 ## Verification boundary
-- GitHub Actions run 71 tests, audit full and production dependencies, type-check the SDK, verify that the local camera utility/model exist in source and in the Vite build, package Android assets, build debug and unsigned release APKs, verify version metadata, and compute SHA-256 checksums. Latest verified run: [40097038958](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958).
+- GitHub Actions run the 74-test suite, audit full and production dependencies, type-check the SDK, verify that the local camera utility/model exist in source and in the Vite build, package Android assets, build debug and unsigned release APKs, verify version metadata, compute SHA-256 checksums and upload both artifacts. Latest verified code-bearing run: [40102119131](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131) on `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`: 74 passed, 0 failed; both audits reported zero vulnerabilities.
 - An unsigned APK is not a distributable signed production release. Sign it with the project owner's release key outside this workflow before general distribution.
 - No physical Android 6/7 device test has been performed in this connector session. Camera switching, permission prompts, portrait/landscape alignment, gallery/share flows, WebGL restoration and sustained thermal/GPU performance remain device-matrix gates; a green CI run is not physical-device evidence.

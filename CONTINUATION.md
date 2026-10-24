@@ -8,7 +8,7 @@ Do not greet, give a generic status preamble, ask the user to repeat the request
 
 1. Read CONTINUATION.md, GPT.md and ROADMAP.md.
 2. Fetch the live branch head, PR #3 metadata, the newest GitHub Actions run/jobs/logs, and artifacts.
-3. Compare live status with this checkpoint. The latest completed full CI observed before this handoff save is run 40100571899 on HEAD d08c55718d19129937147756e6bfdcee63e76767; it passed 71/71 tests, both dependency audits and the full Android artifact pipeline. Always fetch any newer runs because this checkpoint edit itself triggers CI.
+3. Compare live status with this checkpoint. The latest completed code-bearing CI run is 40102119131 on HEAD 0459aaa6e9201cfb9200ca4d65e00f09e6297cc5; it passed 74/74 tests, both dependency audits (0 vulnerabilities each), type-check, source/dist asset checks, Vite build, Android packaging, both APK builds, metadata/checksum verification and artifact uploads. This documentation sync triggers a new run, so inspect it rather than assuming it passed.
 4. Resume from the real live HEAD. Do not replay superseded failures, revert newer commits, or reimplement completed Stage-5 features merely because earlier chat messages describe an intermediate state.
 5. If the current-head CI is failing, read its actual logs, fix the specific cause on the same branch, add/regress a test, then confirm a new green run. Never call an in-progress run successful.
 6. If the current-head CI is green, do not rewrite finished stages. Continue with the outstanding physical device/release gate or a concrete, evidence-based defect found in review.
@@ -19,33 +19,33 @@ Do not greet, give a generic status preamble, ask the user to repeat the request
 - Repository: https://github.com/majd7772233-a11y/OpenMakeup
 - Working branch: feat/open-makeup-arabic-mobile-lifecycle
 - PR #3: https://github.com/majd7772233-a11y/OpenMakeup/pull/3
-- Last completed code+docs HEAD before this handoff-only documentation refresh: `d08c55718d19129937147756e6bfdcee63e76767` (`docs: record final green Stage-5 verification and artifacts`). Full CI run [40100571899](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899) passed on that exact HEAD: 71/71 tests; full and production audits both report zero vulnerabilities; TypeScript, Vite, local source/dist camera/model asset checks, Android packaging, debug and unsigned-release builds, metadata checks, checksum generation and both artifact uploads passed. This save advances HEAD again; fetch live HEAD and newest CI after resume.
+- Latest code-bearing HEAD verified by full CI: `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`. Run [40102119131](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131) passed on that exact revision: 74/74 tests; full and production audits both report zero vulnerabilities; TypeScript, Vite, local source/dist camera/model asset checks, Android packaging, debug and unsigned-release builds, metadata checks, checksum generation and both artifact uploads passed. This documentation synchronization will create a docs-only commit and a new workflow; fetch live HEAD and its actual CI result on resume.
 - PR #3 was OPEN and NOT MERGED. Keep it open/unmerged unless the user explicitly requests a merge.
 - Android app version 1.5.0, versionCode 6, applicationId com.magd.openmakeup, minSdk 23 / Android 6.0. Preserve app ID, minSdk and public SDK contracts unless expressly directed otherwise.
 - The planned roadmap has exactly five stages. Source implementation and automated CI for Stages 1–5 are complete on the verified revision. No Stage 6 is part of the current agreed roadmap.
 
 ## 3. Latest verified CI and live workflow state
 
-### Latest completed full pipeline verified immediately before this checkpoint refresh
+### Latest completed full pipeline on the code-bearing HEAD before this documentation sync
 
-- Run: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899
-- Tested head: `d08c55718d19129937147756e6bfdcee63e76767`. Conclusion: **SUCCESS**.
-- Test summary from the actual job log: **71 tests, 71 passed, 0 failed**.
+- Run: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131
+- Tested code head: `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`. Conclusion: **SUCCESS**.
+- Test summary from the actual job log: **74 tests, 74 passed, 0 failed**.
 - Full dependency audit (including development tooling): **0 vulnerabilities**; production-only audit: **0 vulnerabilities**.
-- TypeScript check, source camera/model asset checks, unit tests, Vite build, built camera/model asset checks, Android asset packaging, Gradle debug/unsigned-release APK builds, version metadata checks, SHA-256 generation and both APK artifact uploads all passed.
+- TypeScript check, source camera/model asset checks, tests, Vite build, built camera/model asset checks, Android asset packaging, Gradle debug/unsigned-release APK builds, version metadata checks, SHA-256 generation and both APK artifact uploads all passed.
 
-Artifacts from run 40100571899 (these digests are for uploaded ZIP archives, not APK-internal hashes):
+Artifacts from run 40102119131 (the digests below are for uploaded ZIP archives, not APK-internal hashes):
 
-- Debug artifact ID 12562239590: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899/artifacts/12562239590
-  - ZIP size: 14,959,763 bytes
-  - ZIP SHA-256: `d5049505761effa44b64f5ac3af9ad20ff292342c09fbc1030718c7295f58ca4`
-- Unsigned release-candidate artifact ID 12562731750: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899/artifacts/12562731750
-  - ZIP size: 13,621,519 bytes
-  - ZIP SHA-256: `599fc7d8cb73d172fe864851878452079d9c2a384cb560b7bf4b15e21b615ff0`
+- Debug artifact ID 12562958707: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12562958707
+  - ZIP size: 14,959,841 bytes
+  - ZIP SHA-256: `44143d6d16ff8d4c162c3f796be75f7e47bb33de2c9f90adcbf18204f1559353`
+- Unsigned release-candidate artifact ID 12563113048: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12563113048
+  - ZIP size: 13,621,537 bytes
+  - ZIP SHA-256: `cc1f6f13aa512fdc5e6ccc82780974dd0faee855897f6df64b728ffd586051c1`
 
 ### Current checkpoint update
 
-At the last completed verification, run 40100571899 on `d08c55718d19129937147756e6bfdcee63e76767` passed 71/71 tests, both audits and all build/artifact steps. This handoff save triggers another workflow; on resume, fetch the newest run and artifacts rather than assuming that later workflow is green.
+The lifecycle-restart reliability fix and its regression tests are verified on `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`. The documentation-only synchronization will advance the branch and trigger another workflow; do not assume that newest run is green until its result is fetched.
 ### Earlier verified checkpoints
 
 - Run 40097505589 on 02c2f7ab32023c0d8f22661a3171b5e8f6368775 also passed 71/71 tests and both audits and uploaded artifacts.
@@ -152,14 +152,14 @@ These are the most important instructions and must survive every handoff:
 - Repository: `majd7772233-a11y/OpenMakeup`.
 - Working branch: `feat/open-makeup-arabic-mobile-lifecycle`.
 - PR #3: https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — **OPEN, NOT MERGED**. Do not merge unless the user explicitly asks.
-- Last code+documentation HEAD observed before this handoff save: `d08c55718d19129937147756e6bfdcee63e76767`. This save contains only the refreshed handoff/notebook/roadmap state and advances the branch; on resume fetch live HEAD and newest CI rather than checking out this recorded parent.
-- Latest completed full CI: [Run 40100571899](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899) on `d08c55718d19129937147756e6bfdcee63e76767`: **71/71 tests**, full and production audits both zero vulnerabilities, typecheck/Vite/source+dist asset checks/Android packaging/debug and unsigned-release builds/checksums/both artifact uploads passed.
-- Debug artifact: [12562239590](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899/artifacts/12562239590), ZIP 14,959,763 bytes, SHA-256 `d5049505761effa44b64f5ac3af9ad20ff292342c09fbc1030718c7295f58ca4`.
-- Unsigned release candidate: [12562731750](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899/artifacts/12562731750), ZIP 13,621,519 bytes, SHA-256 `599fc7d8cb73d172fe864851878452079d9c2a384cb560b7bf4b15e21b615ff0`.
-- The handoff documentation commit itself will trigger another run; fetch its actual result on resume. Do not infer that it passed.
+- Latest code-bearing HEAD verified by run 40102119131: `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`. This documentation synchronization will make a docs-only commit; on resume fetch the live HEAD and newest CI rather than checking out a recorded parent.
+- Latest completed full CI on the code-bearing head: [Run 40102119131](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131) on `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`: **74/74 tests**, full and production audits zero vulnerabilities, typecheck/Vite/source+dist asset checks/Android packaging/debug and unsigned-release builds/checksums/both artifact uploads passed.
+- Debug artifact: [12562958707](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12562958707), ZIP 14,959,841 bytes, SHA-256 `44143d6d16ff8d4c162c3f796be75f7e47bb33de2c9f90adcbf18204f1559353`.
+- Unsigned release candidate: [12563113048](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12563113048), ZIP 13,621,537 bytes, SHA-256 `cc1f6f13aa512fdc5e6ccc82780974dd0faee855897f6df64b728ffd586051c1`.
+- This docs synchronization triggers a new workflow; on resume fetch its actual result and do not infer that it passed.
 - App identity: Android `1.5.0`, `versionCode 6`, `applicationId com.magd.openmakeup`, `minSdk 23`. Preserve ID, minimum SDK and public SDK contracts.
 - Exactly five planned stages exist; Stages 1–5 have source implementation and automated CI evidence. No Stage 6 is part of the agreement.
-- Source-review follow-up in this revision: fixed a lifecycle race where `stop()` could leave an unresolved camera-start promise/frame callback blocking the next start, and a late stale start could clear or stop a newer start. Added regression tests for permission-prompt restart, in-flight frame restart and engine promise ownership. CI validation for this follow-up is pending at this checkpoint.
+- Source-review follow-up verified by run 40102119131: fixed a lifecycle race where `stop()` could leave an unresolved camera-start promise/frame callback blocking the next start, and a late stale start could clear or stop a newer start. Regression tests cover permission-prompt restart, in-flight frame restart and engine promise ownership. All 74 CI tests passed on code head `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`.
 - Physical Android 6/7 and broader camera/permission/resume/orientation/capture/storage/share/accessibility/WebGL/thermal tests have **not been performed**. This is the real-device release gate. The release APK is unsigned.
 
 ### Immediate resume procedure
