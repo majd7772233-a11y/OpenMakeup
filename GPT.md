@@ -1,18 +1,18 @@
 # GPT.md — Open Makeup Engineering Notebook
 
-**Canonical restart file:** [CONTINUATION.md](./CONTINUATION.md). Read it first when a new conversation says “continue where we stopped”; it contains strict rules, exact progress, CI evidence and the remaining release gate.
+**Canonical restart file:** [CONTINUATION.md](./CONTINUATION.md). Read it first whenever a new conversation says “continue where we stopped”; it contains the strict rules, exact stop point, CI evidence and pending release gate.
 
 - **Repository:** https://github.com/majd7772233-a11y/OpenMakeup
-- **Branch:** `feat/open-makeup-arabic-mobile-lifecycle`
-- **Live HEAD before this checkpoint refresh:** `2852f3d1e098564bf262bff1634376a9e6a852d7` (docs-only; this handoff refresh creates another docs-only commit).
-- **Latest completed full CI:** [Run 40098251489](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098251489) on `f437f2a3affcc558cec5297d37ad43dc3b665a12`: **71 tests passed, 0 failed**; full and production audits reported zero vulnerabilities; typecheck, Vite, source/dist local runtime asset checks, Android packaging, debug/unsigned-release APKs, checksums and both artifact uploads passed.
-- **Current-head workflow before this refresh:** [Run 40098508715](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715), at last check in progress on “Upload debug APK”; recheck the newer run triggered by this docs refresh.
-- **Latest completed debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098251489/artifacts/12561747266), ZIP 14,959,767 bytes, SHA-256 `ab7e3bd3c8489414d960820c1108adedfc10b2cec9c6722ae5b3241451b28ccc`.
-- **Latest completed unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098251489/artifacts/12561996454), ZIP 13,621,521 bytes, SHA-256 `1495e94a5e93634c9ee8ba612117012042b3d5e957fd933d9bc8cdc0a5f57e24`.
-- **App identity:** Android 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23. Preserve the package identity and current public SDK contracts.
-- **PR #3:** https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — remains open and unmerged.
-- **Acceptance boundary:** all five planned stages have source and CI evidence. Physical Android 6/7 and broader device, accessibility, GPU/thermal checks have **not** been performed; the release APK is unsigned. Do not claim otherwise.
-- **Mandatory execution protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt).
+- **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`
+- **Base HEAD before this documentation refresh:** `a0bc3c13764ff05b971f1e0f55b3991ea084508f` (docs-only; this refresh creates another docs-only commit).
+- **Latest completed full CI:** [Run 40098508715](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715) on `2852f3d1e098564bf262bff1634376a9e6a852d7`: **71 tests passed, 0 failed**, full and production dependency audits reported zero vulnerabilities, typecheck/Vite/local source+dist asset checks/Android packaging/debug and unsigned-release builds/checksums/artifact uploads all passed.
+- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715/artifacts/12561014425), ZIP 14,959,768 bytes, SHA-256 `4b01fa7099de345227cb7fa25e0020d5a59a50f3fe34df62e3d58b3c6b8b25a4`.
+- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715/artifacts/12561432969), ZIP 13,621,519 bytes, SHA-256 `65485a667f30e2c929aefbd2b811f15f8ca946548db0ead50cc0e2b7e046539d`.
+- **Current-base workflow:** [40098717168](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098717168) was in progress during Gradle APK builds on base HEAD; check the newer workflow triggered by this docs refresh.
+- **Android identity:** 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23.
+- **PR #3:** https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — open and unmerged.
+- **Device acceptance:** not performed. Physical Android 6/7 and broader camera/lifecycle/orientation/storage/share/accessibility/WebGL/thermal checks remain the release gate. CI does not prove these behaviors; the release candidate is unsigned.
+- **Working protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt).
 
 ## 1. Project Intent and Non-Negotiable Requirements
 

@@ -19,7 +19,7 @@ Do not greet, give a generic status preamble, ask the user to repeat the request
 - Repository: https://github.com/majd7772233-a11y/OpenMakeup
 - Working branch: feat/open-makeup-arabic-mobile-lifecycle
 - PR #3: https://github.com/majd7772233-a11y/OpenMakeup/pull/3
-- Last reconciled branch HEAD: `2852f3d1e098564bf262bff1634376a9e6a852d7` (docs-only, parent `f437f2a3affcc558cec5297d37ad43dc3b665a12`). The code is unchanged by the docs commits; full CI passed on the immediate code/docs predecessor at run 40098251489. This checkpoint refresh will itself create a newer docs-only HEAD, so always fetch the live branch tip before acting.
+- Base HEAD at last inspection: `a0bc3c13764ff05b971f1e0f55b3991ea084508f` (documentation-only, parent `2852f3d1e098564bf262bff1634376a9e6a852d7`). The code is unchanged by the docs commits; full CI passed on the immediate predecessor at run 40098508715. This checkpoint refresh will create another docs-only HEAD, so fetch live GitHub before acting.
 - PR #3 was OPEN and NOT MERGED. Keep it open/unmerged unless the user explicitly requests a merge.
 - Android app version 1.5.0, versionCode 6, applicationId com.magd.openmakeup, minSdk 23 / Android 6.0. Preserve app ID, minSdk and public SDK contracts unless expressly directed otherwise.
 - The planned roadmap has exactly five stages. Source implementation and automated CI for Stages 1–5 are complete on the verified revision. No Stage 6 is part of the current agreed roadmap.
@@ -28,27 +28,27 @@ Do not greet, give a generic status preamble, ask the user to repeat the request
 
 ### Latest completed full pipeline at checkpoint time
 
-- Run: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098251489
-- Tested head: `f437f2a3affcc558cec5297d37ad43dc3b665a12`. Conclusion: **SUCCESS**.
-- Test summary from the job log: **71 tests, 71 passed, 0 failed**.
+- Run: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715
+- Tested head: `2852f3d1e098564bf262bff1634376a9e6a852d7`. Conclusion: **SUCCESS**.
+- Test summary from job log: **71 tests, 71 passed, 0 failed**.
 - Full dependency audit (including development tooling): 0 vulnerabilities; production audit: 0 vulnerabilities.
-- TypeScript check, source camera/model asset checks, unit tests, Vite bundle, built camera/model asset checks, Android packaging, Gradle debug/unsigned-release APK builds, metadata checks, SHA-256 generation and both artifact uploads passed.
+- TypeScript check, source camera/model asset checks, unit tests, Vite build, built camera/model asset checks, Android packaging, Gradle debug/unsigned-release APK builds, metadata checks, SHA-256 generation and both artifact uploads all passed.
 
-Artifacts from run 40098251489 (digest/size are for ZIP archives, not APK internal hashes):
+Artifacts from run 40098508715 (digests and sizes describe ZIP archives, not APK internal hashes):
 
-- Debug artifact ID 12561747266: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098251489/artifacts/12561747266
-  - ZIP size: 14,959,767 bytes
-  - ZIP SHA-256: ab7e3bd3c8489414d960820c1108adedfc10b2cec9c6722ae5b3241451b28ccc
-- Unsigned release-candidate artifact ID 12561996454: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098251489/artifacts/12561996454
-  - ZIP size: 13,621,521 bytes
-  - ZIP SHA-256: 1495e94a5e93634c9ee8ba612117012042b3d5e957fd933d9bc8cdc0a5f57e24
+- Debug artifact ID 12561014425: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715/artifacts/12561014425
+  - ZIP size: 14,959,768 bytes
+  - ZIP SHA-256: 4b01fa7099de345227cb7fa25e0020d5a59a50f3fe34df62e3d58b3c6b8b25a4
+- Unsigned release-candidate artifact ID 12561432969: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715/artifacts/12561432969
+  - ZIP size: 13,621,519 bytes
+  - ZIP SHA-256: 65485a667f30e2c929aefbd2b811f15f8ca946548db0ead50cc0e2b7e046539d
 
 ### Latest workflow on the branch tip when this checkpoint was checked
 
-- Run: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715
-- Tested head: 2852f3d1e098564bf262bff1634376a9e6a852d7.
-- Last queried status: **IN PROGRESS**, at the “Upload debug APK” step; no failed steps had been reported and no artifacts had appeared in the artifacts listing yet.
-- This is a documentation-only commit on top of the previously green implementation snapshot. This handoff refresh will trigger another docs-only CI run. Always re-fetch the newest run and result before reporting.
+- Run: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098717168
+- Tested head: a0bc3c13764ff05b971f1e0f55b3991ea084508f.
+- Last queried status: **IN PROGRESS**, at the “Build debug and unsigned release APKs” step; no failed steps had been reported and the artifact list was still empty.
+- This handoff refresh is documentation-only and will trigger a newer workflow. Re-fetch the newest run/status/logs/artifacts before reporting or resuming.
 
 ### Earlier verified checkpoints
 
@@ -151,22 +151,22 @@ These are the most important instructions and must survive every handoff:
 
 ## 8. Exact stop point and immediate next action
 
-### Snapshot being handed off
+### Snapshot at handoff
 
 - Repository: `majd7772233-a11y/OpenMakeup`.
 - Working branch: `feat/open-makeup-arabic-mobile-lifecycle`.
 - PR #3: https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — **OPEN, NOT MERGED**. Do not merge unless the user explicitly asks.
-- Base HEAD before this checkpoint refresh: `2852f3d1e098564bf262bff1634376a9e6a852d7`, commit title `docs: finalize exact continuation checkpoint and refresh CI evidence`. This refresh is documentation-only. The live HEAD will move again when it commits, so fetch it rather than treating the old SHA as the current tip.
-- Last completed full CI: run [40098251489](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098251489), passed **71/71 tests**, 0 full/production dependency vulnerabilities, TypeScript/Vite/source+dist asset validation/Android packaging/debug and unsigned-release builds/checksum generation/artifact uploads.
-- The latest run before this refresh, [40098508715](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715), was in progress on the base SHA during debug artifact upload, with no failures reported. This documentation-only commit causes a newer run; re-check current HEAD and latest Actions status on resume.
-- App identity is Android `1.5.0`, `versionCode 6`, `applicationId com.magd.openmakeup`, `minSdk 23`. Preserve these values and public SDK contracts.
-- Stages **1–5** have source implementation and automated CI evidence. There is no agreed Stage 6 and no need to reimplement completed stages.
-- Physical Android 6/7 plus the broader camera/permissions/resume/orientation/storage/share/accessibility/WebGL/thermal matrix has **not been performed**. This is the remaining real-device release gate. The release APK is unsigned.
+- Base HEAD before this refresh: `a0bc3c13764ff05b971f1e0f55b3991ea084508f`, commit title `docs: remove stale checkpoint and unify the canonical handoff`. This refresh is also documentation-only, so the branch moves again after the commit. Always fetch live HEAD.
+- Last completed full CI: [Run 40098508715](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715) on `2852f3d1e098564bf262bff1634376a9e6a852d7`: **71/71 tests**, full and production audits both zero vulnerabilities, typecheck/Vite/source+dist asset checks/Android packaging/debug and unsigned release builds/checksums/both artifact uploads passed.
+- Latest run before this refresh: [40098717168](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098717168) on base HEAD `a0bc3c13764ff05b971f1e0f55b3991ea084508f`, last queried **IN PROGRESS** at Gradle debug/unsigned-release build with no failed steps and no artifacts listed yet.
+- App identity: Android `1.5.0`, `versionCode 6`, `applicationId com.magd.openmakeup`, `minSdk 23`. Preserve ID, minimum SDK and public SDK contracts.
+- Exactly five planned stages exist; Stages 1–5 have source implementation and automated CI evidence. No Stage 6 is part of the agreement.
+- Physical Android 6/7 and broader camera/permission/resume/orientation/capture/storage/share/accessibility/WebGL/thermal tests have **not been performed**. This is the real-device release gate. The release APK is unsigned.
 
-### First action in the new conversation
+### Immediate resume procedure
 
-1. Begin immediately with GitHub calls; no greeting, plan preamble, repeated questions or status-only message.
-2. Fetch current branch HEAD, PR #3, newest Actions run/jobs/logs/artifacts, then read `CONTINUATION.md`, `GPT.md` and `ROADMAP.md`.
-3. If the current-head CI is green, do not make speculative changes. Continue with the consolidated physical-device matrix if hardware is available, or a specific defect supported by code/log evidence. If CI failed, inspect actual logs, fix the root cause on this same branch, add regression coverage and verify a newer green run.
-4. If no physical devices are connected, leave device acceptance unverified—never infer it from CI.
-5. Keep PR #3 open/unmerged; keep camera/face processing local; never sign/publish or commit credentials. Update the three project memory files after meaningful changes.
+1. Start with GitHub calls, not a greeting or progress preamble. Do not ask the user to restate the task or repeat information stored here.
+2. Fetch live branch HEAD, PR #3, newest Actions run/jobs/logs/artifacts, then read `CONTINUATION.md`, `GPT.md`, `ROADMAP.md`.
+3. If the current-head CI is green, do not reimplement finished stages. Continue with the consolidated hardware matrix if physical devices are available; otherwise leave that gate open. If a workflow failed, inspect its actual logs, fix the root cause on this branch, add regression coverage and verify a newer green run.
+4. Never claim hardware/accessibility/thermal verification from CI. Record exact physical device/model, Android and WebView versions, steps and results only when truly run.
+5. Keep PR #3 open/unmerged; keep camera/face processing local; never sign/publish or commit credentials. Keep these three memory files synchronized after meaningful changes.
