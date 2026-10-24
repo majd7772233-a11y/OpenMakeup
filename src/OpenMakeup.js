@@ -6,6 +6,40 @@ import { MORPH_CONTROLS } from './morphs.js';
 // or when AI resolution fails — keeps `apply()` from ever producing no color.
 const FALLBACK_AI_COLOR = '#b4002e';
 
+// Only advertise pattern categories with a real renderer mapping and bundled
+// mask files. Foundation/lipstick placeholders are deliberately not published.
+const PATTERN_RENDER_SUPPORT = new Set([
+  'blush', 'eyeshadow', 'eyeline', 'mascara',
+]);
+
+function validatePatternManifest(manifest) {
+  if (!manifest || !manifest.categories || typeof manifest.categories !== 'object' || Array.isArray(manifest.categories)) {
+    throw new Error('Pattern manifest has no valid categories object.');
+  }
+
+  for (const category of Object.keys(CATEGORIES)) {
+    const entries = manifest.categories[category];
+    if (!Array.isArray(entries)) throw new Error(`Pattern manifest category "${category}" must be an array.`);
+    if (!PATTERN_RENDER_SUPPORT.has(category) && entries.length) {
+      throw new Error(`Pattern manifest advertises "${category}" without a supported renderer.`);
+    }
+    const seen = new Set();
+    for (const entry of entries) {
+      const id = String(entry && entry.id != null ? entry.id : '');
+      if (!/^\d+$/.test(id)) throw new Error(`Invalid pattern id in category "${category}".`);
+      if (seen.has(id)) throw new Error(`Duplicate pattern id "${id}" in category "${category}".`);
+      seen.add(id);
+      if (entry.file !== `patterns/${category}/${id}.png`) {
+        throw new Error(`Pattern "${id}" has an invalid asset path for "${category}".`);
+      }
+      if (entry.bundled !== true) {
+        throw new Error(`Pattern "${id}" for "${category}" is not bundled for offline use.`);
+      }
+    }
+  }
+  return manifest.categories;
+}
+
 /** Normalize '#rgb' / 'rgb' / '#rrggbb' / 'rrggbb' to '#rrggbb', or null. */
 function normalizeHex(input) {
   if (typeof input !== 'string') return null;
@@ -53,17 +87,21 @@ export class OpenMakeup {
    * @param {(category: string) => (string|Promise<string>)} [options.aiColor]
    *                                      provider for categories whose default
    *                                      color is `ai` (lipstick by default)
+   * @param {(detected: boolean) => void} [options.onFaceTrackingChange]
+   *                                      notified after stable face detection/loss
+   * @param {(state: 'lost'|'restored'|'restore-failed') => void} [options.onWebGLContextChange]
+   *                                      notified when the graphics context changes state
    */
   constructor(options = {}) {
     const {
       video, renderCanvas, overlayCanvas,
       assetsBaseUrl, mediapipeBaseUrl, faceMesh, camera,
-      defaults = {}, aiColor = null,
+      defaults = {}, aiColor = null, onFaceTrackingChange = null, onWebGLContextChange = null,
     } = options;
 
     this.engine = new MakeupEngine({
       video, renderCanvas, overlayCanvas,
-      assetsBaseUrl, mediapipeBaseUrl, faceMesh, camera,
+      assetsBaseUrl, mediapipeBaseUrl, faceMesh, camera, onFaceTrackingChange, onWebGLContextChange,
     });
 
     this._aiColor = typeof aiColor === 'function' ? aiColor : null;
@@ -81,18 +119,31 @@ export class OpenMakeup {
     this._ready = false;
   }
 
-  /** Boot the engine and load the pattern manifest. */
+  /** Boot the engine and validate the bundled pattern manifest. */
   async init(onReady) {
+    if (this._ready) return this;
     await this.engine.init();
     try {
-      const res = await fetch(this.engine.assets.manifest());
-      const manifest = await res.json();
-      this._patterns = manifest.categories || {};
-    } catch (e) {
+      const manifestUrl = this.engine.assets.manifest();
+      const response = await fetch(manifestUrl);
+      if (!response.ok) throw new Error(`Pattern manifest request failed (HTTP ${response.status}).`);
+      const manifest = await response.json();
+      this._patterns = validatePatternManifest(manifest);
+    } catch (error) {
       this._patterns = {};
+      this._ready = false;
+      try { this.engine.dispose(); } catch (disposeError) {
+        console.warn('OpenMakeup: engine cleanup after manifest failure failed:', disposeError);
+      }
+      const detail = error && error.message ? error.message : String(error || 'unknown manifest error');
+      throw new Error('OpenMakeup: required pattern manifest could not be loaded. ' + detail);
     }
     this._ready = true;
-    if (onReady) onReady(this);
+    if (onReady) {
+      try { onReady(this); } catch (callbackError) {
+        console.warn('OpenMakeup: onReady callback failed:', callbackError);
+      }
+    }
     return this;
   }
 
@@ -100,15 +151,17 @@ export class OpenMakeup {
     return this._ready;
   }
 
-  /** List the patterns available for a category: [{ number, id, bundled }]. */
+  /** List usable bundled patterns for a category: [{ number, id, bundled: true }]. */
   getPatterns(category) {
     const name = resolveCategory(category);
-    if (!name) return [];
-    return (this._patterns[name] || []).map((p, i) => ({
-      number: i + 1,
-      id: p.id,
-      bundled: !!p.bundled,
-    }));
+    if (!name || !PATTERN_RENDER_SUPPORT.has(name)) return [];
+    return (this._patterns[name] || [])
+      .filter((pattern) => pattern.bundled === true)
+      .map((pattern, i) => ({
+        number: i + 1,
+        id: pattern.id,
+        bundled: true,
+      }));
   }
 
   /** The canonical category names supported by the SDK. */
@@ -123,37 +176,42 @@ export class OpenMakeup {
   async apply(category, opts = {}) {
     const name = resolveCategory(category);
     if (!name) throw new Error(`OpenMakeup: unknown category "${category}"`);
+    if (!this._ready) throw new Error('OpenMakeup: await init() before applying makeup.');
     const cfg = this._categories[name];
-
+    const intensity = opts.intensity == null ? 1 : opts.intensity;
+    if (typeof intensity !== 'number' || !Number.isFinite(intensity) || intensity < 0 || intensity > 1) {
+      throw new Error('OpenMakeup: intensity must be a finite number from 0 to 1.');
+    }
     const color = await this._resolveColor(name, opts);
     const colorMode = this._resolveColorMode(name, opts);
-
-    // color + visibility
-    this.engine.setAR(cfg.engine, color, colorMode);
-
-    // pattern (only when one is requested or defaulted; otherwise the shader's
-    // built-in texture is kept)
     const patternId = this._resolvePatternId(name, opts);
+
+    // Supported categories restore their built-in texture when no pattern is
+    // requested. This prevents a previous pattern from sticking to a new look.
     if (patternId != null) {
-      try {
-        await this.engine.setPattern(cfg.engine, patternId);
-      } catch (e) {
-        console.warn(`OpenMakeup: could not load pattern ${patternId} for "${name}".`);
-      }
+      const applied = await this.engine.setPattern(cfg.engine, patternId);
+      if (applied === false) throw new Error(`OpenMakeup: pattern update for "${name}" was superseded by a newer selection.`);
+    } else if (PATTERN_RENDER_SUPPORT.has(name)) {
+      const reset = await this.engine.setPattern(cfg.engine, null);
+      if (reset === false) throw new Error(`OpenMakeup: could not restore the default pattern for "${name}".`);
     }
+    this.engine.setAR(cfg.engine, color, colorMode);
+    this.engine.setIntensity(cfg.engine, intensity);
 
     return {
       category: name,
       color,
       finish: cfg.supportsFinish ? (opts.finish ?? cfg.defaults.finish) : null,
       pattern: patternId,
+      intensity,
     };
   }
 
   /** Hide one makeup layer. */
   clear(category) {
     const name = resolveCategory(category);
-    if (name) this.engine.clearPart(this._categories[name].engine);
+    if (!name) throw new Error(`OpenMakeup: unknown category "${category}"`);
+    this.engine.clearPart(this._categories[name].engine);
   }
 
   /** Hide every makeup layer. */
@@ -202,7 +260,24 @@ export class OpenMakeup {
     this.engine.setBlur(on);
   }
 
-  start() { this.engine.start(); }
+  /** Current camera direction requested by the engine. */
+  get cameraFacingMode() { return this.engine.cameraFacingMode; }
+
+  /** Whether this runtime appears to support camera-facing constraints. */
+  canSwitchCamera() { return this.engine.canSwitchCamera(); }
+
+  /**
+   * Switch front/rear cameras. Resolves after fresh frames; on failure the engine
+   * attempts to restore the previous camera before rejecting.
+   * @param {'user'|'environment'} facingMode
+   * @returns {Promise<OpenMakeup>}
+   */
+  switchCamera(facingMode) {
+    if (!this._ready) return Promise.reject(new Error('OpenMakeup: await init() before switching cameras.'));
+    return this.engine.switchCamera(facingMode).then(() => this);
+  }
+
+  start() { return this.engine.start().then(() => this); }
   stop() { this.engine.stop(); }
   dispose() { this.engine.dispose(); }
 
@@ -213,45 +288,62 @@ export class OpenMakeup {
     let color = opts.color != null ? opts.color : cfg.defaults.color;
 
     if (color === AI_SENTINEL) {
-      if (this._aiColor) {
-        try { color = await this._aiColor(name); }
-        catch (e) { color = FALLBACK_AI_COLOR; }
-      } else {
-        color = FALLBACK_AI_COLOR;
+      if (!this._aiColor) return FALLBACK_AI_COLOR;
+      try {
+        color = await this._aiColor(name);
+      } catch (_) {
+        return FALLBACK_AI_COLOR;
       }
     }
-    return normalizeHex(color) || FALLBACK_AI_COLOR;
+
+    const normalized = normalizeHex(color);
+    if (!normalized) {
+      throw new Error(`OpenMakeup: invalid color for "${name}". Use #RGB or #RRGGBB.`);
+    }
+    return normalized;
   }
 
   _resolveColorMode(name, opts) {
     const cfg = this._categories[name];
     if (!cfg.supportsFinish) {
       if (opts.finish != null) {
-        console.warn(`OpenMakeup: "${name}" has no finish; ignoring finish "${opts.finish}".`);
+        throw new Error(`OpenMakeup: finish "${opts.finish}" is not supported for "${name}".`);
       }
       return undefined;
     }
+
     const finish = opts.finish != null ? opts.finish : cfg.defaults.finish;
-    const code = cfg.finishMap[finish];
-    if (code == null) {
-      console.warn(`OpenMakeup: finish "${finish}" not supported for "${name}"; using "${cfg.defaults.finish}".`);
-      return cfg.finishMap[cfg.defaults.finish];
+    if (!Object.prototype.hasOwnProperty.call(cfg.finishMap, finish)) {
+      throw new Error(`OpenMakeup: finish "${finish}" is not supported for "${name}".`);
     }
-    return code;
+    return cfg.finishMap[finish];
   }
 
   _resolvePatternId(name, opts) {
-    if (opts.patternId != null) return opts.patternId; // explicit image id wins
     const cfg = this._categories[name];
-    let p = opts.pattern != null ? opts.pattern : cfg.defaults.pattern;
-    if (p == null) return null; // keep the shader's built-in texture
+    const hasExplicitId = opts.patternId != null;
+    const requested = hasExplicitId
+      ? opts.patternId
+      : (opts.pattern != null ? opts.pattern : cfg.defaults.pattern);
+    if (requested == null) return null;
+
+    if (!PATTERN_RENDER_SUPPORT.has(name)) {
+      throw new Error(`OpenMakeup: patterns are not supported for "${name}" yet.`);
+    }
 
     const list = this._patterns[name] || [];
-    if (Number.isInteger(p) && p >= 1 && p <= list.length) return list[p - 1].id; // 1-based number
-    const byId = list.find((x) => x.id === p);
-    if (byId) return byId.id;
-
-    console.warn(`OpenMakeup: pattern ${p} not found for "${name}" (valid: 1..${list.length}); keeping built-in.`);
-    return null;
+    if (hasExplicitId) {
+      const entry = list.find((pattern) => String(pattern.id) === String(requested));
+      if (entry) return entry.id;
+      throw new Error(`OpenMakeup: pattern id "${requested}" is not available for "${name}".`);
+    }
+    if (Number.isInteger(requested) && requested >= 1 && requested <= list.length) {
+      return list[requested - 1].id;
+    }
+    const entry = list.find((pattern) => String(pattern.id) === String(requested));
+    if (entry) return entry.id;
+    throw new Error(`OpenMakeup: pattern "${requested}" is not available for "${name}" (valid positions: 1..${list.length}).`);
   }
+
+
 }

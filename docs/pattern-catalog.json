@@ -504,38 +504,6 @@
     "bundled": false
   },
   {
-    "makeup_type": "foundation",
-    "category_id": 63,
-    "pattern_id": 6421,
-    "icon_id": 6422,
-    "target_file": "assets/patterns/foundation/6421.png",
-    "bundled": false
-  },
-  {
-    "makeup_type": "lipstick",
-    "category_id": 88,
-    "pattern_id": 6427,
-    "icon_id": 6428,
-    "target_file": "assets/patterns/lipstick/6427.png",
-    "bundled": false
-  },
-  {
-    "makeup_type": "lipstick",
-    "category_id": 88,
-    "pattern_id": 6429,
-    "icon_id": 6430,
-    "target_file": "assets/patterns/lipstick/6429.png",
-    "bundled": false
-  },
-  {
-    "makeup_type": "lipstick",
-    "category_id": 88,
-    "pattern_id": 6431,
-    "icon_id": 6432,
-    "target_file": "assets/patterns/lipstick/6431.png",
-    "bundled": false
-  },
-  {
     "makeup_type": "eyeshadow",
     "category_id": 75,
     "pattern_id": 8711,

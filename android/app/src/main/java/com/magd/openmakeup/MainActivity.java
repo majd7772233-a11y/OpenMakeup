@@ -2,10 +2,24 @@ package com.magd.openmakeup;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.pm.PackageManager;
+import android.content.ContentValues;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.media.MediaScannerConnection;
+import android.util.Base64;
+import android.webkit.JavascriptInterface;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+import androidx.core.content.FileProvider;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -17,16 +31,20 @@ import androidx.webkit.WebViewAssetLoader;
 
 public class MainActivity extends Activity {
     private static final int CAMERA_REQUEST = 41;
+    private static final int STORAGE_REQUEST = 42;
+    private static final int MAX_CAPTURE_DATA_URL_LENGTH = 32_000_000;
     private static final String APP_ORIGIN = "https://appassets.androidplatform.net";
     private WebView webView;
     private PermissionRequest pendingWebPermission;
+    private Bitmap pendingSaveBitmap;
+    private String pendingSaveName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         webView = new WebView(this);
-        webView.setBackgroundColor(0xFF111018);
+        webView.setBackgroundColor(0xFF100D18);
         setContentView(webView);
 
         WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
@@ -62,6 +80,7 @@ public class MainActivity extends Activity {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
             }
         });
+        webView.addJavascriptInterface(new OpenMakeupBridge(), "OpenMakeupBridge");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onPermissionRequest(PermissionRequest request) {
@@ -113,6 +132,17 @@ public class MainActivity extends Activity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == STORAGE_REQUEST) {
+            Bitmap bitmap = pendingSaveBitmap;
+            String name = pendingSaveName;
+            pendingSaveBitmap = null;
+            pendingSaveName = null;
+            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            boolean saved = granted && bitmap != null && saveBitmapToGallery(bitmap, name);
+            if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+            notifyWebImageResult("save", saved ? "saved" : (granted ? "failed" : "permission_denied"));
+            return;
+        }
         if (requestCode != CAMERA_REQUEST) return;
 
         PermissionRequest pending = pendingWebPermission;
@@ -126,23 +156,220 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
+
+    private String safeImageName(String requested) {
+        String name = requested == null ? "" : requested.replaceAll("[^A-Za-z0-9._-]", "_");
+        if (name.isEmpty()) name = "Open-Makeup-" + System.currentTimeMillis();
+        if (!name.toLowerCase().endsWith(".png")) name += ".png";
+        return name;
+    }
+
+    private void notifyWebImageResult(String operation, String status) {
+        String safeOperation = operation.replaceAll("[^a-z]", "");
+        String safeStatus = status.replaceAll("[^a-z_]", "");
+        runOnUiThread(() -> {
+            if (webView != null) {
+                webView.evaluateJavascript("window.onNativeImageResult && window.onNativeImageResult('"
+                        + safeOperation + "','" + safeStatus + "')", null);
+            }
+        });
+    }
+
+    private Bitmap decodePngDataUrl(String dataUrl) {
+        if (dataUrl == null || dataUrl.length() > MAX_CAPTURE_DATA_URL_LENGTH
+                || !dataUrl.startsWith("data:image/png;base64,")) return null;
+        try {
+            byte[] bytes = Base64.decode(dataUrl.substring(dataUrl.indexOf(',') + 1), Base64.DEFAULT);
+            BitmapFactory.Options bounds = new BitmapFactory.Options();
+            bounds.inJustDecodeBounds = true;
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.length, bounds);
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0
+                    || bounds.outWidth > 4096 || bounds.outHeight > 4096
+                    || (long) bounds.outWidth * (long) bounds.outHeight > 16_000_000L) return null;
+            return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private boolean saveBitmapToGallery(Bitmap bitmap, String requestedName) {
+        if (bitmap == null || bitmap.isRecycled()) return false;
+        OutputStream output = null;
+        Uri inserted = null;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Images.Media.DISPLAY_NAME, safeImageName(requestedName));
+                values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+                values.put(MediaStore.Images.Media.RELATIVE_PATH,
+                        Environment.DIRECTORY_PICTURES + "/Open Makeup");
+                values.put(MediaStore.Images.Media.IS_PENDING, 1);
+                inserted = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                if (inserted == null) return false;
+                output = getContentResolver().openOutputStream(inserted);
+                if (output == null || !bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)) {
+                    getContentResolver().delete(inserted, null, null);
+                    return false;
+                }
+                output.close();
+                output = null;
+                ContentValues publish = new ContentValues();
+                publish.put(MediaStore.Images.Media.IS_PENDING, 0);
+                if (getContentResolver().update(inserted, publish, null, null) <= 0) {
+                    getContentResolver().delete(inserted, null, null);
+                    return false;
+                }
+                return true;
+            }
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) return false;
+            File directory = new File(Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_PICTURES), "Open Makeup");
+            if (!directory.exists() && !directory.mkdirs()) return false;
+            File target = new File(directory, safeImageName(requestedName));
+            output = new FileOutputStream(target);
+            if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)) return false;
+            output.close();
+            output = null;
+            MediaScannerConnection.scanFile(this, new String[]{target.getAbsolutePath()},
+                    new String[]{"image/png"}, null);
+            return true;
+        } catch (Exception exception) {
+            if (inserted != null) {
+                try { getContentResolver().delete(inserted, null, null); } catch (Exception ignored) {}
+            }
+            return false;
+        } finally {
+            if (output != null) {
+                try { output.close(); } catch (IOException ignored) {}
+            }
+        }
+    }
+
+    private void beginShareImage(Bitmap bitmap, String requestedName) {
+        File directory = new File(getCacheDir(), "OpenMakeup");
+        if (!directory.exists() && !directory.mkdirs()) {
+            if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+            notifyWebImageResult("share", "failed");
+            return;
+        }
+        File target = new File(directory, safeImageName(requestedName));
+        try (FileOutputStream output = new FileOutputStream(target)) {
+            if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)) {
+                notifyWebImageResult("share", "failed");
+                return;
+            }
+        } catch (Exception exception) {
+            notifyWebImageResult("share", "failed");
+            return;
+        } finally {
+            if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+        }
+        try {
+            Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", target);
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("image/png");
+            send.putExtra(Intent.EXTRA_STREAM, uri);
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            runOnUiThread(() -> {
+                try {
+                    startActivity(Intent.createChooser(send, "Share Open Makeup photo"));
+                    notifyWebImageResult("share", "share_opened");
+                } catch (Exception exception) {
+                    notifyWebImageResult("share", "failed");
+                }
+            });
+        } catch (Exception exception) {
+            notifyWebImageResult("share", "failed");
+        }
+    }
+
+    private final class OpenMakeupBridge {
+        @JavascriptInterface
+        public String saveImage(String dataUrl, String requestedName) {
+            Bitmap bitmap = decodePngDataUrl(dataUrl);
+            if (bitmap == null) return "failed";
+            String name = safeImageName(requestedName);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+                    && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                if (pendingSaveBitmap != null && !pendingSaveBitmap.isRecycled()) pendingSaveBitmap.recycle();
+                pendingSaveBitmap = bitmap;
+                pendingSaveName = name;
+                runOnUiThread(() -> requestPermissions(
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_REQUEST));
+                return "permission_required";
+            }
+            boolean saved = saveBitmapToGallery(bitmap, name);
+            if (!bitmap.isRecycled()) bitmap.recycle();
+            return saved ? "saved" : "failed";
+        }
+
+        @JavascriptInterface
+        public String shareImage(String dataUrl, String requestedName) {
+            Bitmap bitmap = decodePngDataUrl(dataUrl);
+            if (bitmap == null) return "failed";
+            beginShareImage(bitmap, safeImageName(requestedName));
+            return "share_started";
         }
     }
 
     @Override
+    protected void onPause() {
+        if (webView != null) {
+            // Let the web runtime stop an already-running camera before WebView
+            // timers are paused. The JavaScript handler ignores incomplete startup.
+            webView.evaluateJavascript(
+                    "if(window.handleOpenMakeupPause){window.handleOpenMakeupPause();}", null);
+            webView.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.onResume();
+            webView.postDelayed(() -> {
+                if (webView != null) {
+                    webView.evaluateJavascript(
+                            "if(window.handleOpenMakeupResume){window.handleOpenMakeupResume();}", null);
+                }
+            }, 250);
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView == null) {
+            super.onBackPressed();
+            return;
+        }
+        webView.evaluateJavascript(
+                "(function(){return !!(window.handleAndroidBack && window.handleAndroidBack());})()",
+                value -> {
+                    if (!"true".equals(value)) {
+                        if (webView != null && webView.canGoBack()) {
+                            webView.goBack();
+                        } else {
+                            MainActivity.super.onBackPressed();
+                        }
+                    }
+                });
+    }
+
+    @Override
     protected void onDestroy() {
+        if (pendingSaveBitmap != null && !pendingSaveBitmap.isRecycled()) {
+            pendingSaveBitmap.recycle();
+            pendingSaveBitmap = null;
+        }
         if (pendingWebPermission != null) {
             pendingWebPermission.deny();
             pendingWebPermission = null;
         }
         if (webView != null) {
             webView.stopLoading();
+            webView.onPause();
             webView.destroy();
             webView = null;
         }

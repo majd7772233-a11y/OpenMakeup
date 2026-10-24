@@ -3,7 +3,7 @@
 **Display name:** Open Makeup  
 **Application ID:** `com.magd.openmakeup`  
 **Minimum Android:** Android 6.0 (API 23)  
-**Version:** 1.1.0
+**Version:** 1.5.0 · versionCode 6
 
 The app keeps the existing OpenMakeup JavaScript/Three.js/MediaPipe engine and hosts it locally in Android WebView. This avoids a costly native rewrite and keeps the web demo and Android app on the same engine.
 
@@ -11,7 +11,12 @@ The app keeps the existing OpenMakeup JavaScript/Three.js/MediaPipe engine and h
 
 - Real-time virtual makeup and face sculpt controls from the existing SDK.
 - One-tap Rose, Berry, and Nude looks.
-- A custom About screen matching the site's dark, glass-inspired visual style.
+- Arabic-first interface with full Arabic/English UI and accessibility localization, persistent RTL/LTR switching, and localized browser metadata.
+- Keyboard skip navigation, visible focus, 44px touch controls, reduced-motion support, focus-managed About dialog, and expandable advanced controls.
+- Live face-tracking feedback distinguishes normal camera startup from a face that has not yet been detected.
+- Mobile-first responsive controls and an animated About screen matching the site's dark, glass-inspired visual style.
+- Full-screen camera preview with an exit control and Android Back handling.
+- Camera pause/resume recovery when the app moves to the background and returns.
 - Camera permission is requested at runtime and WebView camera access is restricted to the local app origin.
 - Bundled model, shader, pattern, MediaPipe Face Mesh, and camera utility files for offline startup.
 - Clearer startup and action errors when the face engine or device graphics support is unavailable.
@@ -23,7 +28,7 @@ The Android project sets `minSdk 23`, so Android 6.0 Marshmallow and Android 7.x
 
 ## Build
 
-The GitHub Actions workflow installs npm dependencies, bundles the web app and local runtime assets, copies `dist/` into `android/app/src/main/assets/www/`, then builds the debug APK.
+The GitHub Actions workflow installs npm dependencies, bundles the web app and local runtime assets, copies `dist/` into `android/app/src/main/assets/www/`, then builds the debug APK and unsigned release candidate. It uploads both artifacts and release checksums; the release APK remains unsigned.
 
 For a local web bundle, from the repository root:
 

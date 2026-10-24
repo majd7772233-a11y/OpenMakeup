@@ -10,6 +10,7 @@ uniform sampler2D _EyeShadowTexture;
 uniform sampler2D _FaceMaskE;
 uniform float _noise;
 uniform float _transparency;
+uniform float uIntensity;
 
 // ----------------------
 // Simplex Noise 2D
@@ -54,6 +55,6 @@ void main() {
 
     // آلفا نهایی
 //    float alpha = tex.a * mask.r * _ShadowColor.a * _transparency;
-    float alpha = (tex.a) * (mask.r*1.4) *  _transparency;
+    float alpha = (tex.a) * (mask.r*1.4) * _transparency * uIntensity;
     fragColor = vec4(noisyCol.rgb,alpha);
 }

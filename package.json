@@ -25,6 +25,7 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
+    "test": "node --test",
     "build": "node scripts/build-web.mjs"
   },
   "keywords": [
@@ -53,11 +54,16 @@
   "devDependencies": {
     "three": "^0.184.0",
     "typescript": "^5.9.3",
-    "vite": "^8.0.16"
+    "vite": "^8.3.4"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/majd7772233-a11y/OpenMakeup.git"
+  },
+  "overrides": {
+    "nanoid": "^3.3.18",
+    "postcss": "^8.5.23",
+    "source-map-js": "^1.2.2"
   }
 }
