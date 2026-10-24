@@ -288,7 +288,7 @@ The matrix above is a **test plan**, not a record of tested devices. Record devi
 - [x] Onboarding dismissal persistence and bilingual guidance.
 - [x] Twelve validated data-driven looks across four localized groups.
 - [x] Conservative/balanced performance defaults; WebGL context-loss callback and recovery path; temporary-target capture tests.
-- [x] Full and production dependency audit, type-check, 71-test Stage-5 suite, web build, debug and unsigned release APK build, checksum generation and artifact upload passed on the validated revision.
+- [x] Full and production dependency audit, type-check, 74-test full suite including camera lifecycle race regressions, web build, debug and unsigned release APK build, checksum generation and artifact upload passed on the validated revision.
 - [ ] Physical front/rear switch and failed-switch recovery verified on supported hardware.
 - [ ] Sustained performance/thermal impact measured on a defined physical device matrix.
 - [ ] Physical portrait/landscape, capture, accessibility, permission, gallery/share and Android 6/7 compatibility checks recorded before a production release.

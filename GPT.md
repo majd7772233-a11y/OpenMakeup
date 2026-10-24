@@ -221,7 +221,7 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 
 1. If the new chat begins with “اكمل من حيث توقفت”, start with GitHub calls immediately; do not greet, announce a plan, give a generic preamble or ask the user to repeat context.
 2. Fetch the live branch HEAD, PR #3 and latest Actions run/jobs/logs/artifacts. This docs save triggers CI; never assume a run passed before inspecting it.
-3. Stages 1–5 are implemented with 71 passing automated tests and green full/production audits on the last verified HEAD. Do not create Stage 6 or redo completed implementation. Remaining release gate is physical Android 6/7 plus the broader real-device matrix in CONTINUATION.md.
+3. Stages 1–5 are implemented with 74 passing automated tests and green full/production audits on the last verified code HEAD (run 40102119131). Do not create Stage 6 or redo completed implementation. Remaining release gate is physical Android 6/7 plus the broader real-device matrix in CONTINUATION.md.
 4. If a live check fails, inspect actual logs, fix the proven root cause on this branch, add regression coverage and verify a newer green run.
 5. Keep PR #3 open/unmerged; preserve local-only processing and never claim physical tests from CI. Do not sign/publish or commit credentials.
 6. Keep CONTINUATION.md, GPT.md and ROADMAP.md synchronized after meaningful changes.
