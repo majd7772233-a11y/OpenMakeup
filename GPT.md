@@ -1,13 +1,14 @@
 # GPT.md — Open Makeup Engineering Notebook
 
-**Last updated:** 2026-10-23  
+**Last updated:** 2026-10-24  
 **Repository:** https://github.com/majd7772233-a11y/OpenMakeup  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
-**Stage 5 implementation revision:** `64ae1eb7297e305ec458107996b9bb9123f3bbfc`  
-**Latest branch-tip CI:** [Run 39866650037](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866650037) on `8612f3f1006e864be8f869d33428f0bd97c6af72` — **65 tests passed, 0 failed**, full and production npm audits reported zero vulnerabilities, TypeScript/web/Android asset builds passed, both APK variants built and checksum/artifact steps passed.  
-**Latest debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866650037/artifacts/12464606584) — ZIP 14,959,770 bytes; digest `sha256:270dcc78c5cb3d1652f395909cd9c204a6f205042867e72a93ced064f3905cea`.  
-**Latest unsigned release artifact:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866650037/artifacts/12464631359) — ZIP 13,621,314 bytes; digest `sha256:eaf299a0684e27b9debfc7e5b32e61290b2c4184b181057c7fc17d0f672119d4`. It contains APK SHA-256 sums, full audit report, lockfile and release notes.  
-**Implementation-specific rollback regression run:** [39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959) verified the camera rollback recovery and its additional assertions before the final documentation sync.  
+**Stage 5 implementation revision:** `4be895e51332e647a4e2b3bb457f48567bfbd564`  
+**Latest branch-tip CI:** [Run 40097038958](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958) on `4be895e51332e647a4e2b3bb457f48567bfbd564` — **71 tests passed, 0 failed**, full and production npm audits reported zero vulnerabilities; TypeScript, Vite build, source/dist camera and model asset checks, Android packaging, both APK builds, checksums and uploads all passed.  
+**Latest debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958/artifacts/12561017575) — ZIP 14,959,767 bytes; digest `sha256:d6d6d74c36a71f3baa8b09e223dff580cf411bd2a6d45db5f5323eb971b1b4f1`.  
+**Latest unsigned release artifact:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958/artifacts/12560608569) — ZIP 13,621,316 bytes; digest `sha256:f1d86bdf7098956f2cfc377110b4a9137ad6f5a98d7e486bb5613ac4db8c8015`. It contains APK SHA-256 sums, full audit report, lockfile and release notes.  
+**Local camera asset correction:** deeper tree inspection found that the HTML pointed to a camera utility file that was not checked into the repo. A first-party offline Camera adapter is now bundled and covered by lifecycle tests; CI verifies both the source and built asset.  
+**Implementation-specific rollback regression run:** [39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959) verified the camera rollback recovery and its additional assertions before the local-camera audit.  
 **Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3), still open/unmerged.  
 **Mandatory execution protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
 
@@ -218,7 +219,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 2. Fetch branch head and latest GitHub Actions run.
 3. Check `npm test`, type-check, Vite bundle, APK build and artifact upload.
 4. Stage 4 implementation and automated CI are complete on 96020600bcb3c72e3681470435bf3d5a0769bc70; run 39853574683 passed 51 tests and the full APK pipeline.
-5. Stage 5 implementation and release pipeline are on the current branch. Run 39866096959 verified camera-rollback recovery and expanded assertions (65/65 tests); latest branch-tip run 39866650037 also passed 65/65 tests and all audits, builds, metadata/checksum checks and artifact uploads.
+5. Stage 5 implementation and release pipeline are on the current branch. Run 40097038958 passed 71/71 tests, both full and production audits, type-check, Vite, source/dist local asset checks, debug/unsigned-release builds, checksums and artifact uploads. The missing local camera adapter was found during this continuation and is now present in the checked-in source and build output.
 6. Both full and production dependency audits reported zero vulnerabilities in the successful Stage-5 run.
 7. The combined physical Android 6/7 regression and sustained performance/thermal matrix remain **not performed**. Do not claim hardware success. This is the remaining release gate, not a code/CI failure.
 8. The release-candidate APK is unsigned; distribution requires the project owner's signing key. Keep PR #3 open/unmerged unless the user separately requests merging.
@@ -232,11 +233,12 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 - First-run guidance: Arabic-first/English, permission/framing/lighting/core-tool hints, dismissible with start or skip buttons, persistent dismissal when storage is available, Escape/Android Back and focus management.
 - Presets: twelve maintainable data-defined looks in four localized groups, with category-validated shader settings and rollback if a layer fails.
 - Performance/resilience: conservative 640×480/DPR≤1/no antialias for constrained detected devices, balanced 960×540/DPR≤1.5 otherwise; live renderer uses `preserveDrawingBuffer: false`; photo capture uses a temporary WebGL render target; WebGL context loss/restoration triggers statuses and camera-recovery path.
-- Release pipeline: full npm dependency audit and production-only audit, TypeScript, 65-test suite, Vite bundle, Android asset packaging, debug plus unsigned release APKs, version/code checks, SHA-256 sums, artifact upload, full audit report and locked package metadata in the release-candidate artifact.
+- Local camera utility: a first-party offline adapter supplies the Camera API surface referenced by `index.html`; it handles facing-mode constraints, decoded-frame scheduling, stop/track cleanup and late permission cancellation. CI checks the file before and after Vite packaging.
+- Release pipeline: full npm dependency audit and production-only audit, TypeScript, 71-test suite, Vite bundle, Android asset checks, Android packaging, debug plus unsigned release APKs, version/code checks, SHA-256 sums, artifact upload, full audit report and locked package metadata in the release-candidate artifact.
 
 ### Automated evidence
 
-- [Run 39866650037](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866650037): 65 tests passed, 0 failed; full/production audits reported zero vulnerabilities; type-check, Vite build, local asset packaging, Gradle debug/unsigned-release builds, version metadata, checksum and both artifact uploads passed.
+- [Run 40097038958](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958): 71 tests passed, 0 failed; both full and production audits reported zero vulnerabilities; type-check, source/dist local runtime asset checks, Vite build, Android packaging, Gradle debug/unsigned-release builds, metadata, checksum generation and both artifact uploads passed.
 - Both full and production dependency audits reported zero vulnerabilities in that run. Artifact ZIP digests and the APK checksum file are attached to the linked artifacts.
 
 ### Explicitly not verified
