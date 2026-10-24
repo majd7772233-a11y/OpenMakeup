@@ -9,9 +9,14 @@
 
   if (!root) return;
 
+  const alreadyStoppedTracks = new WeakSet();
+
   function stopTracks(stream) {
     if (!stream || typeof stream.getTracks !== 'function') return;
     for (const track of stream.getTracks()) {
+      if (!track || (typeof track !== 'object' && typeof track !== 'function')) continue;
+      if (track.readyState === 'ended' || alreadyStoppedTracks.has(track)) continue;
+      alreadyStoppedTracks.add(track);
       try { track.stop(); } catch (_) {}
     }
   }
@@ -70,7 +75,6 @@
       try {
         stream = await mediaDevices.getUserMedia({ audio: false, video: videoConstraints });
         if (generation !== this._generation) {
-          stopTracks(stream);
           throw new Error('Camera startup was cancelled by a lifecycle change.');
         }
 
@@ -86,7 +90,6 @@
         if (typeof this.video.play === 'function') await this.video.play();
 
         if (generation !== this._generation) {
-          stopTracks(stream);
           if (this.video.srcObject === stream) this.video.srcObject = null;
           if (this.stream === stream) this.stream = null;
           throw new Error('Camera startup was cancelled by a lifecycle change.');
