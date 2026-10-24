@@ -37,11 +37,21 @@ jobs:
       - name: Type-check SDK
         run: npm run typecheck
 
+      - name: Verify local camera and model runtime assets
+        run: |
+          test -s public/mediapipe/camera_utils/camera_utils.js
+          test -s public/mediapipe/face_mesh/face_mesh.js
+
       - name: Test runtime reliability and SDK error propagation
         run: npm test
 
       - name: Bundle web engine and local runtime assets
         run: npm run build
+
+      - name: Verify built local runtime assets
+        run: |
+          test -s dist/mediapipe/camera_utils/camera_utils.js
+          test -s dist/mediapipe/face_mesh/face_mesh.js
 
       - name: Package web app into Android assets
         run: |

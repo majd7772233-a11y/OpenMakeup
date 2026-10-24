@@ -10,6 +10,7 @@ const gradle = read('../android/app/build.gradle');
 const workflow = read('../.github/workflows/android.yml');
 const readme = read('../README.md');
 const releaseNotes = read('../RELEASE_NOTES.md');
+const cameraUtility = read('../public/mediapipe/camera_utils/camera_utils.js');
 
 function localeHas(language, key) {
   const start = locales.indexOf('  ' + language + ': {');
@@ -65,6 +66,14 @@ test('CI audits production dependencies and builds checksummed debug and release
   assert.match(workflow, /Open-Makeup-release-candidate/);
   assert.match(readme, /camera switching/i);
   assert.match(readme, /12 curated looks/i);
+});
+
+test('the camera utility referenced by the shell is committed locally and exports the Camera API', () => {
+  assert.match(html, /src="\.\/mediapipe\/camera_utils\/camera_utils\.js"/);
+  assert.match(cameraUtility, /root\.Camera = Camera/);
+  assert.match(cameraUtility, /mediaDevices\.getUserMedia/);
+  assert.match(workflow, /test -s public\/mediapipe\/camera_utils\/camera_utils\.js/);
+  assert.match(workflow, /test -s dist\/mediapipe\/camera_utils\/camera_utils\.js/);
 });
 
 test('runtime assets stay local and camera/photo data is not sent to remote endpoints', () => {

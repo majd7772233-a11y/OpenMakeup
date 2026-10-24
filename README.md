@@ -59,7 +59,7 @@ It's a real-time AR makeup mirror **and** a beauty face-reshape engine, built on
 - **Named local looks** — save, load and delete looks on this device; undo/redo up to 50 recent studio states.
 - **Capture and sharing** — capture a mirrored PNG through a temporary WebGL render target, save locally or explicitly open the system share sheet. No image is uploaded automatically.
 - **12 curated looks** grouped into everyday, romantic, bold-color and evening collections, defined as data and checked by tests.
-- **Mobile resilience** — front/rear camera switching where supported, dismissible first-run guidance, adaptive camera/render profiles and WebGL context-loss recovery.
+- **Mobile resilience** — a bundled first-party camera adapter (no CDN/package dependency at runtime), front/rear camera switching where supported, dismissible first-run guidance, adaptive camera/render profiles and WebGL context-loss recovery.
 - **Smart defaults** — every parameter has one; plug in your own AI color provider for lipstick.
 
 ### 🧬 Face reshape (morph / blend shapes)
