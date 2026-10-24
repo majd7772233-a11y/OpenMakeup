@@ -100,7 +100,8 @@
         this._scheduleNextFrame(generation);
         return this;
       } catch (error) {
-        this.running = false;
+        // A cancelled older start must not mark a newer generation as stopped.
+        if (generation === this._generation) this.running = false;
         if (stream) {
           stopTracks(stream);
           if (this.video.srcObject === stream) this.video.srcObject = null;
@@ -155,7 +156,8 @@
         } catch (error) {
           this._reportError(error);
         } finally {
-          this._processingFrame = false;
+          // Do not release a newer generation's in-flight frame gate.
+          if (generation === this._generation) this._processingFrame = false;
         }
       }
 
@@ -173,6 +175,10 @@
     stop() {
       this._generation += 1;
       this.running = false;
+      // getUserMedia permission prompts cannot be aborted, but an unresolved
+      // old prompt must not block a fresh start after stop/resume.
+      this._starting = null;
+      this._processingFrame = false;
 
       if (this._frameHandle !== null) {
         if (this._frameHandleType === 'video' && typeof this.video.cancelVideoFrameCallback === 'function') {

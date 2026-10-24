@@ -182,6 +182,7 @@ export class MakeupEngine {
         this._ready = false;
         this._initPromise = null;
         this._cameraStartPromise = null;
+        this._cameraStartToken = null;
         this._cameraRunning = false;
         this._lifecycleGeneration = 0;
         this._activeLayers = new Set();
@@ -1048,16 +1049,18 @@ export class MakeupEngine {
 
         const camera = this._camera;
         const generation = this._lifecycleGeneration;
-        this._cameraStartPromise = (async () => {
-            if (this._rafId == null) this._animate();
+        const startToken = {};
+        this._cameraStartToken = startToken;
+        // Defer the body by one microtask so the promise/token are installed
+        // before a custom Camera.start() can throw synchronously.
+        const startPromise = Promise.resolve().then(async () => {
             try {
+                if (this._rafId == null) this._animate();
                 await camera.start();
                 // A timed-out initialization or background/stop event may have
                 // invalidated this start while its browser permission promise
                 // was still pending. Never let a late completion revive it.
                 if (generation !== this._lifecycleGeneration || this._camera !== camera) {
-                    try { camera.stop(); } catch (_) {}
-                    this._stopAttachedVideoTracks();
                     throw new Error('Camera startup was cancelled by a lifecycle change.');
                 }
                 this._cameraRunning = true;
@@ -1066,16 +1069,28 @@ export class MakeupEngine {
                 if (generation === this._lifecycleGeneration && this._camera === camera) {
                     this.stop();
                 } else {
-                    try { camera.stop(); } catch (_) {}
-                    this._stopAttachedVideoTracks();
+                    const newerStartActive = !!this._cameraStartToken
+                        && this._cameraStartToken !== startToken;
+                    // Never stop/detach resources belonging to a newer start.
+                    if (this._camera !== camera || (!newerStartActive && !this._cameraRunning)) {
+                        try { camera.stop(); } catch (_) {}
+                    }
+                    if (!newerStartActive && !this._cameraRunning) {
+                        this._stopAttachedVideoTracks();
+                    }
                 }
                 const detail = error && error.message ? error.message : String(error || 'unknown camera error');
                 throw new Error('Camera could not start: ' + detail);
             } finally {
-                this._cameraStartPromise = null;
+                // The old start must not clear a newer start's in-flight promise.
+                if (this._cameraStartToken === startToken) {
+                    this._cameraStartToken = null;
+                    this._cameraStartPromise = null;
+                }
             }
-        })();
-        return this._cameraStartPromise;
+        });
+        this._cameraStartPromise = startPromise;
+        return startPromise;
     }
 
     _stopAttachedVideoTracks() {
@@ -1088,6 +1103,10 @@ export class MakeupEngine {
     stop() {
         // Invalidate pending Camera.start() calls before they can complete late.
         this._lifecycleGeneration += 1;
+        // A browser permission request may remain unresolved; allow an immediate
+        // new start while the old generation is being safely discarded.
+        this._cameraStartPromise = null;
+        this._cameraStartToken = null;
         if (this._camera && this._camera.stop) {
             try { this._camera.stop(); } catch (error) { console.warn('OpenMakeupSDK: camera stop failed:', error); }
         }

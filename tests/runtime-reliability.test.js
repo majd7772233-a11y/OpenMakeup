@@ -113,12 +113,58 @@ test('engine cancels a late camera start after stop', async () => {
 
   const pendingStart = engine.start();
   assert.equal(typeof pendingStart.then, 'function');
+  await Promise.resolve(); // allow the deferred start body to invoke camera.start()
   engine.stop();
   finishStart();
 
   await assert.rejects(pendingStart, /Camera could not start: Camera startup was cancelled/);
   assert.equal(engine._cameraRunning, false);
   assert.ok(stopCalls >= 2);
+});
+
+test('engine restart replaces an unresolved start without the stale promise clearing or stopping it', async () => {
+  const resolvers = [];
+  let stopCalls = 0;
+  const camera = {
+    start: () => new Promise((resolve) => { resolvers.push(resolve); }),
+    stop: () => { stopCalls += 1; },
+  };
+  const engine = Object.create(MakeupEngine.prototype);
+  Object.assign(engine, {
+    _camera: camera,
+    _cameraRunning: false,
+    _cameraStartPromise: null,
+    _cameraStartToken: null,
+    _lifecycleGeneration: 0,
+    _faceVisible: false,
+    _noFaceFrames: 0,
+    _rafId: null,
+    _activeLayers: new Set(),
+    video: { srcObject: null },
+    _animate() {},
+    _syncFaceLayerVisibility() {},
+    _stopAttachedVideoTracks() {},
+  });
+
+  const staleStart = engine.start();
+  await Promise.resolve();
+  engine.stop();
+  const currentStart = engine.start();
+  await Promise.resolve();
+  assert.equal(resolvers.length, 2);
+  assert.notEqual(staleStart, currentStart);
+
+  resolvers[0]();
+  await assert.rejects(staleStart, /Camera could not start: Camera startup was cancelled/);
+  assert.equal(engine._cameraStartPromise, currentStart);
+  assert.equal(engine._cameraRunning, false);
+  assert.equal(stopCalls, 1, 'the stale start must not stop the current camera request');
+
+  resolvers[1]();
+  assert.equal(await currentStart, engine);
+  assert.equal(engine._cameraRunning, true);
+  assert.equal(engine._cameraStartPromise, null);
+  assert.equal(stopCalls, 1);
 });
 
 test('SDK start returns a promise that settles with camera startup', async () => {

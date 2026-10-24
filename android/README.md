@@ -3,7 +3,7 @@
 **Display name:** Open Makeup  
 **Application ID:** `com.magd.openmakeup`  
 **Minimum Android:** Android 6.0 (API 23)  
-**Version:** 1.3.0
+**Version:** 1.5.0 · versionCode 6
 
 The app keeps the existing OpenMakeup JavaScript/Three.js/MediaPipe engine and hosts it locally in Android WebView. This avoids a costly native rewrite and keeps the web demo and Android app on the same engine.
 
@@ -28,7 +28,7 @@ The Android project sets `minSdk 23`, so Android 6.0 Marshmallow and Android 7.x
 
 ## Build
 
-The GitHub Actions workflow installs npm dependencies, bundles the web app and local runtime assets, copies `dist/` into `android/app/src/main/assets/www/`, then builds the debug APK.
+The GitHub Actions workflow installs npm dependencies, bundles the web app and local runtime assets, copies `dist/` into `android/app/src/main/assets/www/`, then builds the debug APK and unsigned release candidate. It uploads both artifacts and release checksums; the release APK remains unsigned.
 
 For a local web bundle, from the repository root:
 

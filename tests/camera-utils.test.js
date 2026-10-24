@@ -149,6 +149,87 @@ test('late camera permission completion after stop cannot resurrect a stream', a
   assert.equal(h.stopped(), 1);
 });
 
+test('stop allows a fresh camera start while an older permission request remains pending', async () => {
+  let resolveFirst;
+  let calls = 0;
+  let secondTrackStops = 0;
+  let secondStream;
+  const h = createHarness({
+    getUserMedia: () => {
+      calls += 1;
+      if (calls === 1) return new Promise((resolve) => { resolveFirst = resolve; });
+      const track = { readyState: 'live', stop() { secondTrackStops += 1; } };
+      secondStream = { getTracks: () => [track], getVideoTracks: () => [track] };
+      return Promise.resolve(secondStream);
+    },
+  });
+  const camera = new h.Camera(h.video, { onFrame: async () => {} });
+
+  const firstStart = camera.start();
+  camera.stop();
+  await camera.start();
+
+  assert.equal(calls, 2);
+  assert.equal(camera.running, true);
+  assert.equal(h.video.srcObject, secondStream);
+
+  // Resolving the old permission request late must clean only its own stream.
+  resolveFirst(h.stream);
+  await assert.rejects(firstStart, /cancelled by a lifecycle change/i);
+  assert.equal(camera.running, true);
+  assert.equal(h.video.srcObject, secondStream);
+  assert.equal(secondTrackStops, 0);
+
+  camera.stop();
+  assert.equal(secondTrackStops, 1);
+});
+
+test('stopping during a pending frame callback allows the next generation to process frames', async () => {
+  let resolveFirstFrame;
+  let calls = 0;
+  let mediaCalls = 0;
+  let secondStream;
+  const h = createHarness({
+    getUserMedia: () => {
+      mediaCalls += 1;
+      if (mediaCalls === 1) return Promise.resolve(h.stream);
+      const track = { readyState: 'live', stop() {} };
+      secondStream = { getTracks: () => [track], getVideoTracks: () => [track] };
+      return Promise.resolve(secondStream);
+    },
+  });
+  const camera = new h.Camera(h.video, {
+    onFrame: async () => {
+      calls += 1;
+      if (calls === 1) await new Promise((resolve) => { resolveFirstFrame = resolve; });
+    },
+  });
+
+  await camera.start();
+  h.video.currentTime = 1;
+  let [id, callback] = h.frameCallbacks.entries().next().value;
+  h.frameCallbacks.delete(id);
+  callback(0, { mediaTime: 1 });
+  await drainMicrotasks();
+  assert.equal(calls, 1);
+
+  camera.stop();
+  await camera.start();
+  h.video.currentTime = 2;
+  [id, callback] = h.frameCallbacks.entries().next().value;
+  h.frameCallbacks.delete(id);
+  callback(0, { mediaTime: 2 });
+  await drainMicrotasks();
+  assert.equal(calls, 2);
+  assert.equal(camera.running, true);
+  assert.equal(h.video.srcObject, secondStream);
+
+  resolveFirstFrame();
+  await drainMicrotasks();
+  assert.equal(camera.running, true);
+  camera.stop();
+});
+
 test('camera utility gives an actionable error when the WebView has no camera capture API', async () => {
   const h = createHarness();
   h.window.navigator.mediaDevices = {};

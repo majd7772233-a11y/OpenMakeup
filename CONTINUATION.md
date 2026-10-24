@@ -159,6 +159,7 @@ These are the most important instructions and must survive every handoff:
 - The handoff documentation commit itself will trigger another run; fetch its actual result on resume. Do not infer that it passed.
 - App identity: Android `1.5.0`, `versionCode 6`, `applicationId com.magd.openmakeup`, `minSdk 23`. Preserve ID, minimum SDK and public SDK contracts.
 - Exactly five planned stages exist; Stages 1–5 have source implementation and automated CI evidence. No Stage 6 is part of the agreement.
+- Source-review follow-up in this revision: fixed a lifecycle race where `stop()` could leave an unresolved camera-start promise/frame callback blocking the next start, and a late stale start could clear or stop a newer start. Added regression tests for permission-prompt restart, in-flight frame restart and engine promise ownership. CI validation for this follow-up is pending at this checkpoint.
 - Physical Android 6/7 and broader camera/permission/resume/orientation/capture/storage/share/accessibility/WebGL/thermal tests have **not been performed**. This is the real-device release gate. The release APK is unsigned.
 
 ### Immediate resume procedure

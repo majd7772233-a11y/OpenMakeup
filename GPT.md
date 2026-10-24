@@ -242,6 +242,12 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 - Latest verified complete pipeline at this checkpoint: [Run 40100571899](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899) on `d08c55718d19129937147756e6bfdcee63e76767`: 71 tests passed, 0 failed; full and production audits reported zero vulnerabilities; type-check, source/dist local camera/model asset checks, Vite, Android packaging, Gradle debug/unsigned-release builds, metadata, checksum generation and both artifact uploads passed. Earlier implementation validation is retained in git history.
 - Both full and production dependency audits reported zero vulnerabilities in that run. Artifact ZIP digests and the APK checksum file are attached to the linked artifacts.
 
+### Post-checkpoint lifecycle reliability follow-up (CI pending)
+
+- Source review found that `Camera.stop()` did not release an unresolved `_starting` promise or per-frame processing lock. A later permission result/frame callback could stall or clobber the restarted camera.
+- The bundled camera adapter now clears its start slot and processing lock on stop, and stale generations cannot reset the newer generation's running/frame state.
+- `MakeupEngine.start()` now owns a per-start token; `stop()` invalidates that token immediately and stale completion cannot clear or stop a newer start. Regression tests exercise these races. CI remains pending for this follow-up until a completed run on the new HEAD is inspected.
+
 ### Explicitly not verified
 
 - No physical Android device has been exercised here. Actual camera switching and rollback, repeated camera resume, Android 6/7 permission behavior, screen reader/contrast, capture mirror and color, gallery/share, WebGL recovery under real GPU resets and sustained thermal/frame stability remain unverified.

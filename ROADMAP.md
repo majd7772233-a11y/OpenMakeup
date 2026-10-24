@@ -306,6 +306,8 @@ For every stage:
 
 ## 8. Current Operational State
 
+- Source-review follow-up in the current continuation: camera adapter and engine start/stop generation ownership hardened for unresolved permission prompts and in-flight frame callbacks; regression tests cover stale-start isolation. CI is pending for this exact follow-up revision. The physical-device acceptance matrix remains open and is not replaced by these automated tests.
+
 - Canonical restart point: [CONTINUATION.md](./CONTINUATION.md). On resume, re-fetch live HEAD, PR #3, newest CI jobs/logs/artifacts before making changes.
 - Last verified full-pipeline HEAD before this handoff refresh: `d08c55718d19129937147756e6bfdcee63e76767`; this save advances branch HEAD, so fetch live HEAD on resume.
 - Latest verified full pipeline: [40100571899](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40100571899), 71 tests passed / 0 failed; both dependency audits zero vulnerabilities; typecheck, Vite, source/dist runtime asset verification, Android packaging, debug/unsigned-release builds, metadata/checksum generation and both artifact uploads passed.
