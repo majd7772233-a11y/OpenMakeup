@@ -153,10 +153,12 @@ test('engine restart replaces an unresolved start without the stale promise clea
   await Promise.resolve();
   assert.equal(resolvers.length, 2);
   assert.notEqual(staleStart, currentStart);
+  const currentSharedStart = engine._cameraStartPromise;
+  assert.ok(currentSharedStart, 'the current shared start promise must be registered');
 
   resolvers[0]();
   await assert.rejects(staleStart, /Camera could not start: Camera startup was cancelled/);
-  assert.equal(engine._cameraStartPromise, currentStart);
+  assert.equal(engine._cameraStartPromise, currentSharedStart);
   assert.equal(engine._cameraRunning, false);
   assert.equal(stopCalls, 1, 'the stale start must not stop the current camera request');
 

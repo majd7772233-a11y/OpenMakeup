@@ -26,7 +26,7 @@ test('release candidate Android identity and notes agree', () => {
   assert.match(gradle, /minSdk 23/);
   assert.match(gradle, /applicationId 'com\.magd\.openmakeup'/);
   assert.match(releaseNotes, /Version 1\.5\.0/);
-  assert.match(androidReadme, /Version:\s*1\.5\.0/);
+  assert.match(androidReadme, /Version:\*\*\s*1\.5\.0/);
   assert.match(androidReadme, /versionCode 6/);
   assert.match(releaseNotes, /unsigned/i);
   assert.match(releaseNotes, /physical Android 6\/7/i);
