@@ -2,7 +2,7 @@
 
 **Canonical restart file:** [CONTINUATION.md](./CONTINUATION.md) — strict rules, exact branch position, CI state and release gate. Read first in a new conversation.
 **Code implementation revision:** 4be895e51332e647a4e2b3bb457f48567bfbd564.
-**Last live branch checkpoint before this documentation update:** 4789bcc6ca6a8c3b9deb21607674f56d0186b9e3. Latest complete run 40097778274 passed 71/71 on parent docs-only commit edcc7f73f0a3ee9adc7175fb811312cd7fc1c73f. Run 40098001152 was in progress on 4789 during APK build; re-fetch latest Actions after this commit.
+**Live branch checkpoint:** `f437f2a3affcc558cec5297d37ad43dc3b665a12` (docs-only, parent `4789bcc6ca6a8c3b9deb21607674f56d0186b9e3`). Latest completed CI run [40098001152](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098001152) passed 71/71 tests, both audits found zero vulnerabilities, and all build/artifact steps passed. Current-head run [40098251489](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098251489) was still in progress at release artifact upload; re-check it on resume.
 
 
 **Canonical restart file:** [CONTINUATION.md](./CONTINUATION.md) — exact branch/checkpoint, rules and next action. Read it first when continuing in a new conversation.
@@ -318,9 +318,9 @@ For every stage:
 
 - Canonical restart point, strict rules and pending hardware matrix: [CONTINUATION.md](./CONTINUATION.md). Read it first when continuing in a new conversation.
 - Runtime implementation revision: 4be895e51332e647a4e2b3bb457f48567bfbd564. The last live branch tip seen before this handoff correction was 4789bcc6ca6a8c3b9deb21607674f56d0186b9e3, parent edcc7f73f0a3ee9adc7175fb811312cd7fc1c73f.
-- Latest complete workflow before this handoff correction: [40097778274](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097778274), 71 tests passed / 0 failed; full and production audits zero vulnerabilities; type-check, Vite, local runtime checks, Android package, debug/unsigned-release builds, metadata, checksums and uploads passed.
-- Artifacts: debug [12561413416](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097778274/artifacts/12561413416); unsigned release candidate [12561343806](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097778274/artifacts/12561343806).
-- Workflow [40098001152](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098001152) was in progress on the prior handoff commit during APK build; a further docs commit may trigger a newer run. Always check live status before reporting.
+- Latest completed full workflow: [40098001152](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098001152), 71 tests passed / 0 failed; full and production audits zero vulnerabilities; type-check, Vite, local source/dist runtime checks, Android package, debug/unsigned-release builds, metadata, checksums and uploads passed.
+- Artifacts: debug [12561492033](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098001152/artifacts/12561492033); unsigned release candidate [12561178330](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098001152/artifacts/12561178330).
+- Current HEAD docs-only workflow: [40098251489](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098251489) was in progress at unsigned release artifact upload when this checkpoint was written. Re-check exact current-head status on resume.
 - All five planned stages have source implementation and passing automated CI. PR #3 remains open and unmerged.
 - Physical Android 6/7 camera/permission/resume/orientation/capture/storage/share/accessibility/WebGL recovery/sustained-performance acceptance has **not been performed** and remains the release gate. Do not claim it passed.
 - The release artifact is unsigned; only the owner's key can sign it if requested. Never commit credentials.
