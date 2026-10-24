@@ -19,7 +19,7 @@ Do not greet, give a generic status preamble, ask the user to repeat the request
 - Repository: https://github.com/majd7772233-a11y/OpenMakeup
 - Working branch: feat/open-makeup-arabic-mobile-lifecycle
 - PR #3: https://github.com/majd7772233-a11y/OpenMakeup/pull/3
-- Last observed branch HEAD before this checkpoint edit: `0a0656e86a619314cd52c3271d04391340d9e0d0` (`docs: finalize continuation checkpoint with green latest CI`, parent `1607c2d2338981f103b73a8deef5b2fe46f4c86b`). Full CI run 40099682756 passed on this exact HEAD: 71/71 tests, all audits/build steps and artifacts green. This handoff edit is documentation-only and may advance HEAD again; on resume, fetch live HEAD instead of checking out a stale recorded SHA.
+- Last observed branch HEAD immediately before this consolidated checkpoint commit: `74fb6e58f2d2ae4c11d39a72d144934be5915210` (`docs: synchronize roadmap with latest green CI checkpoint`, parent `386789455816c20f38378826169d7ef509ec0045`). The last fully completed workflow at this point is run 40099682756 on source-identical HEAD `0a0656e86a619314cd52c3271d04391340d9e0d0`, and it passed 71/71 tests, audits, builds and artifact uploads. Workflow 40100097601 on `74fb6e58f2d2ae4c11d39a72d144934be5915210` was observed in progress before this final checkpoint commit; its conclusion is not assumed. This consolidated edit itself advances the docs-only HEAD; fetch live HEAD and the newest workflow on resume.
 - PR #3 was OPEN and NOT MERGED. Keep it open/unmerged unless the user explicitly requests a merge.
 - Android app version 1.5.0, versionCode 6, applicationId com.magd.openmakeup, minSdk 23 / Android 6.0. Preserve app ID, minSdk and public SDK contracts unless expressly directed otherwise.
 - The planned roadmap has exactly five stages. Source implementation and automated CI for Stages 1–5 are complete on the verified revision. No Stage 6 is part of the current agreed roadmap.
@@ -45,7 +45,7 @@ Artifacts from run 40099682756 (the following digests are for downloaded ZIP arc
 
 ### Current checkpoint update
 
-At the recorded checkpoint, run 40099682756 on HEAD `0a0656e86a619314cd52c3271d04391340d9e0d0` is the latest completed green workflow. This documentation edit may trigger another run; on resume, fetch the newest run and artifacts rather than assuming the result of any newer run. The source implementation is unchanged.
+At the last completed verification, run 40099682756 on source-identical HEAD `0a0656e86a619314cd52c3271d04391340d9e0d0` passed. A later docs-only run 40100097601 was observed in progress on pre-save HEAD `74fb6e58f2d2ae4c11d39a72d144934be5915210`; no conclusion is claimed for it. This final consolidated checkpoint edit triggers a newer workflow as well. On resume fetch the newest run and artifacts rather than assuming any pending result.
 ### Earlier verified checkpoints
 
 - Run 40097505589 on 02c2f7ab32023c0d8f22661a3171b5e8f6368775 also passed 71/71 tests and both audits and uploaded artifacts.
@@ -152,11 +152,11 @@ These are the most important instructions and must survive every handoff:
 - Repository: `majd7772233-a11y/OpenMakeup`.
 - Working branch: `feat/open-makeup-arabic-mobile-lifecycle`.
 - PR #3: https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — **OPEN, NOT MERGED**. Do not merge unless the user explicitly asks.
-- Last verified HEAD at this checkpoint: `0a0656e86a619314cd52c3271d04391340d9e0d0`; the current handoff edit is documentation-only and may advance HEAD. Fetch live HEAD on resume.
+- Last branch HEAD observed before this consolidated checkpoint commit: `74fb6e58f2d2ae4c11d39a72d144934be5915210`. This commit contains only continuation/notebook/roadmap documentation and will advance the ref. On resume fetch actual live HEAD and latest CI rather than checking out this recorded parent.
 - Latest completed full CI: [Run 40099682756](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40099682756) on `0a0656e86a619314cd52c3271d04391340d9e0d0`: **71/71 tests**, full and production audits both zero vulnerabilities, typecheck/Vite/source+dist asset checks/Android packaging/debug and unsigned release builds/checksums/both artifact uploads passed.
 - Debug artifact: [12562452099](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40099682756/artifacts/12562452099), ZIP 14,959,772 bytes, SHA-256 `f7b3ba79dd1497492a7ca1081d225d4f7b03d3b83fe382e1b28191818ce7b650`.
 - Unsigned release candidate: [12561864579](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40099682756/artifacts/12561864579), ZIP 13,621,522 bytes, SHA-256 `7a06c93c58832071b47c5ff07fcdf79c664fd458f549698100a998278b40c934`.
-- This handoff edit is documentation-only. Run 40099682756 is the latest verified green workflow at this checkpoint; check for any newer run on resume.
+- Latest completed green workflow at the previous confirmed checkpoint: 40099682756. Pre-save docs HEAD `74fb6e58f2d2ae4c11d39a72d144934be5915210` had run 40100097601 in progress. The consolidated checkpoint commit triggers another run; fetch live status on resume.
 - App identity: Android `1.5.0`, `versionCode 6`, `applicationId com.magd.openmakeup`, `minSdk 23`. Preserve ID, minimum SDK and public SDK contracts.
 - Exactly five planned stages exist; Stages 1–5 have source implementation and automated CI evidence. No Stage 6 is part of the agreement.
 - Physical Android 6/7 and broader camera/permission/resume/orientation/capture/storage/share/accessibility/WebGL/thermal tests have **not been performed**. This is the real-device release gate. The release APK is unsigned.
