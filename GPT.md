@@ -1,5 +1,10 @@
 # GPT.md — Open Makeup Engineering Notebook
 
+**Canonical restart file:** [CONTINUATION.md](./CONTINUATION.md) — strict rules, exact branch position, CI state and release gate. Read first in a new conversation.
+**Code implementation revision:** 4be895e51332e647a4e2b3bb457f48567bfbd564.
+**Last live branch checkpoint before this documentation update:** 4789bcc6ca6a8c3b9deb21607674f56d0186b9e3. Latest complete run 40097778274 passed 71/71 on parent docs-only commit edcc7f73f0a3ee9adc7175fb811312cd7fc1c73f. Run 40098001152 was in progress on 4789 during APK build; re-fetch latest Actions after this commit.
+
+
 **Canonical restart file:** [CONTINUATION.md](./CONTINUATION.md) — exact branch/checkpoint, rules and next action. Read it first when continuing in a new conversation.
 
 
@@ -7,9 +12,9 @@
 **Repository:** https://github.com/majd7772233-a11y/OpenMakeup  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
 **Stage 5 code revision:** 4be895e51332e647a4e2b3bb457f48567bfbd564  
-**Latest complete implementation CI:** [Run 40097038958](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958) for implementation revision `4be895e51332e647a4e2b3bb457f48567bfbd564` — **71 tests passed, 0 failed**, full and production npm audits reported zero vulnerabilities; TypeScript, Vite build, source/dist camera and model asset checks, Android packaging, both APK builds, checksums and uploads all passed.  
-**Latest debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589/artifacts/12561920472) — ZIP 14,959,766 bytes; ZIP SHA-256 01e905adf83b384a6a2c6257d8cfa6c6e86cdb982cf803241f3b55389982edd4.  
-**Latest unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589/artifacts/12561765932) — ZIP 13,621,519 bytes; ZIP SHA-256 6600722653d1fb79ed47026f13f975c50f294ac393daacb88723aca79dbb1990.  
+**Latest complete pipeline:** [Run 40097778274](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097778274) on docs-only descendant edcc7f73f0a3ee9adc7175fb811312cd7fc1c73f — 71 tests passed, 0 failed; full and production audits reported 0 vulnerabilities; type-check, tests, Vite, local source/dist assets, Android packaging, debug and unsigned release builds, metadata, checksums and uploads passed.
+**Latest debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097778274/artifacts/12561413416) — ZIP 14,959,770 bytes; ZIP SHA-256 d838bcbe83df2c91e7d8eaab0fbdccf53881e07485ae66dacf7a213184d27a63.
+**Latest unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097778274/artifacts/12561343806) — ZIP 13,621,519 bytes; ZIP SHA-256 f2caac39f412f2849505490ddb72a0f159ce4c6fd9189a3f050b494bd5be9238.
 **Local camera asset correction:** deeper tree inspection found that the HTML pointed to a camera utility file that was not checked into the repo. A first-party offline Camera adapter is now bundled and covered by lifecycle tests; CI verifies both the source and built asset.  
 **Implementation-specific rollback regression run:** [39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959) verified the camera rollback recovery and its additional assertions before the local-camera audit.  
 **Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3), still open/unmerged.  

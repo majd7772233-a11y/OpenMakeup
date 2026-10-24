@@ -19,46 +19,46 @@ Do not greet, give a generic status preamble, ask the user to repeat the request
 - Repository: https://github.com/majd7772233-a11y/OpenMakeup
 - Working branch: feat/open-makeup-arabic-mobile-lifecycle
 - PR #3: https://github.com/majd7772233-a11y/OpenMakeup/pull/3
-- Branch HEAD at the checkpoint: 02c2f7ab32023c0d8f22661a3171b5e8f6368775; its parent/code revision is 4be895e51332e647a4e2b3bb457f48567bfbd564.
+- Live branch HEAD before this handoff-note correction: 4789bcc6ca6a8c3b9deb21607674f56d0186b9e3; parent: edcc7f73f0a3ee9adc7175fb811312cd7fc1c73f. Runtime implementation revision remains 4be895e51332e647a4e2b3bb457f48567bfbd564; re-fetch live HEAD before acting.
 - PR #3 was OPEN and NOT MERGED. Keep it open/unmerged unless the user explicitly requests a merge.
 - Android app version 1.5.0, versionCode 6, applicationId com.magd.openmakeup, minSdk 23 / Android 6.0. Preserve app ID, minSdk and public SDK contracts unless expressly directed otherwise.
 - The planned roadmap has exactly five stages. Source implementation and automated CI for Stages 1–5 are complete on the verified revision. No Stage 6 is part of the current agreed roadmap.
 
-## 3. Latest verified CI on the checkpoint
+## 3. Latest verified CI and live workflow state
 
-Run: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589  
-Tested head: 02c2f7ab32023c0d8f22661a3171b5e8f6368775  
-Conclusion: SUCCESS.
+### Latest completed full pipeline before this handoff-note correction
 
-Evidence retrieved directly from the workflow job log:
-- 71 tests; 71 passed; 0 failed.
-- Full dependency audit (including development dependencies): total 0 vulnerabilities (info 0, low 0, moderate 0, high 0, critical 0).
+- Run: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097778274
+- Tested head: edcc7f73f0a3ee9adc7175fb811312cd7fc1c73f (documentation-only descendant of the validated implementation).
+- Conclusion: SUCCESS.
+- Test summary read from the job log: 71 tests, 71 passed, 0 failed.
+- Full dependency audit including development tooling: total 0 vulnerabilities (info 0, low 0, moderate 0, high 0, critical 0).
 - Production audit npm audit --omit=dev --audit-level=high: 0 vulnerabilities.
-- TypeScript SDK check: passed.
-- Local camera/model asset checks in source: passed.
-- Node test suite: passed.
-- Vite/web bundle: passed.
-- Local runtime asset checks in built Vite output: passed.
-- Android web assets packaged: passed.
-- Gradle debug plus unsigned release APK builds: BUILD SUCCESSFUL.
-- Android app version metadata checks, APK SHA-256 manifest generation and both artifact uploads: passed.
+- TypeScript check, source local runtime asset checks, tests, Vite build, built local runtime asset checks, Android packaging, Gradle debug and unsigned release APK build, app version validation, APK SHA256 generation and both artifact uploads all passed.
 
-Artifacts produced by run 40097505589. The sizes/digests below refer to the artifact ZIP, not the APK file's internal SHA:
+Artifacts from run 40097778274 (sizes/digests describe artifact ZIPs, not APK internal hashes):
 
-- Debug artifact ID 12561920472:
-  https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589/artifacts/12561920472
-  ZIP size: 14,959,766 bytes
-  ZIP SHA-256: 01e905adf83b384a6a2c6257d8cfa6c6e86cdb982cf803241f3b55389982edd4
+- Debug artifact ID 12561413416: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097778274/artifacts/12561413416
+  - ZIP size: 14,959,770 bytes
+  - ZIP SHA-256: d838bcbe83df2c91e7d8eaab0fbdccf53881e07485ae66dacf7a213184d27a63
+- Unsigned release-candidate artifact ID 12561343806: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097778274/artifacts/12561343806
+  - ZIP size: 13,621,519 bytes
+  - ZIP SHA-256: f2caac39f412f2849505490ddb72a0f159ce4c6fd9189a3f050b494bd5be9238
 
-- Unsigned release-candidate artifact ID 12561765932:
-  https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589/artifacts/12561765932
-  ZIP size: 13,621,519 bytes
-  ZIP SHA-256: 6600722653d1fb79ed47026f13f975c50f294ac393daacb88723aca79dbb1990
-  Includes the unsigned release APK, APK-SHA256SUMS.txt, release notes, package lockfile and full npm audit report.
+### Latest workflow at last pre-correction inspection
 
-Historical failures during intermediate Stage-5 commits were caused by test/source assertions that lagged behind the intended implementation (for example, an assertion expected the old preserved-canvas capture path or did not match the exact camera rollback error wording). Those fixes were made; the checkpoint CI above passes. Re-read the live run rather than repeating or assuming the status of historical runs.
+- Run: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098001152
+- Head: 4789bcc6ca6a8c3b9deb21607674f56d0186b9e3.
+- Status at last inspection: IN PROGRESS, building debug and unsigned release APKs; no failed job steps were reported at that moment and artifacts were not uploaded yet.
+- This workflow is for a docs-only handoff commit; the runtime implementation is unchanged from the fully verified code revision. The next documentation-only commit may trigger a still newer workflow. Re-fetch the newest run and its result before resuming rather than relying on this historical in-progress status.
 
-A non-blocking GitHub Actions warning says actions still targeting Node.js 20 will be forced to Node.js 24. Treat it as future workflow maintenance, not a failed build; do not blindly bump action major versions as an unrelated change.
+### Earlier verified checkpoints
+
+- Run 40097505589 on 02c2f7ab32023c0d8f22661a3171b5e8f6368775 also passed 71/71 tests and both audits and uploaded artifacts.
+- Latest code-focused complete pipeline: run 40097038958 on code revision 4be895e51332e647a4e2b3bb457f48567bfbd564, also 71 tests passed, 0 failed.
+- Intermediate Stage-5 failures came from tests/assertions that had not been updated to the implemented capture route or actual camera rollback message; those were fixed in later commits. The full current-code pipeline succeeded afterwards. Inspect live logs; do not resurrect old failures.
+
+A non-blocking GitHub Actions warning says some actions targeting Node.js 20 will be forced to Node.js 24. It is workflow maintenance information, not a failed build; do not blindly bump major versions as unrelated work.
 
 ## 4. Implemented work by stage
 
@@ -153,4 +153,4 @@ These are the most important instructions and must survive every handoff:
 
 ## 8. Stop point
 
-At handoff creation, branch HEAD was 02c2f7ab32023c0d8f22661a3171b5e8f6368775 and run 40097505589 was green on that exact commit. The PR remained open/unmerged. Stages 1–5 have code and CI verification; physical-device acceptance is unperformed, and the release candidate remains unsigned. A documentation-only handoff commit may become the new HEAD immediately after this file is committed; always re-fetch before resuming.
+Immediately before this handoff-note correction, branch HEAD was 4789bcc6ca6a8c3b9deb21607674f56d0186b9e3, parent edcc7f73f0a3ee9adc7175fb811312cd7fc1c73f. Run 40097778274 was the latest completed full pipeline and passed 71/71; run 40098001152 was in progress on 4789 at the APK build step. This correction creates a new docs-only HEAD and may trigger a newer workflow. Re-fetch branch HEAD, PR and Actions first in the next conversation. PR #3 remains open/unmerged. Stages 1–5 have code and CI verification; physical-device acceptance is unperformed and the release candidate remains unsigned.
