@@ -4,11 +4,11 @@
 
 - **Repository:** https://github.com/majd7772233-a11y/OpenMakeup
 - **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`
-- **Base HEAD before this documentation refresh:** `a0bc3c13764ff05b971f1e0f55b3991ea084508f` (docs-only; this refresh creates another docs-only commit).
-- **Latest completed full CI:** [Run 40098508715](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715) on `2852f3d1e098564bf262bff1634376a9e6a852d7`: **71 tests passed, 0 failed**, full and production dependency audits reported zero vulnerabilities, typecheck/Vite/local source+dist asset checks/Android packaging/debug and unsigned-release builds/checksums/artifact uploads all passed.
-- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715/artifacts/12561014425), ZIP 14,959,768 bytes, SHA-256 `4b01fa7099de345227cb7fa25e0020d5a59a50f3fe34df62e3d58b3c6b8b25a4`.
-- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098508715/artifacts/12561432969), ZIP 13,621,519 bytes, SHA-256 `65485a667f30e2c929aefbd2b811f15f8ca946548db0ead50cc0e2b7e046539d`.
-- **Current-base workflow:** [40098717168](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098717168) was in progress during Gradle APK builds on base HEAD; check the newer workflow triggered by this docs refresh.
+- **Last verified source/CI HEAD before this checkpoint refresh:** `e5eca383b89e31ba42c1764913eb6c6c4842023d` (docs-only, parent `a0bc3c13764ff05b971f1e0f55b3991ea084508f`). This refresh makes another docs-only commit; fetch live HEAD before acting.
+- **Latest completed full CI before this refresh:** [Run 40098857624](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624) on `e5eca383b89e31ba42c1764913eb6c6c4842023d`: **71 tests passed, 0 failed**, full and production dependency audits reported zero vulnerabilities, typecheck/Vite/source+dist local asset checks/Android packaging/debug and unsigned-release builds/checksums/artifact uploads all passed.
+- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624/artifacts/12562335607), ZIP 14,959,767 bytes, SHA-256 `f69f13c3ca9a7cf12d576de8e8002c77f5eec9f09ae5ae2c1a3e47e7976892cc`.
+- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624/artifacts/12562270883), ZIP 13,621,519 bytes, SHA-256 `d586378dca8182cccc389671af63fc772c8a7f9df490203bf13687377899934f`.
+- **Next required action:** inspect the newest CI run triggered by this documentation-only checkpoint commit; do not assume its conclusion.
 - **Android identity:** 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23.
 - **PR #3:** https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — open and unmerged.
 - **Device acceptance:** not performed. Physical Android 6/7 and broader camera/lifecycle/orientation/storage/share/accessibility/WebGL/thermal checks remain the release gate. CI does not prove these behaviors; the release candidate is unsigned.
@@ -239,7 +239,7 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 
 ### Automated evidence
 
-- [Run 40097038958](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958): 71 tests passed, 0 failed; both full and production audits reported zero vulnerabilities; type-check, source/dist local runtime asset checks, Vite build, Android packaging, Gradle debug/unsigned-release builds, metadata, checksum generation and both artifact uploads passed.
+- Latest source-identical full verification: [Run 40098857624](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624) on `e5eca383b89e31ba42c1764913eb6c6c4842023d`: 71 tests passed, 0 failed; full and production audits reported zero vulnerabilities; type-check, source/dist local runtime asset checks, Vite, Android packaging, Gradle debug/unsigned-release builds, metadata, checksum generation and both artifact uploads passed. Earlier implementation validation is retained below in git history.
 - Both full and production dependency audits reported zero vulnerabilities in that run. Artifact ZIP digests and the APK checksum file are attached to the linked artifacts.
 
 ### Explicitly not verified
