@@ -3,10 +3,10 @@
 **Canonical continuation checkpoint:** [CONTINUATION.md](./CONTINUATION.md). Read it first when continuing in a new conversation; it contains non-negotiable working rules, exact CI state and the physical-device acceptance matrix.
 
 - **Repository/branch:** `majd7772233-a11y/OpenMakeup` / `feat/open-makeup-arabic-mobile-lifecycle`
-- **Last verified source/CI HEAD before this checkpoint refresh:** `e5eca383b89e31ba42c1764913eb6c6c4842023d` (docs-only, parent `a0bc3c13764ff05b971f1e0f55b3991ea084508f`); this update produces another docs-only head. Always fetch live HEAD before acting.
-- **Latest completed full CI before this refresh:** [Run 40098857624](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624) on `e5eca383b89e31ba42c1764913eb6c6c4842023d`: **71/71 tests**, full and production audits zero vulnerabilities, typecheck/Vite/source+dist local assets/Android packaging/debug and unsigned-release builds/checksums/artifact uploads all passed.
-- **Debug artifact:** [12562335607](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624/artifacts/12562335607), ZIP 14,959,767 bytes, SHA-256 `f69f13c3ca9a7cf12d576de8e8002c77f5eec9f09ae5ae2c1a3e47e7976892cc`.
-- **Unsigned release candidate:** [12562270883](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624/artifacts/12562270883), ZIP 13,621,519 bytes, SHA-256 `d586378dca8182cccc389671af63fc772c8a7f9df490203bf13687377899934f`.
+- **Last verified source/CI HEAD before this checkpoint refresh:** `1607c2d2338981f103b73a8deef5b2fe46f4c86b` (docs-only, parent `dd1a935a5728d49fe6f3f155a08ebb1588f97ed5`); this update produces another docs-only head. Always fetch live HEAD before acting.
+- **Latest completed full CI before this refresh:** [Run 40099405201](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40099405201) on `1607c2d2338981f103b73a8deef5b2fe46f4c86b`: **71/71 tests**, full and production audits zero vulnerabilities, typecheck/Vite/source+dist local assets/Android packaging/debug and unsigned-release builds/checksums/artifact uploads all passed.
+- **Debug artifact:** [12561839288](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40099405201/artifacts/12561839288), ZIP 14,959,771 bytes, SHA-256 `171dab52c8011c501c4955f64499ff884c21d382dff177a3c49549ab55cfb8b8`.
+- **Unsigned release candidate:** [12561834154](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40099405201/artifacts/12561834154), ZIP 13,621,521 bytes, SHA-256 `5d996d63a0cdbe61cffa9903d61b45518f5096bd5bb5783cd2dd9d1046547414`.
 - **Next workflow:** this documentation checkpoint triggers another run; its status is not assumed and must be re-fetched.
 - **Roadmap:** exactly five stages; all have implementation and automated CI evidence. No Stage 6 was agreed.
 - **Remaining gate:** physical Android 6/7 and broader device camera/permission/lifecycle/orientation/capture/storage/share/accessibility/WebGL/thermal tests have not been performed. PR #3 remains open/unmerged; the release APK is unsigned.
@@ -249,7 +249,7 @@ Acceptance criteria status:
 ### Stage 5 — Camera Switching, Onboarding, Preset Library, Performance and Release
 
 **Status:** Stage 5 source implementation and CI/release-candidate pipeline are delivered. **Physical-device compatibility, camera-switch behavior, and sustained thermal/performance measurement remain unverified**, so a production-release readiness claim is not made.  
-**Source implementation revision:** `4be895e51332e647a4e2b3bb457f48567bfbd564`. The source-identical branch head `e5eca383b89e31ba42c1764913eb6c6c4842023d` also passed the full pipeline in [run 40098857624](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624) — **71/71 tests passed**, both audits reported zero vulnerabilities, local camera/model files were verified before and after Vite, and both APK artifacts uploaded.  
+**Source implementation revision:** `4be895e51332e647a4e2b3bb457f48567bfbd564`. The source-identical branch head `1607c2d2338981f103b73a8deef5b2fe46f4c86b` also passed the full pipeline in [run 40099405201](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40099405201) — **71/71 tests passed**, both audits reported zero vulnerabilities, local camera/model files were verified before and after Vite, and both APK artifacts uploaded.  
 **Release identity:** Android `1.5.0` / versionCode `6`; application ID and minSdk preserved.
 
 #### Delivered
@@ -265,7 +265,7 @@ Acceptance criteria status:
 
 #### Automated verification
 
-- Latest full source-identical verification passed in [run 40098857624](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624): **71 tests, 0 failures**, SDK type-check, Vite build, explicit source/dist camera and model asset checks, Android packaging, Gradle debug/unsigned-release builds, version metadata, SHA-256 generation and both artifact uploads. Camera rollback recovery and its focused assertions also passed in [run 39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959).
+- Latest full source-identical verification passed in [run 40099405201](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40099405201): **71 tests, 0 failures**, SDK type-check, Vite build, source/dist camera and model asset checks, Android packaging, Gradle debug/unsigned-release builds, version metadata, SHA-256 generation and both artifact uploads. Camera rollback recovery and focused assertions also passed in [run 39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959).
 - Both the full audit (including development tooling) and `npm audit --omit=dev --audit-level=high` reported **0 vulnerabilities** in the validated report.
 - Artifact names: `Open-Makeup-debug-apk` and `Open-Makeup-release-candidate`. The latter contains the unsigned APK, `APK-SHA256SUMS.txt`, `RELEASE_NOTES.md`, full npm audit report and lockfile.
 - An unsigned release APK must be signed with the project owner's release key before distribution. CI does not sign or invent a release key.
@@ -307,11 +307,11 @@ For every stage:
 ## 8. Current Operational State
 
 - Canonical restart point: [CONTINUATION.md](./CONTINUATION.md). On resume, re-fetch live HEAD, PR #3, newest CI jobs/logs/artifacts before making changes.
-- Last source/CI head before this docs refresh: `e5eca383b89e31ba42c1764913eb6c6c4842023d`; this update is documentation-only and creates a newer HEAD.
-- Latest completed full pipeline: [40098857624](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624), 71 tests passed / 0 failed; both dependency audits zero vulnerabilities; typecheck, Vite, source/dist runtime asset verification, Android packaging, debug/unsigned-release builds, metadata/checksum generation and both artifact uploads passed.
-- Artifacts: debug [12562335607](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624/artifacts/12562335607); unsigned release candidate [12562270883](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098857624/artifacts/12562270883).
+- Last source/CI head before this docs refresh: `1607c2d2338981f103b73a8deef5b2fe46f4c86b`; this update is documentation-only and creates a newer HEAD.
+- Latest completed full pipeline: [40099405201](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40099405201), 71 tests passed / 0 failed; both dependency audits zero vulnerabilities; typecheck, Vite, source/dist runtime asset verification, Android packaging, debug/unsigned-release builds, metadata/checksum generation and both artifact uploads passed.
+- Artifacts: debug [12561839288](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40099405201/artifacts/12561839288); unsigned release candidate [12561834154](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40099405201/artifacts/12561834154).
 - Re-fetch the workflow triggered by this documentation commit; its result is not assumed.
-- Latest workflow before this refresh: [40098717168](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40098717168) was in progress at Gradle APK build with no failed steps; verify the newer workflow from this documentation update.
+
 - App identity: Android 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23. Keep PR #3 open/unmerged unless the user explicitly asks to merge.
 - All five planned stages have code and automated CI evidence. Physical Android 6/7 plus the broader camera/permission/resume/orientation/capture/storage/share/accessibility/WebGL/thermal matrix **has not been performed** and remains the release gate.
 - The release candidate is unsigned. Only the owner's release key can sign it, if requested; never commit credentials.
