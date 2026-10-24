@@ -4,10 +4,10 @@
 **Repository:** https://github.com/majd7772233-a11y/OpenMakeup  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
 **Stage 5 implementation revision:** `64ae1eb7297e305ec458107996b9bb9123f3bbfc`  
-**Final recovery-path CI:** [Run 39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959) — **65 tests passed, 0 failed**.  
-**Latest complete Stage-5 CI:** [Run 39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959) — full/production audits, TypeScript, tests, Vite build, Android packaging, debug/release APKs and checksums passed.  
-**Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959/artifacts/12463304185).  
-**Unsigned release artifact:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959/artifacts/12463718570) — includes APK SHA-256 sums, full npm audit report, lockfile and release notes.  
+**Latest branch-tip CI:** [Run 39866650037](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866650037) on `8612f3f1006e864be8f869d33428f0bd97c6af72` — **65 tests passed, 0 failed**, full and production npm audits reported zero vulnerabilities, TypeScript/web/Android asset builds passed, both APK variants built and checksum/artifact steps passed.  
+**Latest debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866650037/artifacts/12464606584) — ZIP 14,959,770 bytes; digest `sha256:270dcc78c5cb3d1652f395909cd9c204a6f205042867e72a93ced064f3905cea`.  
+**Latest unsigned release artifact:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866650037/artifacts/12464631359) — ZIP 13,621,314 bytes; digest `sha256:eaf299a0684e27b9debfc7e5b32e61290b2c4184b181057c7fc17d0f672119d4`. It contains APK SHA-256 sums, full audit report, lockfile and release notes.  
+**Implementation-specific rollback regression run:** [39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959) verified the camera rollback recovery and its additional assertions before the final documentation sync.  
 **Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3), still open/unmerged.  
 **Mandatory execution protocol:** [Promt.txt](https://github.com/majd7772233-a11y/gpts/blob/main/Promt.txt)
 
@@ -218,7 +218,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 2. Fetch branch head and latest GitHub Actions run.
 3. Check `npm test`, type-check, Vite bundle, APK build and artifact upload.
 4. Stage 4 implementation and automated CI are complete on 96020600bcb3c72e3681470435bf3d5a0769bc70; run 39853574683 passed 51 tests and the full APK pipeline.
-5. Stage 5 implementation and release-candidate pipeline are delivered on the current branch. Run 39866096959 passed 65 tests plus the full debug/unsigned-release APK, type-check, bundle, asset, audit and checksum pipeline, including failed-camera-rollback recovery and added assertions.
+5. Stage 5 implementation and release pipeline are on the current branch. Run 39866096959 verified camera-rollback recovery and expanded assertions (65/65 tests); latest branch-tip run 39866650037 also passed 65/65 tests and all audits, builds, metadata/checksum checks and artifact uploads.
 6. Both full and production dependency audits reported zero vulnerabilities in the successful Stage-5 run.
 7. The combined physical Android 6/7 regression and sustained performance/thermal matrix remain **not performed**. Do not claim hardware success. This is the remaining release gate, not a code/CI failure.
 8. The release-candidate APK is unsigned; distribution requires the project owner's signing key. Keep PR #3 open/unmerged unless the user separately requests merging.
@@ -236,7 +236,7 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 
 ### Automated evidence
 
-- [Run 39865743613](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39865743613): 65 tests passed, 0 failed; type-check, Vite build, local asset packaging, Gradle debug/unsigned-release builds, version metadata, checksum and both artifact uploads passed.
+- [Run 39866650037](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866650037): 65 tests passed, 0 failed; full/production audits reported zero vulnerabilities; type-check, Vite build, local asset packaging, Gradle debug/unsigned-release builds, version metadata, checksum and both artifact uploads passed.
 - Both full and production dependency audits reported zero vulnerabilities in that run. Artifact ZIP digests and the APK checksum file are attached to the linked artifacts.
 
 ### Explicitly not verified
