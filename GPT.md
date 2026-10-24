@@ -1,12 +1,15 @@
 # GPT.md — Open Makeup Engineering Notebook
 
+**Canonical restart file:** [CONTINUATION.md](./CONTINUATION.md) — exact branch/checkpoint, rules and next action. Read it first when continuing in a new conversation.
+
+
 **Last updated:** 2026-10-24  
 **Repository:** https://github.com/majd7772233-a11y/OpenMakeup  
 **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`  
-**Stage 5 implementation revision:** `4be895e51332e647a4e2b3bb457f48567bfbd564`  
+**Stage 5 code revision:** 4be895e51332e647a4e2b3bb457f48567bfbd564  
 **Latest complete implementation CI:** [Run 40097038958](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958) for implementation revision `4be895e51332e647a4e2b3bb457f48567bfbd564` — **71 tests passed, 0 failed**, full and production npm audits reported zero vulnerabilities; TypeScript, Vite build, source/dist camera and model asset checks, Android packaging, both APK builds, checksums and uploads all passed.  
-**Latest debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958/artifacts/12561017575) — ZIP 14,959,767 bytes; digest `sha256:d6d6d74c36a71f3baa8b09e223dff580cf411bd2a6d45db5f5323eb971b1b4f1`.  
-**Latest unsigned release artifact:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958/artifacts/12560608569) — ZIP 13,621,316 bytes; digest `sha256:f1d86bdf7098956f2cfc377110b4a9137ad6f5a98d7e486bb5613ac4db8c8015`. It contains APK SHA-256 sums, full audit report, lockfile and release notes.  
+**Latest debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589/artifacts/12561920472) — ZIP 14,959,766 bytes; ZIP SHA-256 01e905adf83b384a6a2c6257d8cfa6c6e86cdb982cf803241f3b55389982edd4.  
+**Latest unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589/artifacts/12561765932) — ZIP 13,621,519 bytes; ZIP SHA-256 6600722653d1fb79ed47026f13f975c50f294ac393daacb88723aca79dbb1990.  
 **Local camera asset correction:** deeper tree inspection found that the HTML pointed to a camera utility file that was not checked into the repo. A first-party offline Camera adapter is now bundled and covered by lifecycle tests; CI verifies both the source and built asset.  
 **Implementation-specific rollback regression run:** [39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959) verified the camera rollback recovery and its additional assertions before the local-camera audit.  
 **Related PR:** [#3](https://github.com/majd7772233-a11y/OpenMakeup/pull/3), still open/unmerged.  
@@ -215,15 +218,14 @@ Language uses `openMakeupLanguage`. Recovery restores effect options/morphs/togg
 
 ## 12. Exact Resume Procedure
 
-1. Read both project memory files.
-2. Fetch branch head and latest GitHub Actions run.
-3. Check `npm test`, type-check, Vite bundle, APK build and artifact upload.
-4. Stage 4 implementation and automated CI are complete on 96020600bcb3c72e3681470435bf3d5a0769bc70; run 39853574683 passed 51 tests and the full APK pipeline.
-5. Stage 5 implementation and release pipeline are on the current branch. Run 40097038958 passed 71/71 tests, both full and production audits, type-check, Vite, source/dist local asset checks, debug/unsigned-release builds, checksums and artifact uploads. The missing local camera adapter was found during this continuation and is now present in the checked-in source and build output.
-6. Both full and production dependency audits reported zero vulnerabilities in the successful Stage-5 run.
-7. The combined physical Android 6/7 regression and sustained performance/thermal matrix remain **not performed**. Do not claim hardware success. This is the remaining release gate, not a code/CI failure.
-8. The release-candidate APK is unsigned; distribution requires the project owner's signing key. Keep PR #3 open/unmerged unless the user separately requests merging.
+Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff with the strict rules, latest CI evidence, artifact IDs, exact branch and remaining physical-device gate.
 
+1. Start immediately with GitHub calls; no greeting, generic preamble or repeated questions.
+2. Fetch the live branch HEAD, PR #3 and latest Actions status/logs/artifacts. Do not assume the historical SHA remains HEAD.
+3. If current-head CI is green, do not reimplement Stages 1–5. The remaining release gate is consolidated physical Android 6/7 and other device acceptance, documented in CONTINUATION.md.
+4. If a live check fails, inspect actual logs, fix the root cause on this branch, add regression coverage and verify a newer successful run.
+5. Keep PR #3 open/unmerged; preserve local-only processing and do not claim physical tests from CI.
+6. Keep CONTINUATION.md, GPT.md and ROADMAP.md synchronized after meaningful changes.
 
 ## Stage-5 Implementation and Release-Candidate Record
 

@@ -1,10 +1,13 @@
 # Open Makeup — Project Roadmap
 
+**Canonical restart file:** [CONTINUATION.md](./CONTINUATION.md) — exact branch/checkpoint, rules and next action. Read it first when continuing in a new conversation.
+
+
 **Last updated:** 2026-10-24  
-**Stage 5 implementation revision:** `4be895e51332e647a4e2b3bb457f48567bfbd564`  
+**Stage 5 code revision:** 4be895e51332e647a4e2b3bb457f48567bfbd564  
 **Latest complete implementation CI:** [Run 40097038958](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958) validated implementation revision `4be895e51332e647a4e2b3bb457f48567bfbd564`: **71 tests passed, 0 failed**; full and production dependency audits reported zero vulnerabilities; TypeScript, Vite build, source-and-built local camera/model asset checks, Android asset packaging, debug and unsigned-release APK builds, metadata checks, checksums and both artifact uploads all passed.  
-**Latest debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958/artifacts/12561017575) — ZIP 14,959,767 bytes; artifact ZIP digest `sha256:d6d6d74c36a71f3baa8b09e223dff580cf411bd2a6d45db5f5323eb971b1b4f1`.  
-**Latest unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958/artifacts/12560608569) — ZIP 13,621,316 bytes; artifact ZIP digest `sha256:f1d86bdf7098956f2cfc377110b4a9137ad6f5a98d7e486bb5613ac4db8c8015`. It includes APK SHA-256 sums, full audit report, lockfile and release notes.  
+**Latest debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589/artifacts/12561920472) — ZIP 14,959,766 bytes; ZIP SHA-256 01e905adf83b384a6a2c6257d8cfa6c6e86cdb982cf803241f3b55389982edd4.  
+**Latest unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589/artifacts/12561765932) — ZIP 13,621,519 bytes; ZIP SHA-256 6600722653d1fb79ed47026f13f975c50f294ac393daacb88723aca79dbb1990.  
 **Critical asset audit fixed:** the shell referenced `./mediapipe/camera_utils/camera_utils.js`, but that file was absent from the repository. A first-party local camera adapter is now bundled; unit tests cover startup, facing-mode constraints, frame scheduling, stop cleanup and late-permission cancellation, and CI asserts the source and built files exist.  
 **Implementation-specific rollback regression run:** [39866096959](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39866096959) verified camera-rollback recovery before the later local-camera-asset audit.
 **Current verified release line:** Android versionName `1.5.0`, versionCode `6`, application ID `com.magd.openmakeup`, minSdk `23`.  
@@ -308,11 +311,11 @@ For every stage:
 
 ## 8. Current Operational State
 
-- Current work remains on `feat/open-makeup-arabic-mobile-lifecycle`; PR #3 is open and unmerged.
-- Stage 5 implementation revision: `4be895e51332e647a4e2b3bb457f48567bfbd564`. Latest branch-tip verification is [run 40097038958](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097038958), **71 tests passed**. The missing local camera adapter was added and CI now asserts source and Vite output existence.
-- A preceding full Stage-5 run, [39859079525](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/39859079525), passed **65 tests, 0 failures**, type-check, Vite build, Android asset packaging, Gradle debug and unsigned release APK builds, version validation, checksums and both artifact uploads.
-- The full dependency audit (including development tools) and production-only audit each reported **0 vulnerabilities** in run 39859079525. The new workflow preserves `npm-audit-full.json`, `package-lock.json`, `RELEASE_NOTES.md` and APK checksums in the release-candidate artifact.
-- Android version is `1.5.0` / code 6; package ID `com.magd.openmakeup` and minimum SDK 23 remain unchanged.
-- Available artifact classes are `Open-Makeup-debug-apk` and `Open-Makeup-release-candidate`; the latter is unsigned and requires the project's release key before distribution.
-- Stage 1–5 source and automated CI have been implemented; **physical device acceptance is still not performed**. Do not claim a camera-switch/device, screen-reader/contrast, gallery/share, GPU recovery or sustained thermal pass before testing real hardware.
-- Next step is the combined physical Android matrix documented above, then fix any real-device failures and sign a release artifact only with the owner's key. Keep PR #3 open/unmerged unless the user separately requests merging.
+- Canonical restart point, exact rules and the complete pending test matrix: [CONTINUATION.md](./CONTINUATION.md). Read it first in a new conversation.
+- Branch tip at last verification: 02c2f7ab32023c0d8f22661a3171b5e8f6368775. Always re-fetch live HEAD before work.
+- Latest verified run: [40097505589](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589), 71 tests passed / 0 failed, full and production audits zero vulnerabilities, type-check/Vite/source+dist runtime checks/Android package/debug and unsigned-release builds/checksums/artifact uploads passed.
+- Latest artifacts: debug [12561920472](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589/artifacts/12561920472); unsigned release candidate [12561765932](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40097505589/artifacts/12561765932).
+- All five planned stages have code and automated CI evidence. PR #3 remains open and unmerged.
+- Physical Android 6/7 camera/permission/resume/orientation/capture/storage/share/accessibility/WebGL recovery/sustained-performance acceptance has **not been performed** and is the remaining release gate. Do not claim it passed.
+- The release artifact is unsigned; only the owner's release key can be used when signing is explicitly requested. Never commit credentials.
+- See CONTINUATION.md for the full implementation inventory and non-negotiable rules. Keep all three notebook files accurate as new evidence is gathered.
