@@ -259,5 +259,5 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 
 - User requested a Settings option labelled “Font size”, default **12**, applied throughout the application; this is an explicit new stage after the five previously planned stages.
 - Implemented Settings dialog in the header, Arabic/English localization, integer slider 10–20, numeric output, reset-to-12, localStorage persistence key `openMakeupFontSizeV1`, startup restore with bounded validation, and dialog keyboard/focus/Android Back handling.
-- CSS font sizes scale proportionally through `--font-scale`; 12 preserves current layout typography, and camera/WebGL dimensions are not scaled.
+- CSS font sizes scale proportionally by regenerating the base stylesheet with numeric pixel sizes (including older Android WebViews); 12 preserves current layout typography, and camera/WebGL dimensions are not scaled.
 - Regression tests are added. Await the live current-head GitHub Actions result before claiming CI success; physical-device checks remain pending.

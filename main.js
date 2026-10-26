@@ -16,6 +16,8 @@ const sliders = [];
 let engineReady = false;
 let currentLanguage = 'ar';
 const FONT_SIZE_KEY = 'openMakeupFontSizeV1';
+const appStyleElement = document.querySelector('style');
+const BASE_APP_CSS = appStyleElement ? appStyleElement.textContent : '';
 const DEFAULT_FONT_SIZE = 12;
 const MIN_FONT_SIZE = 10;
 const MAX_FONT_SIZE = 20;
@@ -262,7 +264,10 @@ function normalizeFontSize(value) {
 
 function applyFontSize(value, persist = true) {
   currentFontSize = normalizeFontSize(value);
-  document.documentElement.style.setProperty('--font-scale', String(currentFontSize / DEFAULT_FONT_SIZE));
+  const scale = currentFontSize / DEFAULT_FONT_SIZE;
+  if (appStyleElement) {
+    appStyleElement.textContent = BASE_APP_CSS.replace(/font-size:([0-9]+(?:\\.[0-9]+)?)px/g, (_, pixels) => `font-size:${Number((Number(pixels) * scale).toFixed(3))}px`);
+  }
   $('font-size-setting').value = String(currentFontSize);
   $('font-size-value').value = String(currentFontSize);
   $('font-size-value').textContent = String(currentFontSize);
