@@ -266,7 +266,7 @@ function applyFontSize(value, persist = true) {
   currentFontSize = normalizeFontSize(value);
   const scale = currentFontSize / DEFAULT_FONT_SIZE;
   if (appStyleElement) {
-    appStyleElement.textContent = BASE_APP_CSS.replace(/font-size:([0-9]+(?:\\.[0-9]+)?)px/g, (_, pixels) => `font-size:${Number((Number(pixels) * scale).toFixed(3))}px`);
+    appStyleElement.textContent = BASE_APP_CSS.replace(/font-size:([0-9]+(?:\.[0-9]+)?)px/g, (_, pixels) => `font-size:${Number((Number(pixels) * scale).toFixed(3))}px`);
   }
   $('font-size-setting').value = String(currentFontSize);
   $('font-size-value').value = String(currentFontSize);
