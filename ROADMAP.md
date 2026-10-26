@@ -317,3 +317,26 @@ For every stage:
 - All five planned stages have code and automated CI evidence. Physical Android 6/7 plus the broader camera/permission/resume/orientation/capture/storage/share/accessibility/WebGL/thermal matrix **has not been performed** and remains the release gate.
 - The release candidate is unsigned. Only the owner's release key can sign it, if requested; never commit credentials.
 - Keep CONTINUATION.md, GPT.md and ROADMAP.md synchronized after meaningful changes.
+
+
+## Stage 6 — Global Font Size Settings and Persistence
+
+**Status:** Implementation added; automated CI validation pending on the current branch head. This stage was explicitly requested after the original five-stage plan and is tracked separately without rewriting their completion history.
+
+### Scope and behavior
+
+- Add an accessible Settings dialog reachable from the main app header, localized in Arabic and English and respecting RTL/LTR.
+- Add a global font-size slider with a default value of **12**, adjustable from 10 to 20 in integer steps, with a visible numeric readout and reset-to-default action.
+- Apply the selected scale to all authored CSS font-size declarations across the studio while preserving the current design at 12; do not resize the camera/video canvas or alter WebGL render resolution.
+- Persist the setting under `openMakeupFontSizeV1`; restore it at startup and safely fall back to 12 when storage is unavailable or the stored value is invalid/out of range.
+- Support dialog focus containment/restoration, Escape, backdrop close and Android Back; keep keyboard and touch operation available.
+- Add bilingual/accessibility/source-contract regression tests; run the complete test, typecheck, web build, Android package/APK and artifact pipeline.
+
+### Acceptance gates
+
+- [x] Settings dialog, bilingual labels, slider and reset action implemented.
+- [x] Default 12 and persisted bounded setting with automatic whole-studio text scaling.
+- [x] Keyboard/focus and Android Back close behavior wired.
+- [x] Automated regression tests added.
+- [ ] Current-head GitHub Actions completes successfully; update this status only from actual workflow evidence.
+- [ ] Physical-device usability/accessibility check remains part of the consolidated hardware matrix; CI is not physical-device evidence.

@@ -15,6 +15,12 @@ const getActionButtons = () => [...document.querySelectorAll(actionButtonSelecto
 const sliders = [];
 let engineReady = false;
 let currentLanguage = 'ar';
+const FONT_SIZE_KEY = 'openMakeupFontSizeV1';
+const DEFAULT_FONT_SIZE = 12;
+const MIN_FONT_SIZE = 10;
+const MAX_FONT_SIZE = 20;
+let currentFontSize = DEFAULT_FONT_SIZE;
+let settingsOpener = null;
 let isFullscreenPreview = false;
 let resumeInProgress = false;
 let hiddenAt = 0;
@@ -248,6 +254,64 @@ async function shareCurrentPhoto() {
 
 function t(key, values = {}) { return translate(currentLanguage, key, values); }
 
+function normalizeFontSize(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return DEFAULT_FONT_SIZE;
+  return Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, Math.round(parsed)));
+}
+
+function applyFontSize(value, persist = true) {
+  currentFontSize = normalizeFontSize(value);
+  document.documentElement.style.setProperty('--font-scale', String(currentFontSize / DEFAULT_FONT_SIZE));
+  $('font-size-setting').value = String(currentFontSize);
+  $('font-size-value').value = String(currentFontSize);
+  $('font-size-value').textContent = String(currentFontSize);
+  if (persist) {
+    try { localStorage.setItem(FONT_SIZE_KEY, String(currentFontSize)); } catch (_) {}
+  }
+}
+
+function openSettings() {
+  const modal = $('settings-modal');
+  if (modal.classList.contains('open')) return;
+  settingsOpener = document.activeElement;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+  $('close-settings').focus();
+}
+
+function closeSettings() {
+  const modal = $('settings-modal');
+  if (!modal.classList.contains('open')) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+  const target = settingsOpener && typeof settingsOpener.focus === 'function' ? settingsOpener : $('open-settings');
+  settingsOpener = null;
+  target.focus();
+}
+
+function trapSettingsFocus(event) {
+  const modal = $('settings-modal');
+  if (!modal.classList.contains('open') || event.key !== 'Tab') return;
+  const focusable = [...modal.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((element) => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
+  if (!focusable.length) { event.preventDefault(); modal.focus(); return; }
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (event.shiftKey && (document.activeElement === first || document.activeElement === modal)) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+}
+
+$('open-settings').addEventListener('click', openSettings);
+$('close-settings').addEventListener('click', closeSettings);
+$('done-settings').addEventListener('click', closeSettings);
+$('settings-modal').addEventListener('click', (event) => { if (event.target === $('settings-modal')) closeSettings(); });
+$('font-size-setting').addEventListener('input', (event) => applyFontSize(event.currentTarget.value));
+$('reset-settings').addEventListener('click', () => applyFontSize(DEFAULT_FONT_SIZE));
+try { applyFontSize(localStorage.getItem(FONT_SIZE_KEY) ?? DEFAULT_FONT_SIZE, false); }
+catch (_) { applyFontSize(DEFAULT_FONT_SIZE, false); }
+
 function setTrackingState(state) {
   lastTrackingState = ['waiting', 'noFace', 'detected'].includes(state) ? state : 'waiting';
   const chip = $('tracking-state'), label = $('tracking-text');
@@ -459,6 +523,11 @@ document.addEventListener('keydown', (event) => {
     trapOnboardingFocus(event);
     return;
   }
+  if ($('settings-modal').classList.contains('open')) {
+    if (event.key === 'Escape') { event.preventDefault(); closeSettings(); return; }
+    trapSettingsFocus(event);
+    return;
+  }
   if ($('about-modal').classList.contains('open')) {
     if (event.key === 'Escape') { event.preventDefault(); closeAbout(); return; }
     trapAboutFocus(event);
@@ -505,6 +574,7 @@ window.isPreviewFullscreen = () => isFullscreenPreview;
 window.handleAndroidBack = () => {
   if (isFullscreenPreview) { exitFullscreenPreview(); return true; }
   if ($('onboarding-modal').classList.contains('open')) { dismissOnboardingAndStart(); return true; }
+  if ($('settings-modal').classList.contains('open')) { closeSettings(); return true; }
   if ($('about-modal').classList.contains('open')) { closeAbout(); return true; }
   return false;
 };

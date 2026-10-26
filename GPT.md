@@ -253,3 +253,11 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 - No physical Android device has been exercised here. Actual camera switching and rollback, repeated camera resume, Android 6/7 permission behavior, screen reader/contrast, capture mirror and color, gallery/share, WebGL recovery under real GPU resets and sustained thermal/frame stability remain unverified.
 - Runtime-derived resolution/antialias settings are defensive defaults. They are not benchmark measurements. The test matrix in ROADMAP.md is a plan, not proof that named devices have passed.
 - The release APK is unsigned; never generate or commit the owner's signing key.
+
+
+## Stage 6 — Global Font Size Settings (new user request)
+
+- User requested a Settings option labelled “Font size”, default **12**, applied throughout the application; this is an explicit new stage after the five previously planned stages.
+- Implemented Settings dialog in the header, Arabic/English localization, integer slider 10–20, numeric output, reset-to-12, localStorage persistence key `openMakeupFontSizeV1`, startup restore with bounded validation, and dialog keyboard/focus/Android Back handling.
+- CSS font sizes scale proportionally through `--font-scale`; 12 preserves current layout typography, and camera/WebGL dimensions are not scaled.
+- Regression tests are added. Await the live current-head GitHub Actions result before claiming CI success; physical-device checks remain pending.

@@ -115,3 +115,26 @@ test('future persistence schemas are preserved instead of overwritten', () => {
   assert.match(main, /Number\(parsed\.version\) > CUSTOM_LOOKS_VERSION/);
   assert.match(main, /if \(!persistCustomLooks\(\)\) \{ customLooks = previousLooks; renderCustomLooks\(\); return; \}/);
 });
+
+
+test('font-size setting is bilingual, defaults to 12, persists, scales all authored CSS text and supports reset', () => {
+  for (const key of ['settingsTitle','settingsDescription','openSettings','closeSettings','fontSizeLabel','fontSizeUnit','fontSizeHelp','resetFontSize','doneSettings']) {
+    assert.equal(typeof dictionaries.ar[key], 'string', `Arabic translation missing for ${key}`);
+    assert.equal(typeof dictionaries.en[key], 'string', `English translation missing for ${key}`);
+  }
+  assert.match(html, /id="open-settings"/);
+  assert.match(html, /id="settings-modal"[^>]*role="dialog"[^>]*aria-modal="true"/);
+  assert.match(html, /id="font-size-setting" type="range" min="10" max="20" step="1" value="12"/);
+  assert.match(html, /id="font-size-value"[^>]*>12<\/output>/);
+  assert.match(html, /--font-scale:1/);
+  assert.match(html, /font-size:calc\([0-9.]+px \* var\(--font-scale, 1\)\)/);
+  assert.match(main, /const DEFAULT_FONT_SIZE = 12/);
+  assert.match(main, /const FONT_SIZE_KEY = 'openMakeupFontSizeV1'/);
+  assert.match(main, /function normalizeFontSize\(value\)/);
+  assert.match(main, /Math\.min\(MAX_FONT_SIZE, Math\.max\(MIN_FONT_SIZE, Math\.round\(parsed\)\)\)/);
+  assert.match(main, /document\.documentElement\.style\.setProperty\('--font-scale', String\(currentFontSize \/ DEFAULT_FONT_SIZE\)\)/);
+  assert.match(main, /localStorage\.setItem\(FONT_SIZE_KEY, String\(currentFontSize\)\)/);
+  assert.match(main, /\$\('reset-settings'\)\.addEventListener\('click', \(\) => applyFontSize\(DEFAULT_FONT_SIZE\)\)/);
+  assert.match(main, /function trapSettingsFocus\(event\)/);
+  assert.match(main, /if \(\$\('settings-modal'\)\.classList\.contains\('open'\)\) \{ closeSettings\(\); return true; \}/);
+});

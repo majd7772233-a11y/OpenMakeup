@@ -170,3 +170,12 @@ These are the most important instructions and must survive every handoff:
 4. If current-head CI fails, inspect actual log output, identify the precise root cause, fix it on this branch and add a regression test; rerun and verify a newer green workflow before claiming completion.
 5. Never claim hardware/accessibility/thermal verification from CI. Record exact physical device/model, Android and WebView versions, steps and results only when truly run.
 6. Keep PR #3 open/unmerged; keep camera/face processing local; never sign/publish or commit credentials. Keep these three memory files synchronized after meaningful changes.
+
+
+## 7. Newly requested Stage 6 — Global Font Size Settings
+
+- User explicitly requested a new stage adding a global “Font size” setting with default **12**, applied throughout the app. This request authorizes Stage 6 despite the earlier five-stage roadmap; do not delete or rewrite Stages 1–5.
+- Implementation files: `index.html` (header settings action, dialog and scaled CSS declarations), `main.js` (bounded value, persistence, dialog lifecycle/focus/Android Back), `src/ui/locales.js` (Arabic and English strings), and `tests/accessibility-ui.test.js` (regressions).
+- Preference key: `openMakeupFontSizeV1`; range 10–20 integer px, default 12. At 12, existing design sizing is preserved; other values scale all authored CSS text while leaving camera/WebGL dimensions untouched.
+- CI is pending for the commit that introduces this stage until a live Actions result is fetched. Do not call it validated before the current-head workflow completes.
+- Existing physical-device release gate remains open; test the setting at small/large values on a handset when the consolidated Android 6/7 matrix is run.
