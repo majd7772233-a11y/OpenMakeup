@@ -165,3 +165,8 @@ test('finish selector hides an indistinguishable non-lipstick glossy option', ()
   assert.ok(main.includes("glossyOption.hidden = currentEditorCategory !== 'lipstick'"));
   assert.ok(main.includes("currentEditorCategory !== 'lipstick' && finish === 'glossy'"));
 });
+
+
+test('startup reports when the app cannot persist studio changes', () => {
+  assert.ok(main.includes("else if (sessionPersistenceUnavailable) {\n      setStatusKey('statusSessionNotSaved', 'error');"));
+});

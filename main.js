@@ -630,6 +630,8 @@ async function startEngine() {
     } else if (restoreErrors.length) {
       console.warn('Session restore failures:', restoreErrors);
       setStatus(t('statusSessionRestoreWarning', { count: restoreErrors.length }), 'error');
+    } else if (sessionPersistenceUnavailable) {
+      setStatusKey('statusSessionNotSaved', 'error');
     } else {
       setStatusKey('statusReady', 'success');
     }
