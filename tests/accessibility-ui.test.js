@@ -170,3 +170,28 @@ test('finish selector hides an indistinguishable non-lipstick glossy option', ()
 test('startup reports when the app cannot persist studio changes', () => {
   assert.ok(main.includes("else if (sessionPersistenceUnavailable) {\n      setStatusKey('statusSessionNotSaved', 'error');"));
 });
+
+
+test('stage-eight workspace redesign keeps the rose-purple brand and adds accessible mobile navigation', () => {
+  assert.ok(html.includes('--pink:#f071a7'));
+  assert.ok(html.includes('--purple:#9d76ff'));
+  assert.ok(html.includes('backdrop-filter:blur(24px) saturate(155%)'));
+  assert.ok(html.includes('class="workspace-intro"'));
+  assert.ok(html.includes('class="workspace-navigation" id="workspace-navigation"'));
+  assert.ok(html.includes('@media(max-width:759px)'));
+  for (const [tab, panel, key] of [
+    ['looks', 'daily-controls', 'workspaceLooks'],
+    ['makeup', 'personalization-panel', 'workspaceMakeup'],
+    ['saved', 'custom-looks-panel', 'workspaceSaved'],
+    ['sculpt', 'advanced-controls', 'workspaceSculpt'],
+  ]) {
+    assert.ok(html.includes(`data-workspace-tab="${tab}"`), 'Missing workspace tab ' + tab);
+    assert.ok(html.includes(`data-workspace-panel="${tab}"`), 'Missing workspace panel ' + tab);
+    assert.ok(html.includes(`aria-controls="${panel}"`), 'Missing panel relation for ' + tab);
+    assert.ok(dictionaries.ar[key] && dictionaries.en[key], 'Missing bilingual workspace label ' + key);
+  }
+  assert.match(main, /function activateWorkspaceTab\(name, options = \{\}\)/);
+  assert.match(main, /event\.key === 'ArrowLeft'/);
+  assert.match(main, /event\.key === 'ArrowRight'/);
+  assert.match(html, /prefers-reduced-motion:reduce/);
+});

@@ -410,6 +410,48 @@ try {
 } catch (_) {}
 $('language-toggle').addEventListener('click', () => applyLanguage(currentLanguage === 'ar' ? 'en' : 'ar'));
 
+
+const workspaceTabButtons = [...document.querySelectorAll('[data-workspace-tab]')];
+const workspacePanels = [...document.querySelectorAll('[data-workspace-panel]')];
+
+function activateWorkspaceTab(name, options = {}) {
+  const targetPanel = workspacePanels.find((panel) => panel.dataset.workspacePanel === name);
+  if (!targetPanel) return;
+  workspaceTabButtons.forEach((button) => {
+    const selected = button.dataset.workspaceTab === name;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  workspacePanels.forEach((panel) => panel.classList.toggle('workspace-tab-inactive', panel !== targetPanel));
+  if (name === 'sculpt') $('advanced-controls').open = true;
+  if (options.focus) {
+    const activeButton = workspaceTabButtons.find((button) => button.dataset.workspaceTab === name);
+    if (activeButton) activeButton.focus();
+  }
+  if (options.scroll && window.matchMedia && window.matchMedia('(max-width: 759px)').matches) {
+    window.requestAnimationFrame(() => {
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      targetPanel.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'nearest' });
+    });
+  }
+}
+
+workspaceTabButtons.forEach((button) => {
+  button.addEventListener('click', () => activateWorkspaceTab(button.dataset.workspaceTab, { scroll: true }));
+  button.addEventListener('keydown', (event) => {
+    const current = workspaceTabButtons.indexOf(button);
+    let next = current;
+    if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = workspaceTabButtons.length - 1;
+    else if (event.key === 'ArrowLeft') next = (current + (document.documentElement.dir === 'rtl' ? 1 : -1) + workspaceTabButtons.length) % workspaceTabButtons.length;
+    else if (event.key === 'ArrowRight') next = (current + (document.documentElement.dir === 'rtl' ? -1 : 1) + workspaceTabButtons.length) % workspaceTabButtons.length;
+    else return;
+    event.preventDefault();
+    activateWorkspaceTab(workspaceTabButtons[next].dataset.workspaceTab, { focus: true, scroll: true });
+  });
+});
+activateWorkspaceTab('looks');
+
 async function runAction(labelKey, action) {
   if (!engineReady || webglContextLost) { setStatusKey(webglContextLost ? 'statusGraphicsLost' : 'statusWaiting', 'error'); return false; }
   const before = getStudioSnapshot();

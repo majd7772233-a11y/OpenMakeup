@@ -1,6 +1,8 @@
 export const dictionaries = {
   ar: {
     tagline:'جمالك، بطريقتك', livePreview:'المعاينة المباشرة', fullscreenTitle:'تكبير المعاينة إلى ملء الشاشة',
+    workspaceOverline:'مساحة الجمال الرقمية', workspaceHeading:'صمّمي إطلالتك على ذوقك', workspaceDescription:'اختاري لونك، جرّبي التأثير مباشرة، واضبطي التفاصيل خطوة بخطوة.',
+    workspaceNavigation:'التنقل بين أدوات الاستوديو', workspaceLooks:'الإطلالات', workspaceMakeup:'التخصيص', workspaceSaved:'المحفوظة', workspaceSculpt:'الملامح',
     studioChip:'✦ استوديو الجمال المباشر', statusLoading:'جارٍ تجهيز الاستوديو...', looksTitle:'إطلالات سريعة',
     looksSubtitle:'اختاري ألوانك بلمسة واحدة', rose:'وردي', berry:'توتي', nude:'طبيعي', makeupTitle:'مستحضرات التجميل',
     lipstick:'ملمع الشفاه', eyeshadow:'ظلال لامعة', eyeline:'كحل العين', blush:'أحمر الخدود',
@@ -114,6 +116,8 @@ export const dictionaries = {
   },
   en: {
     tagline:'Your look, your rules', livePreview:'Live preview', fullscreenTitle:'Expand preview to full screen',
+    workspaceOverline:'YOUR BEAUTY WORKSPACE', workspaceHeading:'Create a look that feels like you', workspaceDescription:'Explore your colors live, refine each detail, and keep your favorite looks close.',
+    workspaceNavigation:'Navigate studio tools', workspaceLooks:'Looks', workspaceMakeup:'Customize', workspaceSaved:'Saved', workspaceSculpt:'Sculpt',
     studioChip:'✦ LIVE BEAUTY STUDIO', statusLoading:'Preparing your studio...', looksTitle:'Quick looks',
     looksSubtitle:'Try a color story in one tap', rose:'Rose', berry:'Berry', nude:'Nude', makeupTitle:'Makeup',
     lipstick:'Lip gloss', eyeshadow:'Glitter shadow', eyeline:'Eyeliner', blush:'Blush',

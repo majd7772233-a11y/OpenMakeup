@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#100d18" />
+  <meta name="theme-color" content="#1a1224" />
   <meta name="description" content="استوديو مكياج افتراضي يعمل محليًا مع معاينة مباشرة للكاميرا وإطلالات قابلة للتجربة." />
   <meta name="color-scheme" content="dark" />
   <title>Open Makeup — مكياجي</title>
@@ -136,6 +136,82 @@
     .onboarding-card{max-width:560px}
     @media(max-width:380px){.preset-grid{gap:6px}.preset-button{font-size:11px;padding-inline:4px}.onboarding-step{padding:9px}}
     @media(max-width:330px){.preset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.preset-button{font-size:11px}.onboarding-actions{grid-template-columns:1fr}}
+  
+    /* Stage 8 — original rose/purple liquid-glass workspace. */
+    :root{--pink:#f071a7;--purple:#9d76ff;--glass:rgba(255,255,255,.065);--glass-strong:rgba(255,255,255,.10);--glass-edge:rgba(255,255,255,.17);--glass-shadow:0 20px 55px rgba(0,0,0,.28)}
+    html{scroll-padding-top:calc(14px + var(--safe-top))}
+    body{padding:calc(14px + var(--safe-top)) 18px calc(20px + var(--safe-bottom));background:radial-gradient(ellipse at 8% 3%,rgba(240,113,167,.19),transparent 35%),radial-gradient(ellipse at 95% 19%,rgba(157,118,255,.18),transparent 40%),radial-gradient(ellipse at 55% 92%,rgba(190,91,178,.10),transparent 37%),linear-gradient(145deg,#100d18 0%,#171020 53%,#100b18 100%);background-attachment:fixed}
+    button:disabled{cursor:not-allowed}
+    .app{width:min(100%,1340px);gap:18px}
+    .topbar{position:relative;isolation:isolate;overflow:hidden;padding:10px 13px;border:1px solid var(--glass-edge);border-radius:24px;background:linear-gradient(112deg,rgba(240,113,167,.095),rgba(255,255,255,.045) 38%,rgba(157,118,255,.10));backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 10px 34px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.12)}
+    .topbar::after{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 28%,rgba(255,255,255,.055) 48%,transparent 68%)}
+    .brand-mark{border:1px solid rgba(255,255,255,.25);background:linear-gradient(145deg,#f58dbb,#d76cac 43%,#9169f4);box-shadow:0 8px 26px rgba(217,76,133,.28),inset 0 1px 0 rgba(255,255,255,.38)}
+    .brand h1{font-size:clamp(21px,3vw,28px);letter-spacing:-.035em}.tagline{color:#e3c6df}.top-actions{gap:8px}
+    .icon-btn,.lang-btn,.secondary,.primary,.look,.makeup-btn{border-color:var(--glass-edge);transition:transform .2s ease,background .2s ease,border-color .2s ease,box-shadow .2s ease}
+    .icon-btn,.lang-btn{background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.035));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.10)}
+    .icon-btn:hover,.lang-btn:hover,.secondary:hover,.makeup-btn:hover,.look:hover{border-color:rgba(240,113,167,.40);box-shadow:0 8px 22px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.12)}
+    .primary{position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.19);background:linear-gradient(112deg,#e963a0,#c85bd0 54%,#8962ef);box-shadow:0 9px 26px rgba(180,76,170,.24),inset 0 1px 0 rgba(255,255,255,.26);font-weight:800}
+    .primary::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.14) 48%,transparent 70%);opacity:.72}
+    .secondary{background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.08);font-weight:700}
+    .workspace-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:5px 6px 1px}
+    .workspace-intro-copy{min-width:0}.workspace-overline{margin:0 0 7px;color:#f2a5ca;font-size:11px;font-weight:850;letter-spacing:.10em;text-transform:uppercase}
+    .workspace-heading{margin:0;font-size:clamp(24px,3.5vw,37px);font-weight:900;letter-spacing:-.045em;line-height:1.2;background:linear-gradient(105deg,#fff5fb,#f8bad8 47%,#c5a9ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .workspace-description{max-width:650px;margin:8px 0 0;color:#c9bad5;font-size:13px;line-height:1.75}
+    .workspace-chip{display:flex;align-items:center;gap:9px;flex:0 0 auto;padding:12px 15px;border:1px solid rgba(255,255,255,.17);border-radius:18px;color:#e9d9f1;font-size:10px;font-weight:850;letter-spacing:.09em;background:linear-gradient(140deg,rgba(240,113,167,.12),rgba(157,118,255,.12));box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 24px rgba(0,0,0,.16);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+    .workspace-chip-sparkle{font-size:17px;color:#ffb8d9}.workspace-chip-divider{width:1px;height:17px;background:rgba(255,255,255,.19)}.workspace-chip-live{width:7px;height:7px;border-radius:50%;background:#f071a7;box-shadow:0 0 0 4px rgba(240,113,167,.12),0 0 14px rgba(240,113,167,.55)}
+    .studio{gap:20px;align-items:start}
+    .preview-card{position:sticky;top:calc(14px + var(--safe-top));z-index:15;padding:11px;border:1px solid rgba(255,255,255,.19);border-radius:31px;background:radial-gradient(ellipse at 7% 5%,rgba(240,113,167,.11),transparent 48%),linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.025) 60%);box-shadow:var(--glass-shadow),inset 0 1px 0 rgba(255,255,255,.13);backdrop-filter:blur(18px) saturate(135%);-webkit-backdrop-filter:blur(18px) saturate(135%)}
+    .preview-head{padding:5px 5px 12px}.preview-title{font-size:13px;gap:10px}.live-dot{background:var(--pink);box-shadow:0 0 0 4px rgba(240,113,167,.16),0 0 14px rgba(240,113,167,.42)}
+    .preview-tools .icon-btn{border-radius:15px;background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(157,118,255,.08))}
+    #stage{aspect-ratio:4/3;min-height:240px;max-height:68vh;border-radius:24px;border:1px solid rgba(255,255,255,.20);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 12px 34px rgba(0,0,0,.20);background:#0b0812;isolation:isolate}
+    #stage::before{content:"";position:absolute;z-index:1;inset:0;pointer-events:none;background:radial-gradient(ellipse at 12% 0%,rgba(240,113,167,.10),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(157,118,255,.10),transparent 47%);border-radius:inherit}
+    #stage::after{content:"";position:absolute;z-index:1;inset:10px;pointer-events:none;border:1px solid rgba(255,255,255,.055);border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+    #stage #video,#stage #renderCanvas{border-radius:inherit}
+    .stage-chip{top:13px;inset-inline-start:13px;padding:8px 12px;border-color:rgba(255,255,255,.22);background:rgba(19,13,29,.70);color:#ffe8f4;box-shadow:0 7px 18px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.12)}
+    #fullscreen-preview{top:12px;inset-inline-end:12px;border:1px solid rgba(255,255,255,.24);background:rgba(22,14,33,.72);box-shadow:0 8px 18px rgba(0,0,0,.18)}
+    .tracking-chip{inset-inline-start:13px;bottom:13px;padding:9px 12px;border-radius:15px;background:rgba(19,13,29,.78);border-color:rgba(255,255,255,.23);backdrop-filter:blur(16px) saturate(145%);-webkit-backdrop-filter:blur(16px) saturate(145%)}
+    #status{align-items:center;margin-top:11px;padding:12px 14px;border-radius:18px;border:1px solid rgba(255,255,255,.13);background:linear-gradient(110deg,rgba(240,113,167,.07),rgba(255,255,255,.035),rgba(157,118,255,.07));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.075);color:#e7d9ee;font-size:12px}
+    .controls-column{display:grid;gap:15px;min-width:0}
+    .panel{position:relative;isolation:isolate;overflow:hidden;padding:18px;border:1px solid rgba(255,255,255,.145);border-radius:25px;background:linear-gradient(145deg,rgba(255,255,255,.078),rgba(255,255,255,.025) 59%,rgba(157,118,255,.035));backdrop-filter:blur(19px) saturate(130%);-webkit-backdrop-filter:blur(19px) saturate(130%);box-shadow:0 13px 38px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.085);animation:float-in .45s ease both}
+    .panel::before{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;background:radial-gradient(ellipse at 0% 0%,rgba(240,113,167,.07),transparent 52%),radial-gradient(ellipse at 100% 100%,rgba(157,118,255,.055),transparent 49%)}
+    .panel-head{position:relative;z-index:0;margin-bottom:16px}.panel-title{font-size:18px;letter-spacing:-.025em}.panel-subtitle{color:#d0c2df;font-size:12px;line-height:1.65}
+    .section-label{color:#f3d4e9}.preset-group-title{color:#f3d4e9;font-size:13px}.preset-library{gap:18px}.preset-group{gap:9px}
+    .preset-button{min-height:57px;border-radius:17px;background:linear-gradient(135deg,rgba(240,113,167,.075),rgba(255,255,255,.035),rgba(157,118,255,.075));border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);transition:transform .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease}
+    .preset-button.active{border-color:var(--preset-color);box-shadow:0 0 0 1px color-mix(in srgb,var(--preset-color) 32%,transparent),0 8px 23px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.15)}
+    .makeup-btn{border-radius:18px;min-height:84px;background:linear-gradient(145deg,rgba(255,255,255,.07),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+    .makeup-btn.active{box-shadow:inset 0 0 0 1px rgba(240,113,167,.23),0 8px 21px rgba(217,76,133,.08)}.makeup-btn .emoji{filter:drop-shadow(0 4px 10px rgba(217,76,133,.27))}
+    .quick-actions{gap:9px}.editor-fields{gap:13px}.editor-field{gap:8px;color:#eaddeb;font-size:12px}
+    .editor-field select,.editor-field input[type="text"],.editor-field input[type="color"]{border-color:rgba(255,255,255,.18);border-radius:15px;background:linear-gradient(145deg,rgba(18,13,28,.88),rgba(28,20,42,.88));box-shadow:inset 0 1px 0 rgba(255,255,255,.065)}
+    .editor-field input[type="range"],.switch input{accent-color:var(--pink)}.tool-row button{border-radius:15px}
+    .privacy-note{border-color:rgba(157,118,255,.20);background:linear-gradient(112deg,rgba(157,118,255,.09),rgba(240,113,167,.065));border-radius:17px}
+    .advanced-panel{padding:0}.advanced-summary{padding:18px;border-radius:25px}.advanced-badge{border-color:rgba(255,255,255,.16);background:linear-gradient(145deg,rgba(240,113,167,.22),rgba(157,118,255,.24));box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+    .advanced-content{padding:0 18px 18px}.switch{border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.035);border-radius:15px}.hint{color:#d0c2dc;line-height:1.75;font-size:12px}
+    .capture-thumbnail{border-color:rgba(255,255,255,.20);border-radius:20px;box-shadow:0 12px 25px rgba(0,0,0,.22)}
+    .look,.makeup-btn,.preset-button,.primary,.secondary,.workspace-tab{touch-action:manipulation}
+    .workspace-navigation{display:none}.workspace-tab-inactive{display:block}
+    .look:focus-visible,.makeup-btn:focus-visible,.preset-button:focus-visible,.workspace-tab:focus-visible{outline:3px solid #ffd5e8;outline-offset:3px}
+    .workspace-tab{font-family:inherit}
+    @media(min-width:760px){
+      body{padding:22px}.workspace-intro{padding:4px 9px 2px}.studio{grid-template-columns:minmax(0,1.16fr) minmax(330px,.84fr);gap:22px}.preview-card{top:22px}.controls-column{gap:16px}.panel{padding:20px}.advanced-panel{padding:0}#stage{max-height:72vh}
+    }
+    @media(max-width:759px){
+      body{padding:calc(8px + var(--safe-top)) 10px calc(104px + var(--safe-bottom))}
+      .app{gap:12px}.topbar{gap:8px;padding:8px 9px;border-radius:22px}.brand{gap:9px}.brand-mark{width:41px;height:41px;border-radius:15px;font-size:21px}.top-actions{gap:5px}.top-actions .icon-btn{width:44px;height:44px}.lang-btn{font-size:11px;padding-inline:9px}
+      .workspace-intro{align-items:flex-start;gap:10px;padding:1px 3px 0}.workspace-overline{margin-bottom:4px;font-size:10px;letter-spacing:.08em}.workspace-heading{font-size:clamp(22px,6vw,29px);line-height:1.25}.workspace-description{font-size:12px;line-height:1.55;margin-top:5px}.workspace-chip{display:none}
+      .studio{display:grid;grid-template-columns:minmax(0,1fr);gap:13px}.preview-card{top:calc(var(--safe-top) + 4px);padding:7px;border-radius:25px;border-color:rgba(255,255,255,.2)}
+      .preview-head{padding:3px 4px 8px}.preview-title{font-size:12px}#stage{min-height:210px;max-height:34vh;border-radius:19px}.stage-chip{top:9px;inset-inline-start:9px;padding:6px 9px;font-size:9px}#fullscreen-preview{top:8px;inset-inline-end:8px}.tracking-chip{inset-inline-start:9px;bottom:9px;max-width:calc(100% - 18px);font-size:10px;padding:7px 9px}
+      #status{padding:10px 11px;border-radius:15px;font-size:11px;margin-top:8px}.controls-column{gap:12px;padding-bottom:10px}.panel{padding:15px;border-radius:22px}.advanced-panel{padding:0}.advanced-summary{min-height:68px;padding:14px}.advanced-content{padding:0 14px 15px}.panel-head{margin-bottom:13px}.panel-title{font-size:16px}.panel-subtitle{font-size:11px}
+      .preset-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.preset-button{min-height:52px}.makeup-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.makeup-btn{min-height:71px;gap:6px;border-radius:16px}.makeup-btn .emoji{font-size:23px}.editor-fields{gap:11px}.tool-row{gap:7px}.tool-row button{flex:1 1 125px}.quick-actions button{flex:1 1 95px}
+      .workspace-navigation{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;position:fixed;z-index:90;left:50%;bottom:calc(7px + var(--safe-bottom));transform:translateX(-50%);width:min(calc(100vw - 18px),560px);padding:6px;border:1px solid rgba(255,255,255,.21);border-radius:23px;background:linear-gradient(120deg,rgba(35,20,42,.88),rgba(26,20,43,.90) 55%,rgba(36,22,50,.88));box-shadow:0 13px 37px rgba(0,0,0,.42),0 0 30px rgba(157,118,255,.10),inset 0 1px 0 rgba(255,255,255,.17);backdrop-filter:blur(24px) saturate(155%);-webkit-backdrop-filter:blur(24px) saturate(155%)}
+      .workspace-navigation::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(240,113,167,.105),transparent 42%,rgba(157,118,255,.12))}
+      .workspace-tab{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:57px;padding:6px 3px;border:1px solid transparent;border-radius:17px;background:transparent;color:#cbbfd7;font-size:10px;font-weight:800;line-height:1.25;transition:background .2s ease,border-color .2s ease,color .2s ease,transform .2s ease}
+      .workspace-tab-icon{font-size:19px;line-height:1;color:#e5b5d4}.workspace-tab.active{color:#fff5fb;border-color:rgba(240,113,167,.25);background:linear-gradient(145deg,rgba(240,113,167,.22),rgba(157,118,255,.22));box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 5px 15px rgba(0,0,0,.12)}.workspace-tab.active .workspace-tab-icon{color:#ffc0de;text-shadow:0 0 18px rgba(240,113,167,.35)}
+      [data-workspace-panel].workspace-tab-inactive{display:none}.footer{padding-bottom:8px}.about-card{border-radius:24px}
+    }
+    @media(max-width:390px){body{padding-inline:8px}.topbar{padding-inline:8px}.brand h1{font-size:19px}.lang-btn{padding-inline:7px;font-size:10.5px}.workspace-heading{font-size:23px}.workspace-navigation{width:calc(100vw - 14px);padding:5px}.workspace-tab{font-size:9.5px;min-height:55px}}
+    @media(orientation:landscape) and (max-height:520px) and (max-width:900px){body{padding-block-start:calc(4px + var(--safe-top));padding-bottom:calc(92px + var(--safe-bottom))}.app{gap:8px}.workspace-intro{align-items:center;gap:8px}.workspace-description{display:none}.workspace-heading{font-size:23px}.workspace-chip{display:none}.studio{gap:8px}.preview-card{position:relative;top:auto;padding:5px}#stage{aspect-ratio:16/9;min-height:125px;max-height:47vh}.preview-head{padding:2px 4px 5px}.controls-column{gap:8px}.panel{padding:11px;border-radius:17px}.workspace-tab{min-height:48px;gap:2px}.workspace-tab-icon{font-size:16px}}
+    @media(prefers-reduced-motion:reduce){.workspace-navigation,.workspace-tab,.topbar,.panel,.preview-card{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
   </style>
 </head>
 <body>
@@ -146,6 +222,15 @@
       <div class="top-actions"><button class="lang-btn" id="language-toggle" aria-label="Switch language">EN · English</button><button class="icon-btn" id="open-settings" data-i18n-aria="openSettings" aria-label="الإعدادات" aria-haspopup="dialog" aria-controls="settings-modal" type="button">⚙</button><button class="icon-btn" id="open-about" data-i18n-aria="openAbout" aria-label="عن التطبيق" aria-haspopup="dialog" aria-controls="about-modal" type="button">ⓘ</button></div>
     </header>
 
+    <section class="workspace-intro" aria-labelledby="workspace-heading">
+      <div class="workspace-intro-copy">
+        <p class="workspace-overline" data-i18n="workspaceOverline">مساحة الجمال الرقمية</p>
+        <h2 class="workspace-heading" id="workspace-heading" data-i18n="workspaceHeading">صمّمي إطلالتك على ذوقك</h2>
+        <p class="workspace-description" data-i18n="workspaceDescription">اختاري لونك، جرّبي التأثير مباشرة، واضبطي التفاصيل خطوة بخطوة.</p>
+      </div>
+      <div class="workspace-chip" aria-hidden="true"><span class="workspace-chip-sparkle">✦</span><span>OPEN MAKEUP</span><span class="workspace-chip-divider"></span><span class="workspace-chip-live"></span></div>
+    </section>
+
     <div class="studio">
       <section class="preview-card">
         <div class="preview-head"><div class="preview-title"><span class="live-dot" aria-hidden="true"></span><span data-i18n="livePreview">المعاينة المباشرة</span></div><div class="preview-tools"><button class="icon-btn" id="switch-camera" data-i18n-title="switchCamera" data-i18n-aria="switchCamera" aria-label="تبديل الكاميرا" title="تبديل الكاميرا" type="button" disabled>↻</button></div></div>
@@ -154,7 +239,7 @@
       </section>
 
       <div class="controls-column">
-        <section class="panel" id="daily-controls" aria-labelledby="looks-title">
+        <section class="panel workspace-panel" id="daily-controls" aria-labelledby="looks-title" data-workspace-panel="looks">
           <div class="panel-head"><div><h2 class="panel-title" id="looks-title" data-i18n="looksTitle">إطلالات سريعة</h2><div class="panel-subtitle" data-i18n="looksSubtitle">اختاري ألوانك بلمسة واحدة</div></div><span aria-hidden="true">✧</span></div>
           <div id="preset-library" class="preset-library" aria-labelledby="looks-title"></div>
           <h3 class="section-label" id="makeup-title" data-i18n="makeupTitle">مستحضرات التجميل</h3>
@@ -173,7 +258,7 @@
           </div>
         </section>
 
-        <section class="panel studio-tool-panel" id="personalization-panel" aria-labelledby="editor-title">
+        <section class="panel studio-tool-panel workspace-panel" id="personalization-panel" aria-labelledby="editor-title" data-workspace-panel="makeup">
           <div class="panel-head"><div><h2 class="panel-title" id="editor-title" data-i18n="editorTitle">تخصيص التأثير</h2><div class="panel-subtitle" data-i18n="editorSubtitle">اختاري اللون والشدة واللمسة ثم طبّقيها على الطبقة المحددة.</div></div></div>
           <div class="editor-fields">
             <label class="editor-field editor-span" for="editor-category"><span data-i18n="editorCategoryLabel">طبقة المكياج</span>
@@ -200,7 +285,7 @@
           <div class="privacy-note"><span aria-hidden="true">🔒</span><span data-i18n="privacy">تتم معالجة معاينة الكاميرا على جهازك. لا يرفع التطبيق بث الكاميرا إلى خادم.</span></div>
         </section>
 
-        <section class="panel studio-tool-panel" id="custom-looks-panel" aria-labelledby="custom-looks-title">
+        <section class="panel studio-tool-panel workspace-panel" id="custom-looks-panel" aria-labelledby="custom-looks-title" data-workspace-panel="saved">
           <div class="panel-head"><div><h2 class="panel-title" id="custom-looks-title" data-i18n="customLooksTitle">إطلالاتك المحفوظة</h2></div></div>
           <div class="editor-fields">
             <label class="editor-field editor-span" for="custom-look-name"><span data-i18n="lookNameLabel">اسم الإطلالة</span><input id="custom-look-name" type="text" maxlength="40" autocomplete="off" data-i18n-placeholder="lookNamePlaceholder" placeholder="مثلاً: وردي المساء" /></label>
@@ -210,7 +295,7 @@
           <p class="hint" data-i18n="privacy">تتم معالجة معاينة الكاميرا على جهازك. لا يرفع التطبيق بث الكاميرا إلى خادم.</p>
         </section>
 
-        <details class="panel advanced-panel" id="advanced-controls">
+        <details class="panel advanced-panel workspace-panel" id="advanced-controls" data-workspace-panel="sculpt">
           <summary class="advanced-summary">
             <span class="advanced-summary-copy">
               <span class="advanced-badge" aria-hidden="true">◈</span>
@@ -232,6 +317,22 @@
         </details>
       </div>
     </div>
+
+    <nav class="workspace-navigation" id="workspace-navigation" role="group" data-i18n-aria="workspaceNavigation" aria-label="التنقل بين أدوات الاستوديو">
+      <button class="workspace-tab active" id="workspace-tab-looks" type="button" data-workspace-tab="looks" aria-controls="daily-controls" aria-pressed="true">
+        <span class="workspace-tab-icon" aria-hidden="true">✧</span><span data-i18n="workspaceLooks">الإطلالات</span>
+      </button>
+      <button class="workspace-tab" id="workspace-tab-makeup" type="button" data-workspace-tab="makeup" aria-controls="personalization-panel" aria-pressed="false">
+        <span class="workspace-tab-icon" aria-hidden="true">◌</span><span data-i18n="workspaceMakeup">التخصيص</span>
+      </button>
+      <button class="workspace-tab" id="workspace-tab-saved" type="button" data-workspace-tab="saved" aria-controls="custom-looks-panel" aria-pressed="false">
+        <span class="workspace-tab-icon" aria-hidden="true">▣</span><span data-i18n="workspaceSaved">المحفوظة</span>
+      </button>
+      <button class="workspace-tab" id="workspace-tab-sculpt" type="button" data-workspace-tab="sculpt" aria-controls="advanced-controls" aria-pressed="false">
+        <span class="workspace-tab-icon" aria-hidden="true">◈</span><span data-i18n="workspaceSculpt">الملامح</span>
+      </button>
+    </nav>
+
     <footer class="footer" data-i18n="footer">Open Makeup · صُنع للإبداع ✦</footer>
   </main>
 
