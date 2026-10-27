@@ -4,12 +4,11 @@
 
 - **Repository:** https://github.com/majd7772233-a11y/OpenMakeup
 - **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`
-- **Latest code-bearing HEAD verified by CI:** `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`; run 40505687165 passed on that exact code revision.
-- **Latest verified full CI:** [Run 40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165): **86 tests passed, 0 failed**; full and production dependency audits each reported zero vulnerabilities; type-check, local asset checks, Vite, Android packaging, debug and unsigned-release builds, metadata/checksums and both uploads all passed.
-- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735171159), ZIP 14,962,616 bytes.
-- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735555428), ZIP 13,623,736 bytes.
-- **Next required action:** fetch live HEAD, PR #3 and newest Actions jobs/logs/artifacts before further work. Stages 1–7 are implemented with CI evidence; the physical-device matrix remains open. This docs-only update triggers another run, which must be verified.
-
+- **Latest code-bearing HEAD verified by CI:** 0e18bacf2716eca99f72383015bdb580e63ff279; full run 40511322876 passed on that exact code-bearing revision.
+- **Latest verified full CI:** [Run 40511322876](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876): **87 tests passed, 0 failed**; full and production dependency audits each reported zero vulnerabilities; TypeScript, local asset checks, Vite, Android packaging, debug and unsigned-release builds, metadata/checksums and both uploads all passed.
+- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876/artifacts/12738041479), ZIP 14,967,923 bytes.
+- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876/artifacts/12736474787), ZIP 13,627,264 bytes.
+- **Next required action:** fetch live HEAD, PR #3 and newest Actions logs/artifacts before further work. Stages 1–8 have implementation and automated CI evidence; physical-device visual/accessibility testing remains open. This docs-only update triggers another run, which must be verified.
 
 - **Android identity:** 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23.
 - **PR #3:** https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — open and unmerged.
@@ -223,7 +222,7 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 
 1. If the new chat begins with “اكمل من حيث توقفت”, start with GitHub calls immediately; do not greet, announce a plan, give a generic preamble or ask the user to repeat context.
 2. Fetch the live branch HEAD, PR #3 and latest Actions run/jobs/logs/artifacts. This docs save triggers CI; never assume a run passed before inspecting it.
-3. Stages 1–7 have implementation and CI evidence. The latest verified code-bearing head is `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70` (run 40505687165: 86 tests passed, audits zero vulnerabilities, typecheck, Vite, APKs and uploads passed). Stage 8 is the planned full UI redesign. Physical Android 6/7 plus the broader real-device matrix remain open.
+3. Stages 1–8 have implementation and CI evidence. The latest verified code-bearing head is 0e18bacf2716eca99f72383015bdb580e63ff279 (run 40511322876: 87 tests passed, audits zero vulnerabilities, TypeScript, Vite, APKs and uploads passed). The visual/device acceptance gate remains open until the redesigned mobile workspace is checked on real Android/WebView versions.
 4. If a live check fails, inspect actual logs, fix the proven root cause on this branch, add regression coverage and verify a newer green run.
 5. Keep PR #3 open/unmerged; preserve local-only processing and never claim physical tests from CI. Do not sign/publish or commit credentials.
 6. Keep CONTINUATION.md, GPT.md and ROADMAP.md synchronized after meaningful changes.
@@ -275,3 +274,13 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 - The non-lipstick glossy choice is hidden where it maps to the same engine mode as glitter.
 - CI: 86/86 tests passed; both dependency audits reported zero vulnerabilities; type-check, local assets, Vite, Android packaging, APK builds, metadata/checksums and artifacts passed.
 - No physical device has been tested. Camera, capture, gallery/share, accessibility, WebGL recovery and sustained performance remain hardware acceptance items.
+
+## Stage 8 — Full UI and UX Redesign (CI verified)
+
+- Code-bearing head: 0e18bacf2716eca99f72383015bdb580e63ff279; full workflow [40511322876](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876) succeeded.
+- Reviewed Liquid.png as an inspiration reference. Adopted translucent glass surfaces, luminous edges, layered depth and a calmer layout, but retained Open Makeup's pink/rose and purple identity rather than importing the reference's blue/teal colors.
+- Added a short workspace intro and restyled the header, live-preview card, status surface, controls, presets and form fields to a coherent liquid-glass system.
+- Added a four-item mobile navigation connected to existing Looks / Customize / Saved / Sculpt panels. It is active only on narrow layouts; desktop still exposes the full panel layout. Added keyboard arrows/Home/End, selected state, bilingual labels, visible focus and reduced-motion styling.
+- Preserved the underlying existing camera, shader, capture/share, saved-look and face-morph action IDs/wiring; this stage reorganizes presentation instead of replacing behavior.
+- CI: 87/87 tests passed; both dependency audits reported zero vulnerabilities; TypeScript, local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and both uploads passed.
+- No physical Android device or assistive-technology run has been performed. Actual mobile fit, focus order, camera preview while switching sections, and glass effects under low-end GPU conditions remain to be validated on devices.

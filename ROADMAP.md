@@ -3,12 +3,12 @@
 **Canonical continuation checkpoint:** [CONTINUATION.md](./CONTINUATION.md). Read it first when continuing in a new conversation; it contains non-negotiable working rules, exact CI state and the physical-device acceptance matrix.
 
 - **Repository/branch:** `majd7772233-a11y/OpenMakeup` / `feat/open-makeup-arabic-mobile-lifecycle`
-- **Latest verified code-bearing HEAD:** `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`; full workflow [40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165) passed on that exact revision.
-- **Latest full CI:** **86/86 tests passed**, zero failures; full and production dependency audits each reported zero vulnerabilities; typecheck, local runtime assets, Vite, Android packaging, debug and unsigned-release APK builds, metadata/checksums and both artifact uploads passed.
-- **Debug artifact:** [12735171159](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735171159), ZIP 14,962,616 bytes.
-- **Unsigned release candidate:** [12735555428](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735555428), ZIP 13,623,736 bytes.
-- This documentation-only synchronization triggers another workflow; verify its actual result.
-- **Roadmap:** Stages 1–7 have implementation and automated CI evidence; Stage 8 is planned for the full UI redesign.
+- **Latest verified code-bearing HEAD:** `0e18bacf2716eca99f72383015bdb580e63ff279`; full workflow [40511322876](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876) passed on that exact revision.
+- **Latest full CI:** **87/87 tests passed**, zero failures; full and production dependency audits each reported zero vulnerabilities; TypeScript, local runtime assets, Vite bundle, Android packaging, debug and unsigned-release APK builds, release metadata/checksums and both artifact uploads passed.
+- **Debug artifact:** [12738041479](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876/artifacts/12738041479), ZIP 14,967,923 bytes.
+- **Unsigned release candidate:** [12736474787](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876/artifacts/12736474787), ZIP 13,627,264 bytes.
+- This documentation-only update triggers another workflow; verify its actual result.
+- **Roadmap:** Stages 1–8 have implementation and automated CI evidence. Stage 8 implements a full workspace redesign while retaining the rose/purple identity.
 - **Remaining gate:** Physical Android 6/7 and broader camera/permission/lifecycle/orientation/capture/storage/share/accessibility/WebGL/thermal tests have not been performed. PR #3 remains open/unmerged; the release APK is unsigned.
 ## 1. Product Objective
 
@@ -305,11 +305,12 @@ For every stage:
 
 ## 8. Current Operational State
 
-- Latest verified code-bearing HEAD: `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`; run [40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165) completed successfully with **86/86 tests**, zero reported vulnerabilities in both dependency audits, type-check, local runtime asset checks, Vite, Android packaging, debug and unsigned-release APK builds, metadata/checksums and both artifact uploads.
-- Stage 6 and Stage 7 are implemented and CI-verified on that code-bearing head. Stage 7 fixes comparison/capture consistency, stale-capture invalidation, compare-label localization state, comprehensive typography scaling, truthful persistence errors (including startup), safe onboarding Back/Escape behavior, honest camera-facing uncertainty, and duplicate finish choices.
+- Latest verified code-bearing HEAD: 0e18bacf2716eca99f72383015bdb580e63ff279; run [40511322876](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876) completed successfully with **87/87 tests**, zero reported vulnerabilities in both dependency audits, TypeScript checks, local runtime asset checks, Vite bundle, Android packaging, debug and unsigned-release APK builds, release metadata/checksum verification and both artifact uploads.
+- Stage 8 redesigned the interaction shell: a glass-inspired workspace header, a fixed four-section mobile navigation tied to the existing looks/customize/saved/sculpt panels, accessible focus/keyboard operation, reduced-motion handling and responsive desktop layout.
+- The Liquid.png reference was treated as visual inspiration only. The app's rose/pink and purple colors remain the brand palette; the reference's blue/teal palette was not copied.
 - PR #3 remains open and unmerged. Do not merge unless explicitly requested.
-- Artifacts: debug [12735171159](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735171159); unsigned release candidate [12735555428](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735555428).
-- App identity: Android 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23. The release candidate is unsigned.
+- Artifacts: debug [12738041479](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876/artifacts/12738041479); unsigned release candidate [12736474787](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876/artifacts/12736474787).
+- App identity: Android 1.5.0 / versionCode 6 / applicationId com.magd.openmakeup / minSdk 23. The release candidate is unsigned.
 - Physical Android 6/7 and the broader hardware acceptance matrix have not been performed; this remains a release gate.
 - Keep CONTINUATION.md, GPT.md and ROADMAP.md synchronized after meaningful changes.
 ## Stage 6 — Global Font Size Settings and Persistence
@@ -352,3 +353,19 @@ For every stage:
 ### Verification and remaining gate
 - [x] [Run 40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165): 86/86 tests, 0 failures; full and production audits both reported zero vulnerabilities; type-check, local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and both artifacts passed.
 - [ ] Physical-device camera/capture/storage/accessibility and sustained-performance checks remain pending. CI is not hardware evidence.
+
+## Stage 8 — Full UI and UX Redesign
+
+**Status:** Implemented and verified by full CI on code-bearing head 0e18bacf2716eca99f72383015bdb580e63ff279.
+
+### Delivered
+- [x] Added a compact workspace introduction and original liquid-glass-inspired surfaces, layered highlights and depth, using the established pink/rose and purple palette rather than copying the reference image's colors.
+- [x] Reworked the workspace visual hierarchy: larger live preview, glass preview/status surfaces, refined editor/preset controls, and clearer spacing and contrast.
+- [x] Added mobile bottom navigation for **Looks**, **Customize**, **Saved**, and **Sculpt**. Each item is connected to the existing real section and reflects the selected state; on wider screens, every panel remains available in the full workspace layout.
+- [x] Added keyboard navigation between mobile sections, bilingual labels, explicit panel associations, visible focus, touch-sized controls and reduced-motion handling.
+- [x] Preserved existing IDs and action wiring for camera switch/fullscreen, presets, makeup layers, compare/capture/save/share, undo/redo, custom looks, advanced morphs, settings and onboarding.
+- [x] Added a regression test for preserved rose/purple colors, mobile navigation, panel associations, bilingual labels and keyboard/reduced-motion behavior.
+
+### Verification and remaining gate
+- [x] [Run 40511322876](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876): 87/87 tests, 0 failures; full and production dependency audits each reported zero vulnerabilities; typecheck, local asset checks, Vite, Android packaging, debug and unsigned-release builds, metadata/checksums and both artifact uploads passed.
+- [ ] Physical-device visual usability and accessibility checks remain pending. CI does not prove behavior on real Android/WebView versions.
