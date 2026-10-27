@@ -4,11 +4,13 @@
 
 - **Repository:** https://github.com/majd7772233-a11y/OpenMakeup
 - **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`
-- **Latest code-bearing HEAD verified by CI:** `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`. Run 40102119131 passed on that exact code revision.
-- **Latest verified full CI:** [Run 40102119131](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131): **74 tests passed, 0 failed**, full and production dependency audits each reported zero vulnerabilities, type-check/Vite/source+dist local asset checks/Android packaging/debug and unsigned-release builds/metadata/checksums/both artifact uploads all passed.
-- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12562958707), ZIP 14,959,841 bytes, ZIP SHA-256 `44143d6d16ff8d4c162c3f796be75f7e47bb33de2c9f90adcbf18204f1559353`.
-- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12563113048), ZIP 13,621,537 bytes, ZIP SHA-256 `cc1f6f13aa512fdc5e6ccc82780974dd0faee855897f6df64b728ffd586051c1`.
-- **Next required action:** after any new chat, fetch live HEAD, PR #3 and newest Actions run/jobs/logs/artifacts before acting. The five planned stages have code and CI evidence; physical-device testing remains the only open acceptance gate. This docs-only synchronization triggers a new run, so do not infer its result.
+- **Latest code-bearing HEAD verified by CI:** `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`; run 40505687165 passed on that exact code revision.
+- **Latest verified full CI:** [Run 40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165): **86 tests passed, 0 failed**; full and production dependency audits each reported zero vulnerabilities; type-check, local asset checks, Vite, Android packaging, debug and unsigned-release builds, metadata/checksums and both uploads all passed.
+- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735171159), ZIP 14,962,616 bytes.
+- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735555428), ZIP 13,623,736 bytes.
+- **Next required action:** fetch live HEAD, PR #3 and newest Actions jobs/logs/artifacts before further work. Stages 1–7 are implemented with CI evidence; the physical-device matrix remains open. This docs-only update triggers another run, which must be verified.
+
+
 - **Android identity:** 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23.
 - **PR #3:** https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — open and unmerged.
 - **Device acceptance:** not performed. Physical Android 6/7 and broader camera/lifecycle/orientation/storage/share/accessibility/WebGL/thermal checks remain the release gate. CI does not prove these behaviors; the release candidate is unsigned.
@@ -221,7 +223,7 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 
 1. If the new chat begins with “اكمل من حيث توقفت”, start with GitHub calls immediately; do not greet, announce a plan, give a generic preamble or ask the user to repeat context.
 2. Fetch the live branch HEAD, PR #3 and latest Actions run/jobs/logs/artifacts. This docs save triggers CI; never assume a run passed before inspecting it.
-3. Stages 1–5 are implemented with 74 passing automated tests and green full/production audits on the last verified code HEAD (run 40102119131). Do not create Stage 6 or redo completed implementation. Remaining release gate is physical Android 6/7 plus the broader real-device matrix in CONTINUATION.md.
+3. Stages 1–7 have implementation and CI evidence. The latest verified code-bearing head is `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70` (run 40505687165: 86 tests passed, audits zero vulnerabilities, typecheck, Vite, APKs and uploads passed). Stage 8 is the planned full UI redesign. Physical Android 6/7 plus the broader real-device matrix remain open.
 4. If a live check fails, inspect actual logs, fix the proven root cause on this branch, add regression coverage and verify a newer green run.
 5. Keep PR #3 open/unmerged; preserve local-only processing and never claim physical tests from CI. Do not sign/publish or commit credentials.
 6. Keep CONTINUATION.md, GPT.md and ROADMAP.md synchronized after meaningful changes.
@@ -239,14 +241,14 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 
 ### Automated evidence
 
-- Latest verified complete code pipeline: [Run 40102119131](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131) on `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`: 74 tests passed, 0 failed; full and production audits reported zero vulnerabilities; type-check, source/dist local camera/model asset checks, Vite, Android packaging, Gradle debug/unsigned-release builds, metadata, checksum generation and both artifact uploads passed. Earlier implementation validation is retained in git history.
+- Latest verified complete code pipeline: [Run 40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165) on `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`: 86 tests passed, 0 failed; full and production audits reported zero vulnerabilities; type-check, local camera/model asset checks, Vite, Android packaging, Gradle debug/unsigned-release builds, metadata, checksum generation and both artifact uploads passed. Earlier implementation validation is retained in git history.
 - Both full and production dependency audits reported zero vulnerabilities in that run. The artifact ZIP digests and APK checksum file are attached to the linked artifacts.
 
 ### Post-checkpoint lifecycle reliability follow-up (CI verified)
 
 - Source review found that `Camera.stop()` did not release an unresolved `_starting` promise or per-frame processing lock. A later permission result/frame callback could stall or clobber the restarted camera.
 - The bundled camera adapter now clears its start slot and processing lock on stop, and stale generations cannot reset the newer generation's running/frame state.
-- `MakeupEngine.start()` now owns a per-start token; `stop()` invalidates that token immediately and stale completion cannot clear or stop a newer start. Regression tests cover these races; run 40102119131 confirms all 74 tests passed and the complete Android artifact pipeline succeeded.
+- `MakeupEngine.start()` now owns a per-start token; `stop()` invalidates that token immediately and stale completion cannot clear or stop a newer start. Regression tests cover these races; run 40102119131 confirms the then-current 74-test suite and full Android artifact pipeline passed.
 
 ### Explicitly not verified
 
@@ -259,5 +261,17 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 
 - User requested a Settings option labelled “Font size”, default **12**, applied throughout the application; this is an explicit new stage after the five previously planned stages.
 - Implemented Settings dialog in the header, Arabic/English localization, integer slider 10–20, numeric output, reset-to-12, localStorage persistence key `openMakeupFontSizeV1`, startup restore with bounded validation, and dialog keyboard/focus/Android Back handling.
-- CSS font sizes scale proportionally by regenerating the base stylesheet with numeric pixel sizes (including older Android WebViews); 12 preserves current layout typography, and camera/WebGL dimensions are not scaled.
-- Regression tests are added. Await the live current-head GitHub Actions result before claiming CI success; physical-device checks remain pending.
+- CSS typography scaling uses a shared helper for numeric `font-size`, responsive `clamp()` and numeric `font` shorthand sizes. Level 12 preserves the authored stylesheet, and camera/WebGL dimensions are untouched.
+- Regression tests are included. The current code-bearing head passed full CI in run 40505687165; physical-device checks remain pending.
+
+
+## Stage 7 — User-Visible Behavior Correctness (CI verified)
+
+- Code-bearing head: `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`; full workflow [40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165) succeeded.
+- Before/after capture renders the selected mode, stale captures are invalidated when comparison changes, and the compare label/title/accessibility state refresh after localization changes.
+- Typography scaling now handles numeric `font-size`, responsive `clamp()` and numeric CSS `font` shorthand sizes. Setting copy describes a level instead of px.
+- Storage failures are surfaced after actions and at startup, rather than replaced with success-looking statuses. Protection against overwriting future saved schemas is preserved.
+- Onboarding Escape/Android Back no longer starts the camera. Camera direction is considered confirmed only when exposed by the browser; otherwise the UI says it is unverified.
+- The non-lipstick glossy choice is hidden where it maps to the same engine mode as glitter.
+- CI: 86/86 tests passed; both dependency audits reported zero vulnerabilities; type-check, local assets, Vite, Android packaging, APK builds, metadata/checksums and artifacts passed.
+- No physical device has been tested. Camera, capture, gallery/share, accessibility, WebGL recovery and sustained performance remain hardware acceptance items.

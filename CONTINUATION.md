@@ -1,6 +1,6 @@
 # CONTINUATION.md — Canonical Open Makeup Handoff
 
-Last reconciled with live GitHub on 2026-10-24. This is the authoritative restart anchor for any new conversation that says “continue where we stopped”. Always check live GitHub again because the branch may move after this file is written.
+Last reconciled with live GitHub on 2026-10-27. This is the authoritative restart anchor for any new conversation that says “continue where we stopped”. Always check live GitHub again because the branch may move after this file is written.
 
 ## 1. Immediate resume protocol
 
@@ -8,7 +8,7 @@ Do not greet, give a generic status preamble, ask the user to repeat the request
 
 1. Read CONTINUATION.md, GPT.md and ROADMAP.md.
 2. Fetch the live branch head, PR #3 metadata, the newest GitHub Actions run/jobs/logs, and artifacts.
-3. Compare live status with this checkpoint. The latest completed code-bearing CI run is 40102119131 on HEAD 0459aaa6e9201cfb9200ca4d65e00f09e6297cc5; it passed 74/74 tests, both dependency audits (0 vulnerabilities each), type-check, source/dist asset checks, Vite build, Android packaging, both APK builds, metadata/checksum verification and artifact uploads. This documentation sync triggers a new run, so inspect it rather than assuming it passed.
+3. Compare live status with this checkpoint. Latest verified code-bearing HEAD is `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`; run 40505687165 passed 86/86 tests, both dependency audits (0 vulnerabilities each), type-check, local asset checks, Vite, Android packaging, debug and unsigned-release APK builds, metadata/checksum verification and both artifact uploads. This docs sync triggers a new run; inspect its actual result.
 4. Resume from the real live HEAD. Do not replay superseded failures, revert newer commits, or reimplement completed Stage-5 features merely because earlier chat messages describe an intermediate state.
 5. If the current-head CI is failing, read its actual logs, fix the specific cause on the same branch, add/regress a test, then confirm a new green run. Never call an in-progress run successful.
 6. If the current-head CI is green, do not rewrite finished stages. Continue with the outstanding physical device/release gate or a concrete, evidence-based defect found in review.
@@ -19,40 +19,23 @@ Do not greet, give a generic status preamble, ask the user to repeat the request
 - Repository: https://github.com/majd7772233-a11y/OpenMakeup
 - Working branch: feat/open-makeup-arabic-mobile-lifecycle
 - PR #3: https://github.com/majd7772233-a11y/OpenMakeup/pull/3
-- Latest code-bearing HEAD verified by full CI: `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`. Run [40102119131](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131) passed on that exact revision: 74/74 tests; full and production audits both report zero vulnerabilities; TypeScript, Vite, local source/dist camera/model asset checks, Android packaging, debug and unsigned-release builds, metadata checks, checksum generation and both artifact uploads passed. This documentation synchronization will create a docs-only commit and a new workflow; fetch live HEAD and its actual CI result on resume.
+- Latest code-bearing HEAD verified by full CI: `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`. Run [40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165) passed on that exact revision: 86/86 tests; full and production audits both report zero vulnerabilities; TypeScript, local source/dist camera/model asset checks, Vite, Android packaging, debug and unsigned-release builds, metadata checks, checksum generation and both artifact uploads passed. This documentation synchronization will create a docs-only commit and a new workflow; fetch live HEAD and its actual result on resume.
 - PR #3 was OPEN and NOT MERGED. Keep it open/unmerged unless the user explicitly requests a merge.
 - Android app version 1.5.0, versionCode 6, applicationId com.magd.openmakeup, minSdk 23 / Android 6.0. Preserve app ID, minSdk and public SDK contracts unless expressly directed otherwise.
-- The planned roadmap has exactly five stages. Source implementation and automated CI for Stages 1–5 are complete on the verified revision. No Stage 6 is part of the current agreed roadmap.
+- Stages 1–5 retain their original implementation history. Stages 6 (global font-size setting) and 7 (user-visible behavior correctness) were explicitly requested, implemented and CI-verified. Stage 8 is the planned full UI redesign.
 
 ## 3. Latest verified CI and live workflow state
 
-### Latest completed full pipeline on the code-bearing HEAD before this documentation sync
-
-- Run: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131
-- Tested code head: `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`. Conclusion: **SUCCESS**.
-- Test summary from the actual job log: **74 tests, 74 passed, 0 failed**.
+- Run: [40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165)
+- Code-bearing head: `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`. Conclusion: **SUCCESS**.
+- Test summary from the actual job log: **86 tests, 86 passed, 0 failed**.
 - Full dependency audit (including development tooling): **0 vulnerabilities**; production-only audit: **0 vulnerabilities**.
-- TypeScript check, source camera/model asset checks, tests, Vite build, built camera/model asset checks, Android asset packaging, Gradle debug/unsigned-release APK builds, version metadata checks, SHA-256 generation and both APK artifact uploads all passed.
+- TypeScript check, source camera/model asset checks, Vite build, dist asset checks, Android asset packaging, Gradle debug/unsigned-release APK builds, release metadata checks, SHA-256 generation and both artifact uploads all passed.
+- Debug artifact ID 12735171159: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735171159 (ZIP 14,962,616 bytes).
+- Unsigned release-candidate artifact ID 12735555428: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735555428 (ZIP 13,623,736 bytes).
+- This documentation update triggers another workflow; inspect it live and do not infer its result.
+- The workflow still emits non-blocking bundle-size / GitHub Actions runtime deprecation notices; they did not fail the verified run.
 
-Artifacts from run 40102119131 (the digests below are for uploaded ZIP archives, not APK-internal hashes):
-
-- Debug artifact ID 12562958707: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12562958707
-  - ZIP size: 14,959,841 bytes
-  - ZIP SHA-256: `44143d6d16ff8d4c162c3f796be75f7e47bb33de2c9f90adcbf18204f1559353`
-- Unsigned release-candidate artifact ID 12563113048: https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12563113048
-  - ZIP size: 13,621,537 bytes
-  - ZIP SHA-256: `cc1f6f13aa512fdc5e6ccc82780974dd0faee855897f6df64b728ffd586051c1`
-
-### Current checkpoint update
-
-The lifecycle-restart reliability fix and its regression tests are verified on `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`. The documentation-only synchronization will advance the branch and trigger another workflow; do not assume that newest run is green until its result is fetched.
-### Earlier verified checkpoints
-
-- Run 40097505589 on 02c2f7ab32023c0d8f22661a3171b5e8f6368775 also passed 71/71 tests and both audits and uploaded artifacts.
-- Latest code-focused complete pipeline: run 40097038958 on code revision 4be895e51332e647a4e2b3bb457f48567bfbd564, also 71 tests passed, 0 failed.
-- Intermediate Stage-5 failures came from tests/assertions that had not been updated to the implemented capture route or actual camera rollback message; those were fixed in later commits. The full current-code pipeline succeeded afterwards. Inspect live logs; do not resurrect old failures.
-
-A non-blocking GitHub Actions warning says some actions targeting Node.js 20 will be forced to Node.js 24. It is workflow maintenance information, not a failed build; do not blindly bump major versions as unrelated work.
 
 ## 4. Implemented work by stage
 
@@ -151,31 +134,34 @@ These are the most important instructions and must survive every handoff:
 
 - Repository: `majd7772233-a11y/OpenMakeup`.
 - Working branch: `feat/open-makeup-arabic-mobile-lifecycle`.
-- PR #3: https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — **OPEN, NOT MERGED**. Do not merge unless the user explicitly asks.
-- Latest code-bearing HEAD verified by run 40102119131: `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`. This documentation synchronization will make a docs-only commit; on resume fetch the live HEAD and newest CI rather than checking out a recorded parent.
-- Latest completed full CI on the code-bearing head: [Run 40102119131](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131) on `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`: **74/74 tests**, full and production audits zero vulnerabilities, typecheck/Vite/source+dist asset checks/Android packaging/debug and unsigned-release builds/checksums/both artifact uploads passed.
-- Debug artifact: [12562958707](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12562958707), ZIP 14,959,841 bytes, SHA-256 `44143d6d16ff8d4c162c3f796be75f7e47bb33de2c9f90adcbf18204f1559353`.
-- Unsigned release candidate: [12563113048](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12563113048), ZIP 13,621,537 bytes, SHA-256 `cc1f6f13aa512fdc5e6ccc82780974dd0faee855897f6df64b728ffd586051c1`.
-- This docs synchronization triggers a new workflow; on resume fetch its actual result and do not infer that it passed.
-- App identity: Android `1.5.0`, `versionCode 6`, `applicationId com.magd.openmakeup`, `minSdk 23`. Preserve ID, minimum SDK and public SDK contracts.
-- Exactly five planned stages exist; Stages 1–5 have source implementation and automated CI evidence. No Stage 6 is part of the agreement.
-- Source-review follow-up verified by run 40102119131: fixed a lifecycle race where `stop()` could leave an unresolved camera-start promise/frame callback blocking the next start, and a late stale start could clear or stop a newer start. Regression tests cover permission-prompt restart, in-flight frame restart and engine promise ownership. All 74 CI tests passed on code head `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`.
-- Physical Android 6/7 and broader camera/permission/resume/orientation/capture/storage/share/accessibility/WebGL/thermal tests have **not been performed**. This is the real-device release gate. The release APK is unsigned.
+- PR #3: https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — **OPEN, NOT MERGED**. Do not merge unless explicitly requested.
+- Latest code-bearing HEAD verified by run 40505687165: `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`; 86/86 tests, full and production audits with zero reported vulnerabilities, typecheck, local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and both artifact uploads passed.
+- Debug artifact: [12735171159](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735171159), ZIP 14,962,616 bytes.
+- Unsigned release candidate: [12735555428](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735555428), ZIP 13,623,736 bytes.
+- App identity: Android `1.5.0`, `versionCode 6`, `applicationId com.magd.openmakeup`, `minSdk 23`. Preserve identity and SDK contracts. Release candidate is unsigned.
+- Stages 1–7 have implementation and automated CI evidence. Stage 8 is the planned full UI redesign.
+- Physical Android 6/7 and broader camera/permission/resume/orientation/capture/storage/share/accessibility/WebGL/thermal tests have **not** been performed; this is still the hardware release gate.
 
 ### Immediate resume procedure
 
-1. Start with GitHub calls, not a greeting, generic progress preamble, or questions. The user explicitly requested that a new chat saying “اكمل من حيث توقفت” resume directly, without any explanatory opening; act first.
-2. Fetch live branch HEAD, PR #3, newest Actions run/jobs/logs/artifacts, then read `CONTINUATION.md`, `GPT.md`, `ROADMAP.md`. Do not rely only on recorded SHAs because this docs save triggers CI.
-3. The five agreed stages have already been implemented and all 74 automated tests plus the full CI/release-candidate pipeline passed on the last verified code HEAD (run 40102119131). Do not create an unrequested Stage 6 or rewrite completed stages. The remaining project gate is the actual hardware matrix; if a real device is accessible, run/document it. If none is available, keep it honestly pending and review only concrete software issues supported by evidence.
-4. If current-head CI fails, inspect actual log output, identify the precise root cause, fix it on this branch and add a regression test; rerun and verify a newer green workflow before claiming completion.
-5. Never claim hardware/accessibility/thermal verification from CI. Record exact physical device/model, Android and WebView versions, steps and results only when truly run.
-6. Keep PR #3 open/unmerged; keep camera/face processing local; never sign/publish or commit credentials. Keep these three memory files synchronized after meaningful changes.
+1. Fetch live HEAD, PR #3 and newest Actions run/jobs/logs/artifacts; inspect the newest run rather than assuming it passed.
+2. If current-head CI fails, read its actual logs, fix the proven root cause on this branch, add regression coverage and verify a newer green run.
+3. Never claim hardware/accessibility/thermal verification from CI. Record exact device/model, Android and WebView versions, steps and results only when genuinely run.
+4. Keep PR #3 open/unmerged; keep camera/face processing local; never sign/publish or commit credentials. Keep CONTINUATION.md, GPT.md and ROADMAP.md synchronized.
 
+## Stage 6 — Global Font Size Settings and Persistence
 
-## 7. Newly requested Stage 6 — Global Font Size Settings
+- Implemented Settings dialog in the header, Arabic/English localization, slider default 12 and integer range 10–20, automatic persistence via `openMakeupFontSizeV1`, reset action, and keyboard/focus/Android Back behavior.
+- Font scaling covers numeric `font-size`, responsive `clamp()` and numeric CSS `font` shorthand sizes. Level 12 preserves the authored stylesheet exactly; camera/video and WebGL dimensions are not resized.
+- Stage 6 is included in full CI on code-bearing head `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`, run 40505687165. Physical-device usability/accessibility checks remain pending.
 
-- User explicitly requested a new stage adding a global “Font size” setting with default **12**, applied throughout the app. This request authorizes Stage 6 despite the earlier five-stage roadmap; do not delete or rewrite Stages 1–5.
-- Implementation files: `index.html` (header settings action, dialog and scaled CSS declarations), `main.js` (bounded value, persistence, dialog lifecycle/focus/Android Back), `src/ui/locales.js` (Arabic and English strings), and `tests/accessibility-ui.test.js` (regressions).
-- Preference key: `openMakeupFontSizeV1`; range 10–20 integer px, default 12. At 12, existing design sizing is preserved; other values scale all authored CSS text by regenerating the base stylesheet with numeric pixel sizes, preserving compatibility with older Android WebViews and leaving camera/WebGL dimensions untouched.
-- CI is pending for the commit that introduces this stage until a live Actions result is fetched. Do not call it validated before the current-head workflow completes.
-- Existing physical-device release gate remains open; test the setting at small/large values on a handset when the consolidated Android 6/7 matrix is run.
+## Stage 7 — User-Visible Behavior Correctness (CI verified)
+
+- Original-mode capture renders only the live video plane, and comparison changes invalidate stale captures. Compare label/title/`aria-pressed` refresh with language changes.
+- Font scaling now handles `font-size`, `clamp()` and CSS `font` shorthand; the setting is described as a level rather than px.
+- Persistence failures are communicated after actions, undo/redo, morph changes and at startup. Protection against overwriting future saved schemas is preserved.
+- Escape/Android Back no longer starts the camera during onboarding. The camera is called verified only when the browser reports matching facing mode; otherwise the UI says direction is unverified.
+- The non-lipstick glossy option is hidden where it maps to the same renderer mode as glitter.
+- Regression coverage added; full run 40505687165 passed 86/86 tests and the complete Android artifact pipeline.
+- Physical-device camera, capture, gallery/share, accessibility, WebGL recovery and long-run performance remain unverified.
+

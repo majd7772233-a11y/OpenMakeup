@@ -3,14 +3,13 @@
 **Canonical continuation checkpoint:** [CONTINUATION.md](./CONTINUATION.md). Read it first when continuing in a new conversation; it contains non-negotiable working rules, exact CI state and the physical-device acceptance matrix.
 
 - **Repository/branch:** `majd7772233-a11y/OpenMakeup` / `feat/open-makeup-arabic-mobile-lifecycle`
-- **Latest code-bearing HEAD verified by CI:** `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`; full workflow [40102119131](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131) passed on that exact revision.
-- **Latest verified full CI:** **74/74 tests**, full and production dependency audits each reported zero vulnerabilities; typecheck, source/dist local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and artifact uploads all passed.
-- **Debug artifact:** [12562958707](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12562958707), ZIP 14,959,841 bytes, ZIP SHA-256 `44143d6d16ff8d4c162c3f796be75f7e47bb33de2c9f90adcbf18204f1559353`.
-- **Unsigned release candidate:** [12563113048](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12563113048), ZIP 13,621,537 bytes, ZIP SHA-256 `cc1f6f13aa512fdc5e6ccc82780974dd0faee855897f6df64b728ffd586051c1`.
-- **Next workflow:** this documentation-only synchronization triggers another run; fetch its actual result before making claims.
-- **Roadmap:** exactly five stages; all have implementation and automated CI evidence. No Stage 6 was agreed.
-- **Remaining gate:** physical Android 6/7 and broader device camera/permission/lifecycle/orientation/capture/storage/share/accessibility/WebGL/thermal tests have not been performed. PR #3 remains open/unmerged; the release APK is unsigned.
-
+- **Latest verified code-bearing HEAD:** `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`; full workflow [40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165) passed on that exact revision.
+- **Latest full CI:** **86/86 tests passed**, zero failures; full and production dependency audits each reported zero vulnerabilities; typecheck, local runtime assets, Vite, Android packaging, debug and unsigned-release APK builds, metadata/checksums and both artifact uploads passed.
+- **Debug artifact:** [12735171159](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735171159), ZIP 14,962,616 bytes.
+- **Unsigned release candidate:** [12735555428](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735555428), ZIP 13,623,736 bytes.
+- This documentation-only synchronization triggers another workflow; verify its actual result.
+- **Roadmap:** Stages 1–7 have implementation and automated CI evidence; Stage 8 is planned for the full UI redesign.
+- **Remaining gate:** Physical Android 6/7 and broader camera/permission/lifecycle/orientation/capture/storage/share/accessibility/WebGL/thermal tests have not been performed. PR #3 remains open/unmerged; the release APK is unsigned.
 ## 1. Product Objective
 
 Build a trustworthy, attractive, Arabic-first virtual makeup studio for Android and the web. The studio uses a live camera preview, MediaPipe FaceMesh, Three.js/WebGL shaders, makeup layers, and face-shaping controls. English remains available as a persistent secondary language.
@@ -306,28 +305,22 @@ For every stage:
 
 ## 8. Current Operational State
 
-- Source-review follow-up verified by run 40102119131 on code head `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`: camera adapter and engine start/stop generation ownership are hardened for unresolved permission prompts and in-flight frame callbacks; all 74 tests and the full artifact pipeline passed. The physical-device acceptance matrix remains open and is not replaced by these automated tests.
-
-- Canonical restart point: [CONTINUATION.md](./CONTINUATION.md). On resume, re-fetch live HEAD, PR #3, newest CI jobs/logs/artifacts before making changes.
-- Latest code-bearing HEAD verified by CI: `0459aaa6e9201cfb9200ca4d65e00f09e6297cc5`; run [40102119131](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131) passed with 74/74 tests, zero reported vulnerabilities in both audits, type-check/builds/package checks and both uploads green.
-- Artifacts: debug [12562958707](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12562958707); unsigned release candidate [12563113048](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40102119131/artifacts/12563113048).
-- This documentation sync triggers a new workflow; verify its actual result on resume rather than assuming it passed.
-
-- App identity: Android 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23. Keep PR #3 open/unmerged unless the user explicitly asks to merge.
-- All five planned stages have code and automated CI evidence. Physical Android 6/7 plus the broader camera/permission/resume/orientation/capture/storage/share/accessibility/WebGL/thermal matrix **has not been performed** and remains the release gate.
-- The release candidate is unsigned. Only the owner's release key can sign it, if requested; never commit credentials.
+- Latest verified code-bearing HEAD: `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`; run [40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165) completed successfully with **86/86 tests**, zero reported vulnerabilities in both dependency audits, type-check, local runtime asset checks, Vite, Android packaging, debug and unsigned-release APK builds, metadata/checksums and both artifact uploads.
+- Stage 6 and Stage 7 are implemented and CI-verified on that code-bearing head. Stage 7 fixes comparison/capture consistency, stale-capture invalidation, compare-label localization state, comprehensive typography scaling, truthful persistence errors (including startup), safe onboarding Back/Escape behavior, honest camera-facing uncertainty, and duplicate finish choices.
+- PR #3 remains open and unmerged. Do not merge unless explicitly requested.
+- Artifacts: debug [12735171159](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735171159); unsigned release candidate [12735555428](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165/artifacts/12735555428).
+- App identity: Android 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23. The release candidate is unsigned.
+- Physical Android 6/7 and the broader hardware acceptance matrix have not been performed; this remains a release gate.
 - Keep CONTINUATION.md, GPT.md and ROADMAP.md synchronized after meaningful changes.
-
-
 ## Stage 6 — Global Font Size Settings and Persistence
 
-**Status:** Implementation added; automated CI validation pending on the current branch head. This stage was explicitly requested after the original five-stage plan and is tracked separately without rewriting their completion history.
+**Status:** Implemented and CI-verified on code-bearing head `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70` (run 40505687165; 86/86 tests). This stage was explicitly requested after the original five-stage plan and is tracked separately without rewriting their completion history.
 
 ### Scope and behavior
 
 - Add an accessible Settings dialog reachable from the main app header, localized in Arabic and English and respecting RTL/LTR.
 - Add a global font-size slider with a default value of **12**, adjustable from 10 to 20 in integer steps, with a visible numeric readout and reset-to-default action.
-- Apply the selected scale to all authored CSS font-size declarations across the studio while preserving the current design at 12; do not resize the camera/video canvas or alter WebGL render resolution.
+- Scale numeric `font-size` declarations (including responsive `clamp()`) and numeric CSS `font` shorthand sizes, preserving the source stylesheet at level 12; do not resize camera/video or WebGL dimensions.
 - Persist the setting under `openMakeupFontSizeV1`; restore it at startup and safely fall back to 12 when storage is unavailable or the stored value is invalid/out of range.
 - Support dialog focus containment/restoration, Escape, backdrop close and Android Back; keep keyboard and touch operation available.
 - Add bilingual/accessibility/source-contract regression tests; run the complete test, typecheck, web build, Android package/APK and artifact pipeline.
@@ -338,5 +331,24 @@ For every stage:
 - [x] Default 12 and persisted bounded setting with automatic whole-studio text scaling.
 - [x] Keyboard/focus and Android Back close behavior wired.
 - [x] Automated regression tests added.
-- [ ] Current-head GitHub Actions completes successfully; update this status only from actual workflow evidence.
+- [x] Full code-bearing CI passed in run 40505687165 with 86/86 tests and all APK/artifact steps green.
 - [ ] Physical-device usability/accessibility check remains part of the consolidated hardware matrix; CI is not physical-device evidence.
+
+
+## Stage 7 — User-Visible Behavior Correctness
+
+**Status:** Implemented and verified by full CI on code-bearing head `c2d4ceb8f584ed040df2c957d3b51d7b2c185c70`.
+
+### Delivered
+- [x] Original-mode capture renders the live video plane without makeup/morph/debug layers; switching comparison mode invalidates stale capture data.
+- [x] Compare label, title and `aria-pressed` derive from one state and refresh on language changes.
+- [x] Font scaling covers numeric `font-size`, responsive `clamp()` and CSS `font` shorthand sizes; user-facing copy describes a size level rather than px.
+- [x] Persistence failures are surfaced after actions, undo/redo, morph changes and at startup.
+- [x] Escape/Android Back no longer starts the camera as a side effect of leaving first-run guidance.
+- [x] Camera direction is claimed as confirmed only when the browser reports the actual facing mode; otherwise the UI says it is unverified.
+- [x] The non-lipstick glossy option is hidden when it maps to the same renderer mode as glitter.
+- [x] Regression coverage added for capture/visibility restoration, typography scaling, persistence, onboarding behavior and camera-facing verification.
+
+### Verification and remaining gate
+- [x] [Run 40505687165](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40505687165): 86/86 tests, 0 failures; full and production audits both reported zero vulnerabilities; type-check, local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and both artifacts passed.
+- [ ] Physical-device camera/capture/storage/accessibility and sustained-performance checks remain pending. CI is not hardware evidence.
