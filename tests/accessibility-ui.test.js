@@ -29,7 +29,7 @@ test('locale translator interpolates restore counts and unknown keys remain visi
 
 test('phone workflow keeps makeup central and hides advanced/debug controls in native details', () => {
   assert.match(html, /id="daily-controls"[^>]*aria-labelledby="looks-title"/);
-  assert.match(html, /<details class="panel advanced-panel" id="advanced-controls">/);
+  assert.match(html, /<details class="panel advanced-panel workspace-panel" id="advanced-controls" data-workspace-panel="sculpt">/);
   assert.match(html, /<summary class="advanced-summary">/);
   for (const id of ['reset-morph', 'wireframe', 'blur']) assert.ok(html.indexOf(`id="${id}"`) > html.indexOf('id="advanced-controls"'));
 });
