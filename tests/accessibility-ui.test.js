@@ -109,7 +109,8 @@ test('stage-4 personalization, capture and history controls have accessible hook
 });
 
 test('future persistence schemas are preserved instead of overwritten', () => {
-  assert.match(main, /sessionStateWriteBlocked\) return false/);
+  assert.match(main, /if \(sessionStateWriteBlocked\) \{/);
+  assert.match(main, /sessionPersistenceUnavailable = true/);
   assert.match(main, /customLooksWriteBlocked\) \{ setStatusKey\('statusStoredSchemaUnsupported'/);
   assert.match(main, /Unsupported Open Makeup studio-state schema version/i);
   assert.match(main, /Number\(parsed\.version\) > CUSTOM_LOOKS_VERSION/);
