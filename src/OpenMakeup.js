@@ -263,6 +263,9 @@ export class OpenMakeup {
   /** Current camera direction requested by the engine. */
   get cameraFacingMode() { return this.engine.cameraFacingMode; }
 
+  /** Whether the browser confirmed the actual camera direction after a switch. */
+  get cameraFacingModeVerified() { return this.engine.cameraFacingModeVerified; }
+
   /** Whether this runtime appears to support camera-facing constraints. */
   canSwitchCamera() { return this.engine.canSwitchCamera(); }
 

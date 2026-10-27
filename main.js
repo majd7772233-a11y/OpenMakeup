@@ -5,6 +5,7 @@ import { LOOK_PRESETS, LOOK_PRESET_GROUPS } from './src/ui/look-presets.js';
 import { renderSceneToPngDataUrl } from './src/core/capture-frame.js';
 import { dictionaries, translate } from './src/ui/locales.js';
 import { normalizeStudioState, StudioHistory, createCustomLook, parseCustomLooks, normalizeCustomLookName, hasCustomLookName, CUSTOM_LOOKS_VERSION } from './src/ui/studio-state.js';
+import { scaleFontDeclarations } from './src/ui/font-scaling.js';
 
 const $ = (id) => document.getElementById(id);
 const statusText = $('status-text');
@@ -35,6 +36,7 @@ let lastCaptureDataUrl = null;
 let isApplyingHistory = false;
 let morphHistoryBefore = null;
 let sessionStateWriteBlocked = false;
+let sessionPersistenceUnavailable = false;
 let customLooksWriteBlocked = false;
 let currentCameraFacingMode = 'user';
 let cameraSwitchInProgress = false;
@@ -72,11 +74,12 @@ const FINISH_CATEGORIES = new Set(['lipstick', 'eyeshadow', 'blush', 'foundation
 
 function readSessionState() {
   let raw = null;
-  try { raw = localStorage.getItem(SESSION_KEY); } catch (_) { return normalizeStudioState(null); }
+  try { raw = localStorage.getItem(SESSION_KEY); } catch (_) { sessionPersistenceUnavailable = true; return normalizeStudioState(null); }
   try { return normalizeStudioState(raw); }
   catch (error) {
     if (/Unsupported Open Makeup studio-state schema version/i.test(String(error && error.message))) {
       sessionStateWriteBlocked = true;
+      sessionPersistenceUnavailable = true;
       console.warn('A newer studio-state schema was found; preserving it without overwriting.');
     } else console.warn('Stored studio state was invalid; using safe defaults.', error);
     return normalizeStudioState(null);
@@ -90,10 +93,19 @@ function studioStateChanged(before, after) { return JSON.stringify(before) !== J
 
 
 function persistSessionState() {
-  if (sessionStateWriteBlocked) return false;
+  if (sessionStateWriteBlocked) {
+    sessionPersistenceUnavailable = true;
+    return false;
+  }
   sessionState.schemaVersion = 1;
-  try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessionState)); return true; }
-  catch (_) { return false; }
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sessionState));
+    sessionPersistenceUnavailable = false;
+    return true;
+  } catch (_) {
+    sessionPersistenceUnavailable = true;
+    return false;
+  }
 }
 
 function updateLayerButtonStates() {
@@ -211,7 +223,7 @@ function captureCurrentFrame() {
   }
   // A temporary render target keeps preserveDrawingBuffer disabled in live
   // rendering, avoiding a permanent mobile GPU/memory penalty.
-  const { dataUrl } = renderSceneToPngDataUrl(mk.engine, document, 2560);
+  const { dataUrl } = renderSceneToPngDataUrl(mk.engine, document, 2560, { mode: isOriginalPreview ? 'original' : 'makeup' });
   lastCaptureDataUrl = dataUrl;
   $('capture-thumbnail').src = dataUrl; $('capture-thumbnail').hidden = false;
   $('save-photo').disabled = false; $('share-photo').disabled = false;
@@ -256,6 +268,16 @@ async function shareCurrentPhoto() {
 
 function t(key, values = {}) { return translate(currentLanguage, key, values); }
 
+function syncCompareControl() {
+  const button = $('compare-toggle');
+  const label = $('compare-label');
+  if (!button || !label) return;
+  const nextKey = isOriginalPreview ? 'compareAfter' : 'compareBeforeAfter';
+  button.setAttribute('aria-pressed', String(isOriginalPreview));
+  label.textContent = t(nextKey);
+  button.title = t(nextKey);
+}
+
 function normalizeFontSize(value) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return DEFAULT_FONT_SIZE;
@@ -265,9 +287,7 @@ function normalizeFontSize(value) {
 function applyFontSize(value, persist = true) {
   currentFontSize = normalizeFontSize(value);
   const scale = currentFontSize / DEFAULT_FONT_SIZE;
-  if (appStyleElement) {
-    appStyleElement.textContent = BASE_APP_CSS.replace(/font-size:([0-9]+(?:\.[0-9]+)?)px/g, (_, pixels) => `font-size:${Number((Number(pixels) * scale).toFixed(3))}px`);
-  }
+  if (appStyleElement) appStyleElement.textContent = scaleFontDeclarations(BASE_APP_CSS, scale);
   $('font-size-setting').value = String(currentFontSize);
   $('font-size-value').value = String(currentFontSize);
   $('font-size-value').textContent = String(currentFontSize);
@@ -374,6 +394,7 @@ function applyLanguage(language) {
   $('language-toggle').setAttribute('aria-label', t('switchLanguageAria'));
   $('fullscreen-preview').setAttribute('aria-label', t(isFullscreenPreview ? 'fullscreenExit' : 'fullscreenTitle'));
   $('fullscreen-preview').title = t(isFullscreenPreview ? 'fullscreenExit' : 'fullscreenTitle');
+  syncCompareControl();
   renderMorphLabels();
   setTrackingState(lastTrackingState);
   refreshLayerEditor(); renderPresetLibrary(); renderCustomLooks(); updateHistoryButtons();
@@ -399,7 +420,8 @@ async function runAction(labelKey, action) {
       studioHistory.record(before, after); invalidateCapture();
     }
     updateHistoryButtons();
-    setStatus(t(labelKey), 'success');
+    if (sessionPersistenceUnavailable) setStatusKey('statusSessionNotSaved', 'error');
+    else setStatus(t(labelKey), 'success');
     return true;
   } catch (error) {
     console.error(error);
@@ -524,7 +546,7 @@ $('about-modal').addEventListener('click', (event) => {
 });
 document.addEventListener('keydown', (event) => {
   if ($('onboarding-modal').classList.contains('open')) {
-    if (event.key === 'Escape') { event.preventDefault(); dismissOnboardingAndStart(); return; }
+    if (event.key === 'Escape') { event.preventDefault(); return; }
     trapOnboardingFocus(event);
     return;
   }
@@ -578,7 +600,7 @@ $('fullscreen-preview').addEventListener('click', () => isFullscreenPreview ? ex
 window.isPreviewFullscreen = () => isFullscreenPreview;
 window.handleAndroidBack = () => {
   if (isFullscreenPreview) { exitFullscreenPreview(); return true; }
-  if ($('onboarding-modal').classList.contains('open')) { dismissOnboardingAndStart(); return true; }
+  if ($('onboarding-modal').classList.contains('open')) return false;
   if ($('settings-modal').classList.contains('open')) { closeSettings(); return true; }
   if ($('about-modal').classList.contains('open')) { closeAbout(); return true; }
   return false;
@@ -677,7 +699,12 @@ async function switchCameraFromButton() {
     currentCameraFacingMode = mk.cameraFacingMode || nextCameraFacingMode(previous);
     invalidateCapture();
     setTrackingState('waiting');
-    setStatusKey(currentCameraFacingMode === 'environment' ? 'statusCameraRear' : 'statusCameraFront', 'success');
+    const verifiedFacingMode = mk.cameraFacingModeVerified === true;
+    if (verifiedFacingMode) {
+      setStatusKey(currentCameraFacingMode === 'environment' ? 'statusCameraRear' : 'statusCameraFront', 'success');
+    } else {
+      setStatusKey('statusCameraDirectionUnverified', 'info');
+    }
   } catch (error) {
     console.warn('Camera switch failed:', error);
     currentCameraFacingMode = (mk && mk.cameraFacingMode) || previous;
@@ -821,7 +848,12 @@ function refreshLayerEditor() {
   const intensity = Number.isFinite(Number(layer.intensity)) ? Math.max(0, Math.min(1, Number(layer.intensity))) : 1;
   intensityInput.value = String(intensity); intensityOutput.textContent = Math.round(intensity * 100) + '%';
   finishInput.disabled = !FINISH_CATEGORIES.has(currentEditorCategory);
-  finishInput.value = layer.finish || defaults.finish || 'matte';
+  const glossyOption = finishInput.querySelector('option[value="glossy"]');
+  if (glossyOption) glossyOption.hidden = currentEditorCategory !== 'lipstick';
+  let finish = layer.finish || defaults.finish || 'matte';
+  if (!FINISH_CATEGORIES.has(currentEditorCategory)) finish = 'matte';
+  else if (currentEditorCategory !== 'lipstick' && finish === 'glossy') finish = 'glitter';
+  finishInput.value = finish;
 }
 $('editor-category').addEventListener('change', (event) => { currentEditorCategory = event.target.value; refreshLayerEditor(); });
 $('layer-intensity').addEventListener('input', (event) => {
@@ -903,23 +935,22 @@ $('delete-custom-look').addEventListener('click', () => {
 $('undo-action').addEventListener('click', async () => {
   if (!studioHistory.canUndo || !engineReady) return;
   const target = studioHistory.undo(); isApplyingHistory = true;
-  try { await applyStudioSnapshot(target); setStatusKey('statusUndo', 'success'); invalidateCapture(); }
+  try { await applyStudioSnapshot(target); if (sessionPersistenceUnavailable) setStatusKey('statusSessionNotSaved', 'error'); else setStatusKey('statusUndo', 'success'); invalidateCapture(); }
   catch (error) { console.error('Undo failed:', error); studioHistory.redo(); setStatusKey('statusActionError', 'error'); }
   finally { isApplyingHistory = false; updateHistoryButtons(); }
 });
 $('redo-action').addEventListener('click', async () => {
   if (!studioHistory.canRedo || !engineReady) return;
   const target = studioHistory.redo(); isApplyingHistory = true;
-  try { await applyStudioSnapshot(target); setStatusKey('statusRedo', 'success'); invalidateCapture(); }
+  try { await applyStudioSnapshot(target); if (sessionPersistenceUnavailable) setStatusKey('statusSessionNotSaved', 'error'); else setStatusKey('statusRedo', 'success'); invalidateCapture(); }
   catch (error) { console.error('Redo failed:', error); studioHistory.undo(); setStatusKey('statusActionError', 'error'); }
   finally { isApplyingHistory = false; updateHistoryButtons(); }
 });
 $('compare-toggle').addEventListener('click', () => {
   isOriginalPreview = !isOriginalPreview;
   $('renderCanvas').style.visibility = isOriginalPreview ? 'hidden' : 'visible';
-  $('compare-toggle').setAttribute('aria-pressed', String(isOriginalPreview));
-  $('compare-label').textContent = t(isOriginalPreview ? 'compareAfter' : 'compareBeforeAfter');
-  $('compare-toggle').title = t(isOriginalPreview ? 'compareAfter' : 'compareBeforeAfter');
+  syncCompareControl();
+  invalidateCapture();
   setStatusKey(isOriginalPreview ? 'statusCompareOriginal' : 'statusCompareApplied');
 });
 $('capture-photo').addEventListener('click', () => {
@@ -997,7 +1028,9 @@ function makeSlider(name, about) {
     output.textContent = Number(input.value).toFixed(2);
     const value = Number(input.value);
     sessionState.morphs[name] = value;
-    persistSessionState();
+    const stateSaved = persistSessionState();
+    if (!stateSaved && lastStatusKey !== 'statusSessionNotSaved') setStatusKey('statusSessionNotSaved', 'error');
+    else if (stateSaved && lastStatusKey === 'statusSessionNotSaved') setStatusKey('statusReady', 'success');
     try { mk.setMorph(name, value); } catch (error) {
       console.warn('Could not update face shape:', error);
       setStatus(t('statusActionError') + ' — ' + describeError(error), 'error');

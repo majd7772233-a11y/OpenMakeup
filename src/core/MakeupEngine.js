@@ -141,6 +141,7 @@ export class MakeupEngine {
             camera: { ...defaultConfig.camera, ...deviceProfile.camera, ...(camera || {}) },
         };
         this._cameraFacingMode = normalizeCameraFacingMode(this.config.camera.facingMode) || 'user';
+        this._cameraFacingModeVerified = false;
 
         // MediaPipe classes (injected or resolved from globals at init)
         this._FaceMeshClass = faceMeshClass || null;
@@ -979,6 +980,11 @@ export class MakeupEngine {
         return this._cameraFacingMode;
     }
 
+    /** True only when the browser reports the camera's actual facing mode. */
+    get cameraFacingModeVerified() {
+        return this._cameraFacingModeVerified === true;
+    }
+
     canSwitchCamera() {
         const mediaDevices = typeof navigator !== 'undefined' ? navigator.mediaDevices : null;
         return !!this._CameraClass && supportsCameraFacingMode(mediaDevices);
@@ -998,6 +1004,7 @@ export class MakeupEngine {
         }
         this._camera = null;
         this._cameraFacingMode = mode;
+        this._cameraFacingModeVerified = false;
         this.config.camera = { ...this.config.camera, facingMode: mode };
         this._setupCamera();
         await this.start();
@@ -1007,7 +1014,9 @@ export class MakeupEngine {
         const tracks = stream && typeof stream.getVideoTracks === 'function' ? stream.getVideoTracks() : [];
         const settings = tracks[0] && typeof tracks[0].getSettings === 'function' ? tracks[0].getSettings() : null;
         const actual = normalizeCameraFacingMode(settings && settings.facingMode);
+        this._cameraFacingModeVerified = actual === mode;
         if (actual && actual !== mode) {
+            this._cameraFacingModeVerified = false;
             throw new Error('Requested the ' + mode + '-facing camera, but the browser opened ' + actual + '.');
         }
     }

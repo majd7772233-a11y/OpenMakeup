@@ -14,7 +14,26 @@ export function rgbaPixelsTopOrigin(pixels, width, height) {
   return output;
 }
 
-export function renderSceneToPngDataUrl(engine, documentRef = document, maxDimension = 2560) {
+export function withSceneVisibilityForCapture(engine, mode, render) {
+  if (mode !== 'original') return render();
+  const scene = engine && engine.scene;
+  const videoPlane = engine && engine.videoPlane;
+  if (!scene || !videoPlane || typeof scene.traverse !== 'function') {
+    throw new Error('Original capture requires a ready scene with a camera video plane.');
+  }
+  const previousVisibility = [];
+  scene.traverse((object) => {
+    previousVisibility.push([object, object.visible]);
+    if (object !== scene) object.visible = object === videoPlane;
+  });
+  try {
+    return render();
+  } finally {
+    for (const [object, visible] of previousVisibility) object.visible = visible;
+  }
+}
+
+export function renderSceneToPngDataUrl(engine, documentRef = document, maxDimension = 2560, options = {}) {
   const renderer = engine && engine.renderer;
   if (!renderer || !engine.scene || !engine.camera3D || !renderer.domElement) {
     throw new Error('A ready WebGL renderer, scene and camera are required for capture.');
@@ -41,8 +60,10 @@ export function renderSceneToPngDataUrl(engine, documentRef = document, maxDimen
   const previousTarget = typeof renderer.getRenderTarget === 'function' ? renderer.getRenderTarget() : null;
   try {
     renderer.setRenderTarget(target);
-    renderer.render(engine.scene, engine.camera3D);
-    renderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
+    withSceneVisibilityForCapture(engine, options.mode, () => {
+      renderer.render(engine.scene, engine.camera3D);
+      renderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
+    });
   } finally {
     renderer.setRenderTarget(previousTarget || null);
     target.dispose();

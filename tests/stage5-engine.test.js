@@ -99,3 +99,15 @@ test('WebGL context loss pauses rendering and restoration requests a fresh camer
   assert.match(engine, /performanceProfile\.maxPixelRatio/);
   assert.match(main, /handleWebGLContextChange/);
 });
+
+
+test('camera-switch UI distinguishes verified facing mode from an unverified request', async () => {
+  const { dictionaries } = await import('../src/ui/locales.js');
+  assert.ok(engine.includes('get cameraFacingModeVerified()'));
+  assert.ok(engine.includes('this._cameraFacingModeVerified = actual === mode'));
+  assert.ok(sdk.includes('get cameraFacingModeVerified()'));
+  assert.ok(main.includes('mk.cameraFacingModeVerified === true'));
+  assert.ok(main.includes('statusCameraDirectionUnverified'));
+  assert.ok(dictionaries.ar.statusCameraDirectionUnverified);
+  assert.ok(dictionaries.en.statusCameraDirectionUnverified);
+});

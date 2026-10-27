@@ -147,6 +147,8 @@ export class OpenMakeup {
 
   /** Current camera direction requested by the engine. */
   readonly cameraFacingMode: 'user' | 'environment';
+  /** True only when the browser reports the actual camera direction. */
+  readonly cameraFacingModeVerified: boolean;
   /** Whether media APIs expose camera-facing constraints in this runtime. */
   canSwitchCamera(): boolean;
   /** Switch between front/user and rear/environment cameras, restoring the old camera if the switch fails. */
@@ -207,6 +209,7 @@ export class MakeupEngine {
   /** Global multiplier for reshape strength (default 1). */
   morphGain: number;
   readonly cameraFacingMode: 'user' | 'environment';
+  readonly cameraFacingModeVerified: boolean;
   canSwitchCamera(): boolean;
   switchCamera(facingMode: 'user' | 'environment'): Promise<'user' | 'environment'>;
   init(): Promise<void>;

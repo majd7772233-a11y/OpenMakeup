@@ -127,14 +127,40 @@ test('font-size setting is bilingual, defaults to 12, persists, scales all autho
   assert.match(html, /id="font-size-setting" type="range" min="10" max="20" step="1" value="12"/);
   assert.match(html, /id="font-size-value"[^>]*>12<\/output>/);
   assert.match(html, /font-size:[0-9.]+px/);
-  assert.match(main, /BASE_APP_CSS\.replace/);
+  assert.match(main, /scaleFontDeclarations\(BASE_APP_CSS, scale\);/);
   assert.match(main, /const DEFAULT_FONT_SIZE = 12/);
   assert.match(main, /const FONT_SIZE_KEY = 'openMakeupFontSizeV1'/);
   assert.match(main, /function normalizeFontSize\(value\)/);
   assert.match(main, /Math\.min\(MAX_FONT_SIZE, Math\.max\(MIN_FONT_SIZE, Math\.round\(parsed\)\)\)/);
-  assert.match(main, /BASE_APP_CSS\.replace/);
+  assert.match(main, /scaleFontDeclarations\(BASE_APP_CSS, scale\);/);
   assert.match(main, /localStorage\.setItem\(FONT_SIZE_KEY, String\(currentFontSize\)\)/);
   assert.match(main, /\$\('reset-settings'\)\.addEventListener\('click', \(\) => applyFontSize\(DEFAULT_FONT_SIZE\)\)/);
   assert.match(main, /function trapSettingsFocus\(event\)/);
   assert.match(main, /if \(\$\('settings-modal'\)\.classList\.contains\('open'\)\) \{ closeSettings\(\); return true; \}/);
+});
+
+
+test('comparison state drives its label, preview, and fresh photo capture consistently', () => {
+  assert.ok(main.includes('function syncCompareControl()'));
+  assert.ok(main.includes("renderSceneToPngDataUrl(mk.engine, document, 2560, { mode: isOriginalPreview ? 'original' : 'makeup' })"));
+  const handler = main.slice(main.indexOf("$('compare-toggle').addEventListener"), main.indexOf('const morphNames'));
+  assert.ok(handler.includes('invalidateCapture()'));
+  assert.ok(handler.includes('syncCompareControl()'));
+});
+
+test('persistent state failures are surfaced instead of being followed by a false success status', () => {
+  assert.ok(main.includes('let sessionPersistenceUnavailable = false'));
+  assert.ok(main.includes("if (sessionPersistenceUnavailable) setStatusKey('statusSessionNotSaved', 'error')"));
+  assert.match(dictionaries.ar.statusSessionNotSaved, /الجلسة الحالية فقط/);
+  assert.match(dictionaries.en.statusSessionNotSaved, /session only/);
+});
+
+test('onboarding Back and Escape never start the camera as a side effect', () => {
+  assert.ok(main.includes("if (event.key === 'Escape') { event.preventDefault(); return; }"));
+  assert.ok(main.includes("if ($('onboarding-modal').classList.contains('open')) return false;"));
+});
+
+test('finish selector hides an indistinguishable non-lipstick glossy option', () => {
+  assert.ok(main.includes("glossyOption.hidden = currentEditorCategory !== 'lipstick'"));
+  assert.ok(main.includes("currentEditorCategory !== 'lipstick' && finish === 'glossy'"));
 });
