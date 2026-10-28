@@ -18,6 +18,7 @@ const getActionButtons = () => [...document.querySelectorAll(actionButtonSelecto
 const sliders = [];
 let engineReady = false;
 let hostStopGeneration = 0;
+let hostBackgrounded = false;
 let restartStartupWhenVisible = false;
 let currentLanguage = 'ar';
 const FONT_SIZE_KEY = 'openMakeupFontSizeV1';
@@ -698,7 +699,7 @@ window.handleAndroidBack = () => {
 let engineStarting = false;
 async function startEngine() {
   if (engineStarting) return false;
-  if (document.hidden) {
+  if (document.hidden || hostBackgrounded) {
     restartStartupWhenVisible = true;
     return false;
   }
@@ -713,14 +714,14 @@ async function startEngine() {
     // ready fast path skip restarting its stopped camera.
     if (mk.ready) await mk.start();
     else await mk.init();
-    if (startHostStopGeneration !== hostStopGeneration || document.hidden) {
+    if (startHostStopGeneration !== hostStopGeneration || document.hidden || hostBackgrounded) {
       try { mk.stop(); } catch (_) {}
       stopAndDetachCamera();
       restartStartupWhenVisible = true;
       return false;
     }
     await waitForCameraFrames($('video'), { timeoutMs: 6000, pollIntervalMs: 150 });
-    if (startHostStopGeneration !== hostStopGeneration || document.hidden) {
+    if (startHostStopGeneration !== hostStopGeneration || document.hidden || hostBackgrounded) {
       try { mk.stop(); } catch (_) {}
       stopAndDetachCamera();
       restartStartupWhenVisible = true;
@@ -757,7 +758,7 @@ async function startEngine() {
     }
     // Cancellation caused by backgrounding is not a user-facing camera error.
     // Resume will retry against a fresh lifecycle generation.
-    if (startHostStopGeneration !== hostStopGeneration || document.hidden) {
+    if (startHostStopGeneration !== hostStopGeneration || document.hidden || hostBackgrounded) {
       restartStartupWhenVisible = true;
       return false;
     }
@@ -772,7 +773,7 @@ async function startEngine() {
     engineStarting = false;
     // If the app returned before the stale initializer settled, retry exactly
     // once after its promise has relinquished ownership.
-    if (restartStartupWhenVisible && !document.hidden && !engineReady) {
+    if (restartStartupWhenVisible && !document.hidden && !hostBackgrounded && !engineReady) {
       restartStartupWhenVisible = false;
       Promise.resolve().then(() => startEngine());
     }
@@ -1277,6 +1278,7 @@ function pauseCameraForBackground() {
 }
 
 function cancelStartupForHostStop() {
+  hostBackgrounded = true;
   if (!engineReady && engineStarting) {
     hostStopGeneration += 1;
     restartStartupWhenVisible = true;
@@ -1304,7 +1306,7 @@ document.addEventListener('visibilitychange', () => {
     return;
   }
   if (hiddenAt && engineReady) recoverCamera();
-  else if (!engineReady && restartStartupWhenVisible && !engineStarting) {
+  else if (!engineReady && restartStartupWhenVisible && !engineStarting && !hostBackgrounded) {
     restartStartupWhenVisible = false;
     startEngine();
   }
@@ -1327,6 +1329,8 @@ window.addEventListener('beforeunload', () => {
 window.mk = mk;
 let resumeCheckInProgress = false;
 window.handleOpenMakeupResume = async () => {
+  // Only the native Activity resume callback clears the fully-stopped state.
+  hostBackgrounded = false;
   if (document.hidden || resumeInProgress || resumeCheckInProgress) return;
   if (!engineReady) {
     if (engineStarting) {

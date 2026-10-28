@@ -73,6 +73,9 @@ test('Stage 10 cancels in-flight camera initialization only when the native Acti
   const engine = read('../src/core/MakeupEngine.js');
   assert.match(main, /window\.handleOpenMakeupHostStop = \(\) => cancelStartupForHostStop\(\)/);
   assert.match(main, /startHostStopGeneration !== hostStopGeneration/);
+  assert.match(main, /let hostBackgrounded = false/);
+  assert.match(main, /restartStartupWhenVisible && !document\.hidden && !hostBackgrounded/);
+  assert.match(main, /hostBackgrounded = false;[\s\S]*?window\.handleOpenMakeupResume/);
   assert.match(engine, /initializationGeneration !== this\._lifecycleGeneration/);
   assert.match(activity, /protected void onStop\(\)/);
   assert.match(activity, /handleOpenMakeupHostStop/);
