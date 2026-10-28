@@ -278,7 +278,12 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void pruneShareCache(File directory) {
+    /**
+     * Keep the file being handed to FileProvider plus at most nine retained
+     * images, so the total cache never exceeds SHARE_CACHE_MAX_FILES after a
+     * successful new export. The protected file is not evicted by timestamp.
+     */
+    private void pruneShareCache(File directory, File protectedFile) {
         File[] files = directory.listFiles((parent, name) ->
                 name != null && name.startsWith("Open-Makeup-")
                         && name.toLowerCase(java.util.Locale.ROOT).endsWith(".png"));
@@ -286,9 +291,14 @@ public class MainActivity extends Activity {
         java.util.Arrays.sort(files, (left, right) ->
                 Long.compare(right.lastModified(), left.lastModified()));
         long cutoff = System.currentTimeMillis() - SHARE_CACHE_MAX_AGE_MS;
-        for (int i = 0; i < files.length; i++) {
-            if (i >= SHARE_CACHE_MAX_FILES || files[i].lastModified() < cutoff) {
-                try { files[i].delete(); } catch (Exception ignored) {}
+        int retainedOtherFiles = 0;
+        for (File file : files) {
+            if (protectedFile != null && file.equals(protectedFile)) continue;
+            if (file.lastModified() < cutoff
+                    || retainedOtherFiles >= SHARE_CACHE_MAX_FILES - 1) {
+                try { file.delete(); } catch (Exception ignored) {}
+            } else {
+                retainedOtherFiles++;
             }
         }
     }
@@ -300,7 +310,6 @@ public class MainActivity extends Activity {
             notifyWebImageResult("share", "failed");
             return;
         }
-        pruneShareCache(directory);
         File target = new File(directory, safeImageName(requestedName));
         try (FileOutputStream output = new FileOutputStream(target)) {
             if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)) {
@@ -315,6 +324,9 @@ public class MainActivity extends Activity {
         } finally {
             if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
         }
+        // Prune after writing, not before: include this just-created image in
+        // the bound and protect it until the chooser has a usable URI.
+        pruneShareCache(directory, target);
         try {
             Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", target);
             Intent send = new Intent(Intent.ACTION_SEND);
@@ -326,10 +338,12 @@ public class MainActivity extends Activity {
                     startActivity(Intent.createChooser(send, "Share Open Makeup photo"));
                     notifyWebImageResult("share", "share_opened");
                 } catch (Exception exception) {
+                    try { target.delete(); } catch (Exception ignored) {}
                     notifyWebImageResult("share", "failed");
                 }
             });
         } catch (Exception exception) {
+            try { target.delete(); } catch (Exception ignored) {}
             notifyWebImageResult("share", "failed");
         }
     }
