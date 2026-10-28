@@ -76,7 +76,7 @@ test('Stage 10 cancels in-flight camera initialization only when the native Acti
   assert.match(engine, /initializationGeneration !== this\._lifecycleGeneration/);
   assert.match(activity, /protected void onStop\(\)/);
   assert.match(activity, /handleOpenMakeupHostStop/);
-  assert.match(activity, /onPause can be triggered by Android's camera-permission prompt/);
+  assert.match(main, /onPause can be triggered by Android's camera-permission prompt/);
 });
 
 test('Stage 10 Android legacy gallery writes run off the UI thread and failed share writes are deleted', () => {
