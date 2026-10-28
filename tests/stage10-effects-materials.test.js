@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { TextureLoader } from 'three';
+import { TextureLoader, Vector2 } from 'three';
+import { MakeupEngine } from '../src/core/MakeupEngine.js';
 import { OpenMakeup } from '../src/OpenMakeup.js';
 import {
   loadLipMats,
@@ -129,4 +130,32 @@ test('Stage 10: every curated look references a valid 1-based bundled pattern in
       assert.equal(selected.file, `patterns/${category}/${selected.id}.png`);
     }
   }
+});
+
+test('Stage 10: soft-focus blur resolution tracks the source camera frame, not window dimensions', () => {
+  const engine = Object.create(MakeupEngine.prototype);
+  const resolution = new Vector2(1440, 900);
+  engine.video = { videoWidth: 640, videoHeight: 480 };
+  engine.blurMat = { uniforms: { resolution: { value: resolution } } };
+
+  assert.equal(engine._syncVideoTextureResolution(), true);
+  assert.deepEqual(resolution.toArray(), [640, 480]);
+
+  engine.video.videoWidth = 1280;
+  engine.video.videoHeight = 720;
+  assert.equal(engine._syncVideoTextureResolution(), true);
+  assert.deepEqual(resolution.toArray(), [1280, 720]);
+
+  engine.video.videoWidth = 0;
+  assert.equal(engine._syncVideoTextureResolution(), false);
+  assert.deepEqual(resolution.toArray(), [1280, 720], 'missing metadata must not replace a valid source size');
+
+  const engineSource = readFileSync(new URL('../src/core/MakeupEngine.js', import.meta.url), 'utf8');
+  const layoutSource = engineSource.slice(engineSource.indexOf('_sizeToVideoBox ='), engineSource.indexOf('_resizeOverlay ='));
+  assert.match(layoutSource, /_syncVideoTextureResolution\(\)/);
+
+  const shader = readFileSync(new URL('../assets/shaders/bluremask/fragment.glsl', import.meta.url), 'utf8');
+  assert.match(shader, /uniform vec2 resolution/);
+  assert.match(shader, /blurScale \/ resolution\.x/);
+  assert.match(shader, /blurScale \/ resolution\.y/);
 });

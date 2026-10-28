@@ -327,6 +327,19 @@ export class MakeupEngine {
         this.scene.add(this.videoPlane);
     }
 
+    _syncVideoTextureResolution() {
+        const uniform = this.blurMat && this.blurMat.uniforms && this.blurMat.uniforms.resolution;
+        const resolution = uniform && uniform.value;
+        const width = Number(this.video && this.video.videoWidth);
+        const height = Number(this.video && this.video.videoHeight);
+        if (!resolution || !(width > 0) || !(height > 0) || !Number.isFinite(width) || !Number.isFinite(height)) {
+            return false;
+        }
+        if (typeof resolution.set === 'function') resolution.set(width, height);
+        else { resolution.x = width; resolution.y = height; }
+        return true;
+    }
+
     _sizeToVideoBox = () => {
         const container = this.video.parentElement;
         if (!container) return;
@@ -337,6 +350,9 @@ export class MakeupEngine {
         const vidH = this.video.videoHeight || containerHeight;
 
         if (containerWidth <= 0 || containerHeight <= 0) return;
+        // The blur shader samples the live VideoTexture, so its pixel step must
+        // use source-frame dimensions rather than the browser window size.
+        this._syncVideoTextureResolution();
         const fitMode = container.classList && container.classList.contains('fullscreen') ? 'contain' : 'cover';
         const layout = calculateVideoBoxLayout(vidW, vidH, containerWidth, containerHeight, fitMode);
         const { width: targetWidth, height: targetHeight } = layout;
@@ -444,6 +460,9 @@ export class MakeupEngine {
         ] = materialResults.map((result) => result.value);
 
         this.blurMat = blurMat;
+        // The camera may have delivered metadata while materials were loading;
+        // sync again now that the resolution uniform is available.
+        this._syncVideoTextureResolution();
         this.blushMat = blushMat;
         this.lipsMat = lipsMat;
         this.eyeShadowMat = eyeShadowMat;
