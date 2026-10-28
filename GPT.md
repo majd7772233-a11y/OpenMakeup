@@ -4,11 +4,11 @@
 
 - **Repository:** https://github.com/majd7772233-a11y/OpenMakeup
 - **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`
-- **Latest CI-verified code-bearing HEAD:** cd6d51bd28343f51d1c039f247459b6d1967776a; workflow [40731209686](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686) passed on that exact revision.
-- **Latest verified full CI:** [Run 40731209686](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686): **107 tests passed, 0 failed**; full and production dependency audits each reported 0 vulnerabilities; typecheck, local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and both uploads passed.
-- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686/artifacts/12833634599), ZIP 14,972,293 bytes.
-- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686/artifacts/12835695531), ZIP 13,630,170 bytes.
-- **Next required action:** fetch live HEAD, PR #3 and latest Actions logs/artifacts before further work. Stage 10 now covers effects/material integrity, session persistence, camera startup/resume, bounded photo export and Android I/O; physical-device acceptance remains open. The docs-only follow-up has its own workflow and must be checked from live Actions.
+- **Latest CI-verified code-bearing HEAD:** `b402cb3d68ba7f5a3f023d54d93419dedf18ff44`; workflow [40737590458](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40737590458) passed on that exact revision.
+- **Latest verified full CI:** [Run 40737590458](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40737590458): **108 tests passed, 0 failed**; full and production dependency audits each reported 0 vulnerabilities; typecheck, local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and both uploads passed.
+- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40737590458/artifacts/12838835197), ZIP 14,972,389 bytes.
+- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40737590458/artifacts/12837274032), ZIP 13,630,732 bytes.
+- **Next required action:** check the live Actions state for the documentation-only follow-up; stage 10 source and full CI are verified at `b402cb3d68ba7f5a3f023d54d93419dedf18ff44`. Physical-device acceptance remains open.
 
 - **Android identity:** 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23.
 - **PR #3:** https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — open and unmerged.
@@ -325,3 +325,13 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 - SDK typecheck, local camera/model asset checks, Vite build, Android asset packaging, Gradle debug and unsigned-release APK builds, metadata validation, SHA-256 generation and artifact uploads all passed.
 - Debug artifact [12833634599](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686/artifacts/12833634599) (ZIP, 14,972,293 bytes); unsigned release candidate [12835695531](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686/artifacts/12835695531) (ZIP, 13,630,170 bytes). The release candidate is not signed.
 - Physical Android 6/7 camera permission/resume, orientation, real image save/share, face alignment, accessibility, sustained GPU performance and thermal acceptance have not been performed. CI does not replace that device matrix. Keep PR #3 open/unmerged unless explicitly asked to merge.
+
+
+## Stage 10 review follow-up — Android share-cache bound (CI verified)
+
+- Source review found that pruning the share cache *before* writing a new PNG could retain 10 old files and then add an 11th. The code now writes first, protects the new target, removes stale/overflow files while retaining at most nine other images, and deletes the target when FileProvider/chooser startup fails.
+- Regression coverage now checks the protected-target policy, post-write pruning order, ten-image ceiling and failed-handoff cleanup. The previous source-contract test was updated to the new method signature after the first CI run caught that expected test contract mismatch.
+- Fix commit: [0d2953e](https://github.com/majd7772233-a11y/OpenMakeup/commit/0d2953e395c6aaf4f6ac66e57da2da81ebd21080). Test-contract follow-up / code-bearing HEAD: [b402cb3](https://github.com/majd7772233-a11y/OpenMakeup/commit/b402cb3d68ba7f5a3f023d54d93419dedf18ff44).
+- Full pipeline [40737590458](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40737590458) passed on the exact HEAD: **108/108 tests**, 0 failures; full and production dependency audits both reported 0 vulnerabilities; typecheck, assets, Vite, Android packaging, debug and unsigned release builds, metadata/checksums and uploads passed.
+- Debug [artifact 12838835197](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40737590458/artifacts/12838835197), ZIP 14,972,389 bytes, SHA-256 `0c4a198144ccadbef46c12af314d6f0a9e27f9465180eeb765d140ec83cba875`. Unsigned release candidate [artifact 12837274032](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40737590458/artifacts/12837274032), ZIP 13,630,732 bytes, SHA-256 `4fe996ec2a99b672f49a35347730737f6900ccaff7e7d7cd23a955079aaf0f58`.
+- Physical Android 6/7 camera/storage/share, accessibility, sustained GPU and thermal tests remain **not performed**. PR #3 remains open/unmerged; the release candidate is unsigned.
