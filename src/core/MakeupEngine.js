@@ -243,6 +243,7 @@ export class MakeupEngine {
         if (this._ready) return this;
         if (this._initPromise) return this._initPromise;
 
+        const initializationGeneration = this._lifecycleGeneration;
         this._initPromise = (async () => {
             try {
                 this._resolveMediaPipeClasses();
@@ -256,6 +257,11 @@ export class MakeupEngine {
                 }
 
                 await this._loadFaceAndMaterials();
+                // If the host stopped while model/material assets were pending,
+                // abort before constructing a camera controller or requesting permission.
+                if (initializationGeneration !== this._lifecycleGeneration) {
+                    throw new Error('Engine initialization was cancelled by a lifecycle change.');
+                }
                 this._setupFaceMesh();
                 this._setupCamera();
                 await withTimeout(

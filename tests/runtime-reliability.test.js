@@ -206,3 +206,39 @@ test('SDK apply propagates pattern-loading errors instead of swallowing them', a
   sdk.engine.setAR = () => { throw new Error('must not activate before pattern loads'); };
   await assert.rejects(sdk.apply('eyeshadow', { pattern: 1 }), /pattern texture missing/);
 });
+
+test('engine cancels model/material initialization on background stop before starting camera', async () => {
+  let finishMaterials;
+  let cameraSetupCalls = 0;
+  let faceSetupCalls = 0;
+  let disposeCalls = 0;
+  const originalWindow = globalThis.window;
+  globalThis.window = { addEventListener() {}, removeEventListener() {} };
+  const engine = Object.create(MakeupEngine.prototype);
+  Object.assign(engine, {
+    _ready: false, _initPromise: null, _lifecycleGeneration: 0,
+    _camera: null, _cameraRunning: false, _cameraStartPromise: null, _cameraStartToken: null,
+    _faceVisible: false, _noFaceFrames: 0, _rafId: null, _activeLayers: new Set(),
+    video: { addEventListener() {}, removeEventListener() {} }, overlayCanvas: null,
+    _resolveMediaPipeClasses() {}, _setupScene() {}, _sizeToVideoBox() {},
+    _loadFaceAndMaterials: () => new Promise((resolve) => { finishMaterials = resolve; }),
+    _setupFaceMesh() { faceSetupCalls += 1; },
+    _setupCamera() { cameraSetupCalls += 1; },
+    _syncFaceLayerVisibility() {},
+    dispose() { disposeCalls += 1; this._ready = false; },
+  });
+  try {
+    const pendingInit = engine.init();
+    await Promise.resolve();
+    assert.equal(typeof finishMaterials, 'function');
+    engine.stop();
+    finishMaterials();
+    await assert.rejects(pendingInit, /Engine initialization was cancelled by a lifecycle change/);
+    assert.equal(faceSetupCalls, 0);
+    assert.equal(cameraSetupCalls, 0);
+    assert.equal(disposeCalls, 1);
+  } finally {
+    if (originalWindow === undefined) delete globalThis.window;
+    else globalThis.window = originalWindow;
+  }
+});

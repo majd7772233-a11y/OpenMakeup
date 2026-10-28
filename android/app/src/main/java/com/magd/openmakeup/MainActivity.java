@@ -143,9 +143,13 @@ public class MainActivity extends Activity {
             pendingSaveBitmap = null;
             pendingSaveName = null;
             boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-            boolean saved = granted && bitmap != null && saveBitmapToGallery(bitmap, name);
-            if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
-            notifyWebImageResult("save", saved ? "saved" : (granted ? "failed" : "permission_denied"));
+            if (granted && bitmap != null) {
+                // PNG compression and gallery I/O must not run on Android's UI thread.
+                savePendingBitmapInBackground(bitmap, name);
+            } else {
+                if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+                notifyWebImageResult("save", granted ? "failed" : "permission_denied");
+            }
             return;
         }
         if (requestCode != CAMERA_REQUEST) return;
@@ -161,6 +165,22 @@ public class MainActivity extends Activity {
         }
     }
 
+
+    private void savePendingBitmapInBackground(Bitmap bitmap, String requestedName) {
+        Thread saveThread = new Thread(() -> {
+            boolean saved = false;
+            try {
+                saved = saveBitmapToGallery(bitmap, requestedName);
+            } catch (Exception exception) {
+                // A storage-provider failure should be returned to the web UI,
+                // not crash this worker or stall the Activity's permission flow.
+            } finally {
+                if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+            }
+            notifyWebImageResult("save", saved ? "saved" : "failed");
+        }, "OpenMakeup-gallery-save");
+        saveThread.start();
+    }
 
     private String safeImageName(String requested) {
         String name = requested == null ? "" : requested.replaceAll("[^A-Za-z0-9._-]", "_");
@@ -284,10 +304,12 @@ public class MainActivity extends Activity {
         File target = new File(directory, safeImageName(requestedName));
         try (FileOutputStream output = new FileOutputStream(target)) {
             if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)) {
+                try { target.delete(); } catch (Exception ignored) {}
                 notifyWebImageResult("share", "failed");
                 return;
             }
         } catch (Exception exception) {
+            try { target.delete(); } catch (Exception ignored) {}
             notifyWebImageResult("share", "failed");
             return;
         } finally {
@@ -351,6 +373,17 @@ public class MainActivity extends Activity {
             webView.onPause();
         }
         super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        // onStop distinguishes true backgrounding from the transient camera
+        // permission prompt, which may only trigger onPause().
+        if (webView != null) {
+            webView.evaluateJavascript(
+                    "if(window.handleOpenMakeupHostStop){window.handleOpenMakeupHostStop();}", null);
+        }
+        super.onStop();
     }
 
     @Override

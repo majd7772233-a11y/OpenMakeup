@@ -68,3 +68,20 @@ test('Stage 10 capture budget remains bounded for native portrait and landscape 
     assert.ok(size.width * size.height <= 2500000);
   }
 });
+
+test('Stage 10 cancels in-flight camera initialization only when the native Activity is fully stopped', () => {
+  const engine = read('../src/core/MakeupEngine.js');
+  assert.match(main, /window\.handleOpenMakeupHostStop = \(\) => cancelStartupForHostStop\(\)/);
+  assert.match(main, /startHostStopGeneration !== hostStopGeneration/);
+  assert.match(engine, /initializationGeneration !== this\._lifecycleGeneration/);
+  assert.match(activity, /protected void onStop\(\)/);
+  assert.match(activity, /handleOpenMakeupHostStop/);
+  assert.match(activity, /onPause can be triggered by Android's camera-permission prompt/);
+});
+
+test('Stage 10 Android legacy gallery writes run off the UI thread and failed share writes are deleted', () => {
+  assert.match(activity, /savePendingBitmapInBackground\(bitmap, name\)/);
+  assert.match(activity, /private void savePendingBitmapInBackground\([\s\S]*?new Thread\([\s\S]*?saveBitmapToGallery\(bitmap, requestedName\)/);
+  assert.match(activity, /if \(!bitmap\.compress\(Bitmap\.CompressFormat\.PNG, 100, output\)\) \{\s*try \{ target\.delete\(\)/);
+  assert.match(activity, /catch \(Exception exception\) \{\s*try \{ target\.delete\(\)/);
+});

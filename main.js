@@ -17,6 +17,8 @@ const actionButtonSelector = '.makeup-grid button, .preset-library button, .look
 const getActionButtons = () => [...document.querySelectorAll(actionButtonSelector)];
 const sliders = [];
 let engineReady = false;
+let hostStopGeneration = 0;
+let restartStartupWhenVisible = false;
 let currentLanguage = 'ar';
 const FONT_SIZE_KEY = 'openMakeupFontSizeV1';
 const appStyleElement = document.querySelector('style');
@@ -696,16 +698,38 @@ window.handleAndroidBack = () => {
 let engineStarting = false;
 async function startEngine() {
   if (engineStarting) return false;
+  if (document.hidden) {
+    restartStartupWhenVisible = true;
+    return false;
+  }
   engineStarting = true;
+  const startHostStopGeneration = hostStopGeneration;
   $('camera-retry').hidden = true;
   getActionButtons().forEach((button) => { button.disabled = true; });
   setStatusKey('statusLoading');
   try {
-    await mk.init();
+    // A native host may stop the app while model/material initialization is
+    // pending. Reuse a completed SDK instance on resume; don't let init()'s
+    // ready fast path skip restarting its stopped camera.
+    if (mk.ready) await mk.start();
+    else await mk.init();
+    if (startHostStopGeneration !== hostStopGeneration || document.hidden) {
+      try { mk.stop(); } catch (_) {}
+      stopAndDetachCamera();
+      restartStartupWhenVisible = true;
+      return false;
+    }
     await waitForCameraFrames($('video'), { timeoutMs: 6000, pollIntervalMs: 150 });
+    if (startHostStopGeneration !== hostStopGeneration || document.hidden) {
+      try { mk.stop(); } catch (_) {}
+      stopAndDetachCamera();
+      restartStartupWhenVisible = true;
+      return false;
+    }
     buildMorphSliders();
     const restoreErrors = await restoreSessionState();
     engineReady = true;
+    restartStartupWhenVisible = false;
     setTrackingState(mk.engine && mk.engine._reportedFaceTrackingState === false ? 'noFace' : (mk.engine && mk.engine._faceVisible ? 'detected' : 'waiting'));
     getActionButtons().forEach((button) => { button.disabled = false; });
     renderCustomLooks();
@@ -724,7 +748,6 @@ async function startEngine() {
     }
     return true;
   } catch (error) {
-    console.error('Open Makeup initialization failed:', error);
     engineReady = false;
     try { if (mk) mk.stop(); } catch (stopError) { console.warn('Could not stop failed startup:', stopError); }
     const failedStream = $('video').srcObject;
@@ -732,6 +755,13 @@ async function startEngine() {
       failedStream.getTracks().forEach((track) => { try { track.stop(); } catch (_) {} });
       $('video').srcObject = null;
     }
+    // Cancellation caused by backgrounding is not a user-facing camera error.
+    // Resume will retry against a fresh lifecycle generation.
+    if (startHostStopGeneration !== hostStopGeneration || document.hidden) {
+      restartStartupWhenVisible = true;
+      return false;
+    }
+    console.error('Open Makeup initialization failed:', error);
     getActionButtons().forEach((button) => { button.disabled = true; });
     setTrackingState('waiting');
     setStatus(t('statusEngineError') + ' ' + describeError(error), 'error');
@@ -740,6 +770,12 @@ async function startEngine() {
     return false;
   } finally {
     engineStarting = false;
+    // If the app returned before the stale initializer settled, retry exactly
+    // once after its promise has relinquished ownership.
+    if (restartStartupWhenVisible && !document.hidden && !engineReady) {
+      restartStartupWhenVisible = false;
+      Promise.resolve().then(() => startEngine());
+    }
   }
 }
 
@@ -1230,8 +1266,8 @@ async function recoverCamera() {
 function pauseCameraForBackground() {
   // Commit any pending slider write before WebView timers pause or the process backgrounds.
   flushSessionStatePersistence();
-  // Do not interrupt an in-flight first permission/startup flow. Once the
-  // studio is usable, release its camera promptly when the host backgrounds it.
+  // onPause can be triggered by Android's camera-permission prompt. Only the
+  // fully-stopped host callback below cancels startup, so permission UX remains intact.
   if (!engineReady) return;
   hiddenAt = Date.now();
   if (mk) {
@@ -1240,16 +1276,38 @@ function pauseCameraForBackground() {
   }
 }
 
+function cancelStartupForHostStop() {
+  if (!engineReady && engineStarting) {
+    hostStopGeneration += 1;
+    restartStartupWhenVisible = true;
+    try { if (mk) mk.stop(); } catch (error) { console.warn('Startup cancellation failed:', error); }
+    stopAndDetachCamera();
+    return;
+  }
+  pauseCameraForBackground();
+}
+
 window.handleOpenMakeupPause = () => {
   pauseCameraForBackground();
 };
 
+// Called only when the native Activity is fully stopped (not merely paused for
+// the runtime permission dialog). This closes the startup/background race.
+window.handleOpenMakeupHostStop = () => cancelStartupForHostStop();
+
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    pauseCameraForBackground();
+    // Browser tabs can be safely cancelled immediately. Android uses onStop
+    // separately because onPause may represent the permission prompt itself.
+    if (!window.OpenMakeupBridge && !engineReady && engineStarting) cancelStartupForHostStop();
+    else pauseCameraForBackground();
     return;
   }
   if (hiddenAt && engineReady) recoverCamera();
+  else if (!engineReady && restartStartupWhenVisible && !engineStarting) {
+    restartStartupWhenVisible = false;
+    startEngine();
+  }
 });
 
 
@@ -1269,7 +1327,18 @@ window.addEventListener('beforeunload', () => {
 window.mk = mk;
 let resumeCheckInProgress = false;
 window.handleOpenMakeupResume = async () => {
-  if (document.hidden || !engineReady || resumeInProgress || resumeCheckInProgress) return;
+  if (document.hidden || resumeInProgress || resumeCheckInProgress) return;
+  if (!engineReady) {
+    if (engineStarting) {
+      restartStartupWhenVisible = true;
+      return;
+    }
+    if (restartStartupWhenVisible) {
+      restartStartupWhenVisible = false;
+      await startEngine();
+    }
+    return;
+  }
   resumeCheckInProgress = true;
   try {
     // Native Activity resume may occur without a reliable DOM visibilitychange.
