@@ -3,12 +3,12 @@
 **Canonical continuation checkpoint:** [CONTINUATION.md](./CONTINUATION.md). Read it first when continuing in a new conversation; it contains non-negotiable working rules, exact CI state and the physical-device acceptance matrix.
 
 - **Repository/branch:** `majd7772233-a11y/OpenMakeup` / `feat/open-makeup-arabic-mobile-lifecycle`
-- **Latest verified code-bearing HEAD:** `0e18bacf2716eca99f72383015bdb580e63ff279`; full workflow [40511322876](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876) passed on that exact revision.
-- **Latest full CI:** **87/87 tests passed**, zero failures; full and production dependency audits each reported zero vulnerabilities; TypeScript, local runtime assets, Vite bundle, Android packaging, debug and unsigned-release APK builds, release metadata/checksums and both artifact uploads passed.
-- **Debug artifact:** [12738041479](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876/artifacts/12738041479), ZIP 14,967,923 bytes.
-- **Unsigned release candidate:** [12736474787](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876/artifacts/12736474787), ZIP 13,627,264 bytes.
-- This documentation-only update triggers another workflow; verify its actual result.
-- **Roadmap:** Stages 1–8 have implementation and automated CI evidence. Stage 8 implements a full workspace redesign while retaining the rose/purple identity.
+- **Latest CI-verified code-bearing HEAD:** `1fe59559ffa9d4795f23df097b3e97b5b32e47c1`; full workflow [40701117560](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560) passed on that exact revision.
+- **Latest full CI:** **91/91 tests passed**, zero failures; full and production dependency audits each reported zero vulnerabilities; TypeScript, local runtime assets, Vite bundle, Android packaging, debug and unsigned-release builds, release metadata/checksums and both artifact uploads passed.
+- **Debug artifact:** [12822525083](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12822525083), ZIP 14,969,610 bytes.
+- **Unsigned release candidate:** [12821667719](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12821667719), ZIP 13,628,657 bytes.
+- The documentation-only checkpoint triggers its own workflow; check the live run rather than inferring its result.
+- **Roadmap:** Stages 1–9 have implementation and automated CI evidence. Stage 8 redesigned the workspace; Stage 9 adds accessible 3D Liquid Glass motion while retaining the rose/purple identity.
 - **Remaining gate:** Physical Android 6/7 and broader camera/permission/lifecycle/orientation/capture/storage/share/accessibility/WebGL/thermal tests have not been performed. PR #3 remains open/unmerged; the release APK is unsigned.
 ## 1. Product Objective
 
@@ -372,11 +372,12 @@ For every stage:
 
 ### Stage 9 — 3D Liquid Glass Experience and Animation
 
-**Implementation status:** source and regression tests added; full CI verification pending for the Stage 9 code-bearing commit.
+**Status:** source implementation and full automated CI verified on code-bearing HEAD `1fe59559ffa9d4795f23df097b3e97b5b32e47c1`; workflow [40701117560](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560) passed.
 
-- Preserves Open Makeup's rose/pink and purple colors, the Stage 8 four-tab navigation, and existing camera/effect/state/capture APIs.
+- Preserves Open Makeup's rose/pink and purple colors, Stage 8's four-tab navigation, and existing camera/effect/state/capture APIs.
 - Adds bounded pointer-driven 3D tilt (fine pointers only), moving highlight coordinates, glass depth/shadow response, and pointer-leave reset.
-- Adds a subtle desktop ambient gradient drift and decorative sparkle/glow animation; keeps mobile ambient effects static to limit graphics work, with a short entry motion for mobile workspace-panel changes.
+- Adds subtle desktop ambient gradient drift and decorative sparkle/glow; keeps mobile ambient effects static to limit graphics work, with short entry motion when switching mobile workspace panels.
 - Honors `prefers-reduced-motion` both in CSS and at runtime; never treats touch movement as tilt. No new dependencies, remote assets or sensors.
-- New automated tests cover transforms, pointer behavior, reduced-motion toggles, teardown and layout integration.
+- CI log confirmed **91/91 tests passed**, both dependency audits reported 0 vulnerabilities, TypeScript/source assets/Vite/Android packaging/debug and unsigned release builds/checksums/uploads all succeeded.
+- Debug artifact [12822525083](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12822525083) (ZIP 14,969,610 bytes); unsigned release candidate [12821667719](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12821667719) (ZIP 13,628,657 bytes).
 - Physical-device Android/WebView rendering, assistive technology and sustained GPU/thermal behavior remain outside CI and are still unverified.

@@ -4,11 +4,11 @@
 
 - **Repository:** https://github.com/majd7772233-a11y/OpenMakeup
 - **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`
-- **Latest code-bearing HEAD verified by CI:** 0e18bacf2716eca99f72383015bdb580e63ff279; full run 40511322876 passed on that exact code-bearing revision.
-- **Latest verified full CI:** [Run 40511322876](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876): **87 tests passed, 0 failed**; full and production dependency audits each reported zero vulnerabilities; TypeScript, local asset checks, Vite, Android packaging, debug and unsigned-release builds, metadata/checksums and both uploads all passed.
-- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876/artifacts/12738041479), ZIP 14,967,923 bytes.
-- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876/artifacts/12736474787), ZIP 13,627,264 bytes.
-- **Next required action:** fetch live HEAD, PR #3 and newest Actions logs/artifacts before further work. Stages 1–8 have implementation and automated CI evidence; physical-device visual/accessibility testing remains open. This docs-only update triggers another run, which must be verified.
+- **Latest CI-verified code-bearing HEAD:** `1fe59559ffa9d4795f23df097b3e97b5b32e47c1`; workflow [40701117560](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560) passed on that exact code-bearing revision.
+- **Latest verified full CI:** [Run 40701117560](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560): **91 tests passed, 0 failed**; full and production dependency audits each reported zero vulnerabilities; TypeScript, local asset checks, Vite, Android packaging, debug and unsigned-release builds, metadata/checksums and both uploads all passed.
+- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12822525083), ZIP 14,969,610 bytes.
+- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12821667719), ZIP 13,628,657 bytes.
+- **Next required action:** fetch live HEAD, PR #3 and newest Actions logs/artifacts before further work. Stages 1–9 have implementation and automated CI evidence; physical-device visual/accessibility testing remains open. The docs-only follow-up has its own workflow and must be checked from live Actions.
 
 - **Android identity:** 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23.
 - **PR #3:** https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — open and unmerged.
@@ -285,10 +285,12 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 - CI: 87/87 tests passed; both dependency audits reported zero vulnerabilities; TypeScript, local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and both uploads passed.
 - No physical Android device or assistive-technology run has been performed. Actual mobile fit, focus order, camera preview while switching sections, and glass effects under low-end GPU conditions remain to be validated on devices.
 
-## Stage 9 — 3D Liquid Glass and Animation (CI pending)
+## Stage 9 — 3D Liquid Glass and Animation (CI verified)
 
-- Source changes introduce pointer-driven 3D glass tilt for fine pointers only; CSS transitions are bounded and reset when the pointer leaves.
-- Desktop gets a restrained animated ambient rose/purple light and decorative glow/sparkle. Mobile keeps the ambient layer static and animates only the newly selected workspace panel.
+- Source changes introduce pointer-driven 3D glass tilt for fine pointers only; transforms are bounded and reset when the pointer leaves.
+- Desktop gets a restrained animated ambient rose/purple light and decorative glow/sparkle. Mobile keeps the ambient layer static and animates only the selected workspace panel.
 - Touch input is ignored by the tilt controller; `prefers-reduced-motion` disables active tilt and animation. No sensors, dependencies, remote assets, camera changes or SDK API changes were introduced.
-- Added Node regression tests for tilt calculations, touch handling, reduced-motion live changes, cleanup and HTML/main-script integration.
-- Full CI for the current Stage 9 commit is pending. Device-level visual/accessibility/performance checks are not represented as completed.
+- Node regression coverage includes tilt/highlight calculations, touch handling, reduced-motion changes, cleanup, and UI integration.
+- Exact code-bearing revision `1fe59559ffa9d4795f23df097b3e97b5b32e47c1` passed workflow [40701117560](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560): 91/91 tests, zero vulnerabilities in full/production audits, successful typecheck, web build, Android debug/unsigned release APK builds and artifact uploads.
+- Artifacts: [debug APK ZIP 12822525083](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12822525083) and [unsigned release ZIP 12821667719](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12821667719). The release candidate remains unsigned.
+- Device-level Android/WebView visual/accessibility/performance/thermal checks remain unperformed; automated CI is not a substitute for the physical-device matrix.
