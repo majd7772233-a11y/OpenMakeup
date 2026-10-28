@@ -33,6 +33,11 @@ public class MainActivity extends Activity {
     private static final int CAMERA_REQUEST = 41;
     private static final int STORAGE_REQUEST = 42;
     private static final int MAX_CAPTURE_DATA_URL_LENGTH = 32_000_000;
+    // The web capture path is capped more tightly on Android; retain a native
+    // pixel-count guard against unexpectedly large bridge payloads.
+    private static final long MAX_CAPTURE_PIXELS = 4_000_000L;
+    private static final long SHARE_CACHE_MAX_AGE_MS = 7L * 24L * 60L * 60L * 1000L;
+    private static final int SHARE_CACHE_MAX_FILES = 10;
     private static final String APP_ORIGIN = "https://appassets.androidplatform.net";
     private WebView webView;
     private PermissionRequest pendingWebPermission;
@@ -185,7 +190,7 @@ public class MainActivity extends Activity {
             BitmapFactory.decodeByteArray(bytes, 0, bytes.length, bounds);
             if (bounds.outWidth <= 0 || bounds.outHeight <= 0
                     || bounds.outWidth > 4096 || bounds.outHeight > 4096
-                    || (long) bounds.outWidth * (long) bounds.outHeight > 16_000_000L) return null;
+                    || (long) bounds.outWidth * (long) bounds.outHeight > MAX_CAPTURE_PIXELS) return null;
             return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
         } catch (IllegalArgumentException exception) {
             return null;
@@ -196,6 +201,7 @@ public class MainActivity extends Activity {
         if (bitmap == null || bitmap.isRecycled()) return false;
         OutputStream output = null;
         Uri inserted = null;
+        File legacyTarget = null;
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 ContentValues values = new ContentValues();
@@ -225,22 +231,44 @@ public class MainActivity extends Activity {
             File directory = new File(Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_PICTURES), "Open Makeup");
             if (!directory.exists() && !directory.mkdirs()) return false;
-            File target = new File(directory, safeImageName(requestedName));
-            output = new FileOutputStream(target);
-            if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)) return false;
-            output.close();
-            output = null;
-            MediaScannerConnection.scanFile(this, new String[]{target.getAbsolutePath()},
+            legacyTarget = new File(directory, safeImageName(requestedName));
+            boolean compressed;
+            try (FileOutputStream legacyOutput = new FileOutputStream(legacyTarget)) {
+                compressed = bitmap.compress(Bitmap.CompressFormat.PNG, 100, legacyOutput);
+            }
+            if (!compressed) {
+                legacyTarget.delete();
+                return false;
+            }
+            MediaScannerConnection.scanFile(this, new String[]{legacyTarget.getAbsolutePath()},
                     new String[]{"image/png"}, null);
             return true;
         } catch (Exception exception) {
             if (inserted != null) {
                 try { getContentResolver().delete(inserted, null, null); } catch (Exception ignored) {}
             }
+            if (legacyTarget != null && legacyTarget.exists()) {
+                try { legacyTarget.delete(); } catch (Exception ignored) {}
+            }
             return false;
         } finally {
             if (output != null) {
                 try { output.close(); } catch (IOException ignored) {}
+            }
+        }
+    }
+
+    private void pruneShareCache(File directory) {
+        File[] files = directory.listFiles((parent, name) ->
+                name != null && name.startsWith("Open-Makeup-")
+                        && name.toLowerCase(java.util.Locale.ROOT).endsWith(".png"));
+        if (files == null) return;
+        java.util.Arrays.sort(files, (left, right) ->
+                Long.compare(right.lastModified(), left.lastModified()));
+        long cutoff = System.currentTimeMillis() - SHARE_CACHE_MAX_AGE_MS;
+        for (int i = 0; i < files.length; i++) {
+            if (i >= SHARE_CACHE_MAX_FILES || files[i].lastModified() < cutoff) {
+                try { files[i].delete(); } catch (Exception ignored) {}
             }
         }
     }
@@ -252,6 +280,7 @@ public class MainActivity extends Activity {
             notifyWebImageResult("share", "failed");
             return;
         }
+        pruneShareCache(directory);
         File target = new File(directory, safeImageName(requestedName));
         try (FileOutputStream output = new FileOutputStream(target)) {
             if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)) {

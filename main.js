@@ -7,6 +7,7 @@ import { dictionaries, translate } from './src/ui/locales.js';
 import { normalizeStudioState, StudioHistory, createCustomLook, parseCustomLooks, normalizeCustomLookName, hasCustomLookName, CUSTOM_LOOKS_VERSION } from './src/ui/studio-state.js';
 import { scaleFontDeclarations } from './src/ui/font-scaling.js';
 import { initializeLiquidGlassMotion } from './src/ui/liquid-glass-motion.js';
+import { createDebouncedCall } from './src/ui/session-persistence.js';
 
 const $ = (id) => document.getElementById(id);
 const statusText = $('status-text');
@@ -38,6 +39,7 @@ let isApplyingHistory = false;
 let morphHistoryBefore = null;
 let sessionStateWriteBlocked = false;
 let sessionPersistenceUnavailable = false;
+let sessionPersistenceScheduler = null;
 let customLooksWriteBlocked = false;
 let currentCameraFacingMode = 'user';
 let cameraSwitchInProgress = false;
@@ -94,6 +96,7 @@ function studioStateChanged(before, after) { return JSON.stringify(before) !== J
 
 
 function persistSessionState() {
+  if (sessionPersistenceScheduler) sessionPersistenceScheduler.cancel();
   if (sessionStateWriteBlocked) {
     sessionPersistenceUnavailable = true;
     return false;
@@ -107,6 +110,30 @@ function persistSessionState() {
     sessionPersistenceUnavailable = true;
     return false;
   }
+}
+
+function writeScheduledSessionState() {
+  const wasUnavailable = sessionPersistenceUnavailable;
+  const saved = persistSessionState();
+  if (!saved) setStatusKey('statusSessionNotSaved', 'error');
+  else if (wasUnavailable && lastStatusKey === 'statusSessionNotSaved') setStatusKey('statusReady', 'success');
+  return saved;
+}
+
+sessionPersistenceScheduler = createDebouncedCall(writeScheduledSessionState, 180);
+
+function scheduleSessionStatePersistence() {
+  if (sessionStateWriteBlocked) {
+    sessionPersistenceUnavailable = true;
+    return false;
+  }
+  sessionPersistenceScheduler.schedule();
+  return true;
+}
+
+function flushSessionStatePersistence() {
+  if (!sessionPersistenceScheduler || !sessionPersistenceScheduler.pending) return true;
+  return sessionPersistenceScheduler.flush();
 }
 
 function updateLayerButtonStates() {
@@ -224,7 +251,17 @@ function captureCurrentFrame() {
   }
   // A temporary render target keeps preserveDrawingBuffer disabled in live
   // rendering, avoiding a permanent mobile GPU/memory penalty.
-  const { dataUrl } = renderSceneToPngDataUrl(mk.engine, document, 2560, { mode: isOriginalPreview ? 'original' : 'makeup' });
+  const nativeBridge = window.OpenMakeupBridge;
+  const nativeCapture = !!(nativeBridge
+    && (typeof nativeBridge.saveImage === 'function' || typeof nativeBridge.shareImage === 'function'));
+  // Android WebView has a tighter memory budget: cap both each dimension and
+  // total pixels before allocating the render target, RGBA buffers and canvases.
+  const maxDimension = nativeCapture ? 1920 : 2560;
+  const maxPixels = nativeCapture ? 2500000 : 6500000;
+  const { dataUrl } = renderSceneToPngDataUrl(mk.engine, document, maxDimension, {
+    mode: isOriginalPreview ? 'original' : 'makeup',
+    maxPixels,
+  });
   lastCaptureDataUrl = dataUrl;
   $('capture-thumbnail').src = dataUrl; $('capture-thumbnail').hidden = false;
   $('save-photo').disabled = false; $('share-photo').disabled = false;
@@ -1080,9 +1117,10 @@ function makeSlider(name, about) {
     output.textContent = Number(input.value).toFixed(2);
     const value = Number(input.value);
     sessionState.morphs[name] = value;
-    const stateSaved = persistSessionState();
-    if (!stateSaved && lastStatusKey !== 'statusSessionNotSaved') setStatusKey('statusSessionNotSaved', 'error');
-    else if (stateSaved && lastStatusKey === 'statusSessionNotSaved') setStatusKey('statusReady', 'success');
+    const persistenceScheduled = scheduleSessionStatePersistence();
+    if (!persistenceScheduled && !sessionStateWriteBlocked && lastStatusKey !== 'statusSessionNotSaved') {
+      setStatusKey('statusSessionNotSaved', 'error');
+    }
     try { mk.setMorph(name, value); } catch (error) {
       console.warn('Could not update face shape:', error);
       setStatus(t('statusActionError') + ' — ' + describeError(error), 'error');
@@ -1095,6 +1133,8 @@ function makeSlider(name, about) {
       if (studioStateChanged(morphHistoryBefore, after)) studioHistory.record(morphHistoryBefore, after);
       morphHistoryBefore = null; updateHistoryButtons();
     }
+    // Commit the last slider value at the end of a pointer/keyboard interaction.
+    flushSessionStatePersistence();
   });
   $('morph-panel').appendChild(row);
   sliders.push({ input, output, name });
@@ -1188,6 +1228,8 @@ async function recoverCamera() {
 }
 
 function pauseCameraForBackground() {
+  // Commit any pending slider write before WebView timers pause or the process backgrounds.
+  flushSessionStatePersistence();
   // Do not interrupt an in-flight first permission/startup flow. Once the
   // studio is usable, release its camera promptly when the host backgrounds it.
   if (!engineReady) return;
@@ -1216,9 +1258,11 @@ window.addEventListener('resize', () => {
   if (mk.engine && mk.engine._sizeToVideoBox) mk.engine._sizeToVideoBox();
 });
 window.addEventListener('pagehide', () => {
+  flushSessionStatePersistence();
   try { mk.stop(); } catch (_) {}
 });
 window.addEventListener('beforeunload', () => {
+  flushSessionStatePersistence();
   try { mk.dispose(); } catch (error) { console.debug(error); }
 });
 

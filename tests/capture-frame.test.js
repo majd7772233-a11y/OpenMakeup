@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rgbaPixelsTopOrigin, withSceneVisibilityForCapture } from '../src/core/capture-frame.js';
+import { rgbaPixelsTopOrigin, withSceneVisibilityForCapture, calculateCaptureSize } from '../src/core/capture-frame.js';
 
 test('WebGL RGBA rows are flipped into top-origin image order without channel reordering', () => {
   // The first row returned by readRenderTargetPixels is the bottom image row.
@@ -51,4 +51,23 @@ test('makeup-mode capture leaves the scene untouched', () => {
   assert.equal(withSceneVisibilityForCapture(engine, 'makeup', () => effects.visible), true);
   assert.equal(plane.visible, true);
   assert.equal(effects.visible, true);
+});
+
+
+test('capture dimensions cap both the longest side and total pixel count', () => {
+  const landscape = calculateCaptureSize(4000, 3000, 1920, 2500000);
+  assert.ok(landscape.width <= 1920);
+  assert.ok(landscape.height <= 1920);
+  assert.ok(landscape.width * landscape.height <= 2500000);
+  assert.ok(Math.abs(landscape.width / landscape.height - 4 / 3) < 0.002);
+
+  const portrait = calculateCaptureSize(1080, 2400, 1920, 2500000);
+  assert.ok(portrait.width <= 1920);
+  assert.ok(portrait.height <= 1920);
+  assert.ok(portrait.width * portrait.height <= 2500000);
+});
+
+test('capture dimension calculation rejects invalid sizes before allocation', () => {
+  assert.throws(() => calculateCaptureSize(0, 10), /positive finite numbers/);
+  assert.throws(() => calculateCaptureSize(Infinity, 10), /positive finite numbers/);
 });

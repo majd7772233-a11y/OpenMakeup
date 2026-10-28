@@ -14,6 +14,31 @@ export function rgbaPixelsTopOrigin(pixels, width, height) {
   return output;
 }
 
+/**
+ * Resolve export dimensions before allocating GPU/CPU pixel buffers.
+ * maxPixels is optional so existing browser callers retain the dimension-only cap.
+ */
+export function calculateCaptureSize(rawWidth, rawHeight, maxDimension = 2560, maxPixels = Infinity) {
+  if (!Number.isFinite(rawWidth) || !Number.isFinite(rawHeight) || rawWidth < 1 || rawHeight < 1) {
+    throw new Error('Capture source dimensions must be positive finite numbers.');
+  }
+  const dimensionLimit = Number.isFinite(maxDimension) && maxDimension >= 1 ? maxDimension : 2560;
+  let scale = Math.min(1, dimensionLimit / Math.max(rawWidth, rawHeight));
+  if (Number.isFinite(maxPixels) && maxPixels >= 1) {
+    scale = Math.min(scale, Math.sqrt(maxPixels / (rawWidth * rawHeight)));
+  }
+  let width = Math.max(1, Math.round(rawWidth * scale));
+  let height = Math.max(1, Math.round(rawHeight * scale));
+  if (Number.isFinite(maxPixels) && maxPixels >= 1) {
+    while (width * height > maxPixels) {
+      if (width / rawWidth >= height / rawHeight && width > 1) width -= 1;
+      else if (height > 1) height -= 1;
+      else break;
+    }
+  }
+  return { width, height };
+}
+
 export function withSceneVisibilityForCapture(engine, mode, render) {
   if (mode !== 'original') return render();
   const scene = engine && engine.scene;
@@ -46,9 +71,7 @@ export function renderSceneToPngDataUrl(engine, documentRef = document, maxDimen
   if (!Number.isFinite(rawWidth) || !Number.isFinite(rawHeight) || rawWidth < 1 || rawHeight < 1) {
     throw new Error('The renderer has no drawable pixels yet.');
   }
-  const scale = Math.min(1, maxDimension / Math.max(rawWidth, rawHeight));
-  const width = Math.max(1, Math.round(rawWidth * scale));
-  const height = Math.max(1, Math.round(rawHeight * scale));
+  const { width, height } = calculateCaptureSize(rawWidth, rawHeight, maxDimension, options.maxPixels);
   const target = new WebGLRenderTarget(width, height, {
     format: RGBAFormat,
     type: UnsignedByteType,
