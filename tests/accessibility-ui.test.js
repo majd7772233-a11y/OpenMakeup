@@ -143,7 +143,10 @@ test('font-size setting is bilingual, defaults to 12, persists, scales all autho
 
 test('comparison state drives its label, preview, and fresh photo capture consistently', () => {
   assert.ok(main.includes('function syncCompareControl()'));
-  assert.ok(main.includes("renderSceneToPngDataUrl(mk.engine, document, 2560, { mode: isOriginalPreview ? 'original' : 'makeup' })"));
+  assert.ok(main.includes('const maxDimension = nativeCapture ? 1920 : 2560'));
+  assert.ok(main.includes('const maxPixels = nativeCapture ? 2500000 : 6500000'));
+  assert.ok(main.includes('renderSceneToPngDataUrl(mk.engine, document, maxDimension, {'));
+  assert.ok(main.includes('    maxPixels,'));
   const handler = main.slice(main.indexOf("$('compare-toggle').addEventListener"), main.indexOf('const morphNames'));
   assert.ok(handler.includes('invalidateCapture()'));
   assert.ok(handler.includes('syncCompareControl()'));
