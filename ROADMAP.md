@@ -369,3 +369,14 @@ For every stage:
 ### Verification and remaining gate
 - [x] [Run 40511322876](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40511322876): 87/87 tests, 0 failures; full and production dependency audits each reported zero vulnerabilities; typecheck, local asset checks, Vite, Android packaging, debug and unsigned-release builds, metadata/checksums and both artifact uploads passed.
 - [ ] Physical-device visual usability and accessibility checks remain pending. CI does not prove behavior on real Android/WebView versions.
+
+### Stage 9 — 3D Liquid Glass Experience and Animation
+
+**Implementation status:** source and regression tests added; full CI verification pending for the Stage 9 code-bearing commit.
+
+- Preserves Open Makeup's rose/pink and purple colors, the Stage 8 four-tab navigation, and existing camera/effect/state/capture APIs.
+- Adds bounded pointer-driven 3D tilt (fine pointers only), moving highlight coordinates, glass depth/shadow response, and pointer-leave reset.
+- Adds a subtle desktop ambient gradient drift and decorative sparkle/glow animation; keeps mobile ambient effects static to limit graphics work, with a short entry motion for mobile workspace-panel changes.
+- Honors `prefers-reduced-motion` both in CSS and at runtime; never treats touch movement as tilt. No new dependencies, remote assets or sensors.
+- New automated tests cover transforms, pointer behavior, reduced-motion toggles, teardown and layout integration.
+- Physical-device Android/WebView rendering, assistive technology and sustained GPU/thermal behavior remain outside CI and are still unverified.

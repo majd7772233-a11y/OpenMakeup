@@ -284,3 +284,11 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 - Preserved the underlying existing camera, shader, capture/share, saved-look and face-morph action IDs/wiring; this stage reorganizes presentation instead of replacing behavior.
 - CI: 87/87 tests passed; both dependency audits reported zero vulnerabilities; TypeScript, local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and both uploads passed.
 - No physical Android device or assistive-technology run has been performed. Actual mobile fit, focus order, camera preview while switching sections, and glass effects under low-end GPU conditions remain to be validated on devices.
+
+## Stage 9 — 3D Liquid Glass and Animation (CI pending)
+
+- Source changes introduce pointer-driven 3D glass tilt for fine pointers only; CSS transitions are bounded and reset when the pointer leaves.
+- Desktop gets a restrained animated ambient rose/purple light and decorative glow/sparkle. Mobile keeps the ambient layer static and animates only the newly selected workspace panel.
+- Touch input is ignored by the tilt controller; `prefers-reduced-motion` disables active tilt and animation. No sensors, dependencies, remote assets, camera changes or SDK API changes were introduced.
+- Added Node regression tests for tilt calculations, touch handling, reduced-motion live changes, cleanup and HTML/main-script integration.
+- Full CI for the current Stage 9 commit is pending. Device-level visual/accessibility/performance checks are not represented as completed.

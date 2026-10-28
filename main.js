@@ -6,6 +6,7 @@ import { renderSceneToPngDataUrl } from './src/core/capture-frame.js';
 import { dictionaries, translate } from './src/ui/locales.js';
 import { normalizeStudioState, StudioHistory, createCustomLook, parseCustomLooks, normalizeCustomLookName, hasCustomLookName, CUSTOM_LOOKS_VERSION } from './src/ui/studio-state.js';
 import { scaleFontDeclarations } from './src/ui/font-scaling.js';
+import { initializeLiquidGlassMotion } from './src/ui/liquid-glass-motion.js';
 
 const $ = (id) => document.getElementById(id);
 const statusText = $('status-text');
@@ -424,6 +425,12 @@ function activateWorkspaceTab(name, options = {}) {
   });
   workspacePanels.forEach((panel) => panel.classList.toggle('workspace-tab-inactive', panel !== targetPanel));
   if (name === 'sculpt') $('advanced-controls').open = true;
+  if (window.matchMedia && window.matchMedia('(max-width: 759px)').matches
+    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    targetPanel.classList.remove('glass-panel-enter');
+    void targetPanel.offsetWidth;
+    targetPanel.classList.add('glass-panel-enter');
+  }
   if (options.focus) {
     const activeButton = workspaceTabButtons.find((button) => button.dataset.workspaceTab === name);
     if (activeButton) activeButton.focus();
@@ -451,6 +458,7 @@ workspaceTabButtons.forEach((button) => {
   });
 });
 activateWorkspaceTab('looks');
+initializeLiquidGlassMotion();
 
 async function runAction(labelKey, action) {
   if (!engineReady || webglContextLost) { setStatusKey(webglContextLost ? 'statusGraphicsLost' : 'statusWaiting', 'error'); return false; }

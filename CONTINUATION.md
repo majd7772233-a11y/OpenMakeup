@@ -1,6 +1,6 @@
 # CONTINUATION.md — Canonical Open Makeup Handoff
 
-Last reconciled with live GitHub on 2026-10-27. This is the authoritative restart anchor for any new conversation that says “continue where we stopped”. Always check live GitHub again because the branch may move after this file is written.
+Last reconciled with live GitHub on 2026-10-28. This is the authoritative restart anchor for any new conversation that says “continue where we stopped”. Always check live GitHub again because the branch may move after this file is written.
 
 ## 1. Immediate resume protocol
 
@@ -170,3 +170,13 @@ These are the most important instructions and must survive every handoff:
 - Existing IDs and real behavior for camera, makeup layer editing, undo/redo, compare/capture/save/share, saved looks, face morphs, settings and onboarding remain intact.
 - Run 40511322876 passed 87/87 tests and the complete dependency audit, typecheck, web build, Android packaging/build/checksum/artifact pipeline.
 - No real Android device or assistive-technology validation has been performed. Confirm screen fit, preview visibility during section switching, glass rendering and accessibility on target Android/WebView devices before treating the UX acceptance gate as complete.
+
+
+## Stage 9 — 3D Liquid Glass and motion (implementation added; CI pending)
+
+- Builds on Stage 8's glass workspace and preserves the existing rose/pink and purple identity; no external visual assets, remote scripts, motion sensors, or new runtime dependencies were added.
+- Adds restrained 3D perspective tilt to the top bar, workspace panels and glass chip on hover-capable fine-pointer devices. Rotation is bounded; touch pointers are ignored, pointer leave resets transforms, and media-query changes respect `prefers-reduced-motion`.
+- Adds a low-intensity ambient rose/purple gradient animation only on larger layouts, a subtle desktop glass-logo/sparkle animation, and short mobile section-entry animation when switching the existing workspace tabs.
+- The mobile ambient layer is static and reduced-motion mode disables tilt, transitions and the section animation. No changes to camera, face tracking, GPU makeup shaders, capture, saved-look state, or public SDK contracts.
+- Added focused Node tests for tilt bounds/highlight positions, touch rejection, reset/cleanup, reduced-motion changes and UI integration.
+- **CI status for this new code-bearing revision: pending**. This source checkpoint must not be called CI-verified until the matching Actions run passes. Real Android/WebView visual, accessibility, performance and thermal acceptance remains unperformed.
