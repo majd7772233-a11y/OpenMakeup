@@ -54,10 +54,14 @@ test('Stage 10 Android capture uses a lower pixel budget and flushes pending ses
 
 test('Stage 10 Android image export cleans partial files and bounds retained share cache', () => {
   assert.match(activity, /legacyTarget\.delete\(\)/);
-  assert.match(activity, /private void pruneShareCache\(File directory\)/);
+  assert.match(activity, /private void pruneShareCache\(File directory, File protectedFile\)/);
+  assert.match(activity, /protectedFile != null && file\.equals\(protectedFile\)/);
+  assert.match(activity, /retainedOtherFiles >= SHARE_CACHE_MAX_FILES - 1/);
   assert.match(activity, /SHARE_CACHE_MAX_AGE_MS/);
   assert.match(activity, /SHARE_CACHE_MAX_FILES = 10/);
-  assert.match(activity, /pruneShareCache\(directory\)/);
+  const shareMethod = activity.slice(activity.indexOf('private void beginShareImage'), activity.indexOf('private final class OpenMakeupBridge'));
+  assert.ok(shareMethod.indexOf('pruneShareCache(directory, target)') > shareMethod.indexOf('bitmap.compress'));
+  assert.ok(shareMethod.indexOf('pruneShareCache(directory, target)') < shareMethod.indexOf('FileProvider.getUriForFile'));
 });
 
 test('Stage 10 capture budget remains bounded for native portrait and landscape previews', () => {
