@@ -3,13 +3,13 @@
 **Canonical continuation checkpoint:** [CONTINUATION.md](./CONTINUATION.md). Read it first when continuing in a new conversation; it contains non-negotiable working rules, exact CI state and the physical-device acceptance matrix.
 
 - **Repository/branch:** `majd7772233-a11y/OpenMakeup` / `feat/open-makeup-arabic-mobile-lifecycle`
-- **Latest CI-verified code-bearing HEAD:** `c8a83b0dfba51b98503e4a51227c49cbffd549bc`; full workflow [40707190156](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156) passed on that exact revision.
-- **Latest full CI:** **96/96 tests passed**, zero failures; full and production dependency audits each reported zero vulnerabilities; TypeScript, local runtime assets, Vite, Android packaging, debug/unsigned-release builds, release metadata/checksums and both artifact uploads passed.
-- **Debug artifact:** [12825120606](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156/artifacts/12825120606), ZIP 14,970,002 bytes.
-- **Unsigned release candidate:** [12824960906](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156/artifacts/12824960906), ZIP 13,629,074 bytes.
-- The documentation-only checkpoint triggers its own workflow; check the live run rather than inferring its result.
-- **Roadmap:** Stages 1–10 have implementation and automated CI evidence. Stage 8 redesigned the workspace, Stage 9 adds 3D Liquid Glass motion, and Stage 10 hardens face-effect materials, async layer application and soft-focus sampling.
+- **Latest CI-verified code-bearing HEAD:** cd6d51bd28343f51d1c039f247459b6d1967776a; full workflow [40731209686](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686) passed on this exact revision.
+- **Latest full CI:** **107/107 tests passed**, zero failures; full and production dependency audits each reported **0 vulnerabilities**; SDK type-check, source/dist local runtime assets, Vite build, Android packaging, debug and unsigned-release APK builds, release metadata/checksums and both artifact uploads passed.
+- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686/artifacts/12833634599), ZIP 14,972,293 bytes.
+- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686/artifacts/12835695531), ZIP 13,630,170 bytes.
+- Stage 10 now includes face-effect/material correctness plus persistence, interrupted camera startup/resume, bounded capture/export and Android I/O safeguards.
 - **Remaining gate:** Physical Android 6/7 and broader camera/permission/lifecycle/orientation/capture/storage/share/accessibility/WebGL/thermal tests have not been performed. PR #3 remains open/unmerged; the release APK is unsigned.
+- **Roadmap:** Stage 8 redesigned the workspace, Stage 9 adds 3D Liquid Glass motion, and Stage 10 combines effect/material hardening with stability, persistence, camera lifecycle, export and Android I/O/performance safeguards.
 ## 1. Product Objective
 
 Build a trustworthy, attractive, Arabic-first virtual makeup studio for Android and the web. The studio uses a live camera preview, MediaPipe FaceMesh, Three.js/WebGL shaders, makeup layers, and face-shaping controls. English remains available as a persistent secondary language.
@@ -383,15 +383,30 @@ For every stage:
 - Physical-device Android/WebView rendering, assistive technology and sustained GPU/thermal behavior remain outside CI and are still unverified.
 
 
-### Stage 10 — Face Effects, Materials and Curated Looks
+### Stage 10 — Stability, Persistence, Camera, Export and Android Performance
 
-**Status:** implementation and full CI verified on code-bearing HEAD `c8a83b0dfba51b98503e4a51227c49cbffd549bc`; workflow [40707190156](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156) passed.
+**Status:** implementation and complete CI verified on code-bearing HEAD cd6d51bd28343f51d1c039f247459b6d1967776a; workflow [40731209686](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686) passed.
 
-- **Material ownership:** all seven texture-backed material loaders now dispose partial texture allocations when a later texture or shader request fails. The original load error is preserved for honest startup failure reporting.
-- **Async selection correctness:** SDK apply requests use per-category generations. Late color-provider results cannot overwrite a newer same-layer selection; clear-one, clear-all and dispose invalidate pending work. Texture pattern application checks the current generation after its await before swapping the loaded texture into the material.
-- **Soft focus:** blur sampling resolution is synchronized with the intrinsic camera video dimensions, avoiding a window-size-dependent blur kernel. The update path runs during video-layout/metadata changes and again after material creation.
-- **Curated looks:** added an explicit assertion that every pattern index in the 12 preset looks resolves to an actual bundled manifest entry in the right category.
-- **Regression verification:** tests cover partial texture disposal, out-of-order async applies, clearing/disposal with pending requests, pattern references in presets, and blur resolution updates at 640×480 and 1280×720.
-- **CI evidence:** 96/96 tests passed, zero failures; full and production dependency audits both reported 0 vulnerabilities; TypeScript, local source/dist camera/model assets, Vite, Android asset packaging, debug and unsigned release APK builds, version/checksum verification and both artifact uploads succeeded.
-- Debug artifact [12825120606](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156/artifacts/12825120606) (ZIP 14,970,002 bytes); unsigned release candidate [12824960906](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156/artifacts/12824960906) (ZIP 13,629,074 bytes).
-- **Not claimed:** physical Android/WebView face tracking, effect alignment under motion/lighting, accessibility, sustained GPU/thermal behavior, and actual camera/effect visual appearance still require target-device acceptance.
+#### Effect and resource correctness
+- All seven material loaders dispose any acquired textures on subsequent shader/texture failure and propagate the original load failure.
+- Per-category asynchronous generations prevent stale color/pattern operations from overriding newer selections; clear and dispose cancel pending work.
+- Soft-focus blur resolution tracks intrinsic camera-frame size and ignores invalid zero/missing video metadata.
+- Regression coverage verifies all 12 curated looks reference real bundled pattern assets in the right category.
+
+#### Persistence and camera lifecycle
+- Session persistence coalesces rapid changes with a bounded 180 ms debounce, and flushes the newest pending value on commit/background/page exit. Versioned data is normalized, and future schemas are not overwritten.
+- Engine initialization records a lifecycle generation and aborts after asynchronous model/material loading if the host stopped the engine, before face/camera startup.
+- Android onStop cancels interrupted startup and gates restart until the Activity resumes; onPause is not treated as full backgrounding, avoiding confusion with the system camera permission prompt.
+- Camera recovery validates live tracks and advancing video frames; camera switching attempts rollback if the requested facing mode fails. UI does not claim verified facing mode when runtime evidence is unavailable.
+
+#### Capture/export and Android performance
+- Capture uses a temporary render target rather than preserveDrawingBuffer, with native limits of 1920 pixels per dimension / 2.5 million total pixels and browser limits of 2560 / 6.5 million.
+- Android bridge independently rejects malformed or oversized PNG payloads above 4 million pixels.
+- Legacy Android gallery-save writes run on a worker thread instead of the UI thread; bitmaps are recycled and failures reported to the web UI.
+- Partial/failed gallery and share files are removed; the share cache is bounded to 10 images and 7 days.
+- Regression tests cover debounce/flush/cancel, portrait/landscape memory limits, initialization canceled while loading, Android resume gating, background-thread save, failed-file cleanup and cache bounds.
+
+#### Verified CI and release gate
+- Run [40731209686](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686): **107/107 tests passed**, full and production dependency audits reported 0 vulnerabilities, typecheck/source assets/Vite/Android packaging/debug+unsigned release builds/metadata/SHA-256/uploads passed.
+- Debug artifact [12833634599](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686/artifacts/12833634599) (ZIP, 14,972,293 bytes); unsigned release-candidate artifact [12835695531](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40731209686/artifacts/12835695531) (ZIP, 13,630,170 bytes).
+- **Still pending:** physical Android 6/7 camera permission and resume, device rotation, real image save/share, face alignment under motion/lighting, accessibility, sustained WebGL/GPU performance and thermal testing. CI does not substitute for hardware testing. PR #3 remains open/unmerged and release artifact unsigned.
