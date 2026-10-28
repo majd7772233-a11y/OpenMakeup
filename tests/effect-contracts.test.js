@@ -254,7 +254,9 @@ test('SDK accepts an explicit listed pattern ID and rejects unknown IDs', async 
   sdk.engine.setIntensity = () => 1;
   const selected = manifest.categories.eyeshadow[2];
   const result = await sdk.apply('eyeshadow', { patternId: selected.id });
-  assert.deepEqual(patternCalls, [['eyeshadow', selected.id]]);
+  assert.equal(patternCalls.length, 1);
+  assert.deepEqual(patternCalls[0].slice(0, 2), ['eyeshadow', selected.id]);
+  assert.equal(typeof patternCalls[0][2], 'function', 'SDK passes a freshness guard to the async texture request');
   assert.equal(result.pattern, selected.id);
   await assert.rejects(sdk.apply('eyeshadow', { patternId: 999999 }), /pattern id "999999" is not available/);
   await assert.rejects(sdk.apply('eyeshadow', { patternId: '../patterns/lipstick/6427.png' }), /pattern id ".+" is not available/);
