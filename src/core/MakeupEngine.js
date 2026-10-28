@@ -736,13 +736,16 @@ export class MakeupEngine {
     }
 
     /** Apply a bundled alpha-mask pattern; null restores the built-in texture. */
-    async setPattern(armode, imageId) {
+    async setPattern(armode, imageId, isCurrentRequest = null) {
         const target = PATTERN_TARGETS[armode];
         if (!target) {
             throw new Error(`Pattern support is not implemented for makeup layer "${armode}".`);
         }
 
-        if (imageId == null) return this._resetPattern(armode);
+        if (imageId == null) {
+            if (typeof isCurrentRequest === 'function' && !isCurrentRequest()) return false;
+            return this._resetPattern(armode);
+        }
         if (!/^\d+$/.test(String(imageId))) {
             throw new Error(`Invalid pattern id "${imageId}" for "${armode}".`);
         }
@@ -761,7 +764,8 @@ export class MakeupEngine {
         // happens while this texture is in flight, the older request is cancelled
         // and its decoded texture is immediately disposed instead of winning late.
         const texture = await this._fetchPatternTexture(armode, imageId);
-        if (this._patternRequestVersions.get(armode) !== requestVersion) {
+        if (this._patternRequestVersions.get(armode) !== requestVersion
+            || (typeof isCurrentRequest === 'function' && !isCurrentRequest())) {
             texture.dispose();
             return false;
         }

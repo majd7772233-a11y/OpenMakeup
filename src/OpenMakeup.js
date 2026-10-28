@@ -105,6 +105,8 @@ export class OpenMakeup {
     });
 
     this._aiColor = typeof aiColor === 'function' ? aiColor : null;
+    // Per-category request sequencing prevents late color providers from overwriting newer choices.
+    this._applyRequestVersions = new Map();
 
     // merge consumer default overrides over the built-in category defaults
     this._categories = {};
@@ -182,19 +184,33 @@ export class OpenMakeup {
     if (typeof intensity !== 'number' || !Number.isFinite(intensity) || intensity < 0 || intensity > 1) {
       throw new Error('OpenMakeup: intensity must be a finite number from 0 to 1.');
     }
-    const color = await this._resolveColor(name, opts);
     const colorMode = this._resolveColorMode(name, opts);
     const patternId = this._resolvePatternId(name, opts);
+    const requestVersion = this._nextApplyRequestVersion(name);
+    const assertLatestRequest = () => {
+      if (this._applyRequestVersions.get(name) !== requestVersion) {
+        throw new Error(`OpenMakeup: apply for "${name}" was superseded by a newer selection.`);
+      }
+    };
 
-    // Supported categories restore their built-in texture when no pattern is
-    // requested. This prevents a previous pattern from sticking to a new look.
+    const color = await this._resolveColor(name, opts);
+    assertLatestRequest();
+
+    // Check the request generation across asynchronous color and texture loads.
     if (patternId != null) {
-      const applied = await this.engine.setPattern(cfg.engine, patternId);
+      const applied = await this.engine.setPattern(
+        cfg.engine,
+        patternId,
+        () => this._applyRequestVersions.get(name) === requestVersion,
+      );
       if (applied === false) throw new Error(`OpenMakeup: pattern update for "${name}" was superseded by a newer selection.`);
+      assertLatestRequest();
     } else if (PATTERN_RENDER_SUPPORT.has(name)) {
       const reset = await this.engine.setPattern(cfg.engine, null);
       if (reset === false) throw new Error(`OpenMakeup: could not restore the default pattern for "${name}".`);
+      assertLatestRequest();
     }
+    assertLatestRequest();
     this.engine.setAR(cfg.engine, color, colorMode);
     this.engine.setIntensity(cfg.engine, intensity);
 
@@ -207,15 +223,17 @@ export class OpenMakeup {
     };
   }
 
-  /** Hide one makeup layer. */
+  /** Hide one makeup layer and cancel any late apply request for it. */
   clear(category) {
     const name = resolveCategory(category);
     if (!name) throw new Error(`OpenMakeup: unknown category "${category}"`);
+    this._nextApplyRequestVersion(name);
     this.engine.clearPart(this._categories[name].engine);
   }
 
-  /** Hide every makeup layer. */
+  /** Hide every makeup layer and cancel late applies for all categories. */
   clearAll() {
+    this._invalidatePendingApplies();
     this.engine.clearAll();
   }
 
@@ -260,6 +278,19 @@ export class OpenMakeup {
     this.engine.setBlur(on);
   }
 
+  _nextApplyRequestVersion(category) {
+    if (!this._applyRequestVersions) this._applyRequestVersions = new Map();
+    const version = (this._applyRequestVersions.get(category) || 0) + 1;
+    this._applyRequestVersions.set(category, version);
+    return version;
+  }
+
+  _invalidatePendingApplies() {
+    for (const category of Object.keys(this._categories || CATEGORIES)) {
+      this._nextApplyRequestVersion(category);
+    }
+  }
+
   /** Current camera direction requested by the engine. */
   get cameraFacingMode() { return this.engine.cameraFacingMode; }
 
@@ -282,7 +313,7 @@ export class OpenMakeup {
 
   start() { return this.engine.start().then(() => this); }
   stop() { this.engine.stop(); }
-  dispose() { this.engine.dispose(); }
+  dispose() { this._invalidatePendingApplies(); this._ready = false; this.engine.dispose(); }
 
   /* ───────────────────────── internals ───────────────────────── */
 
