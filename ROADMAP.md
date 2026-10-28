@@ -3,12 +3,12 @@
 **Canonical continuation checkpoint:** [CONTINUATION.md](./CONTINUATION.md). Read it first when continuing in a new conversation; it contains non-negotiable working rules, exact CI state and the physical-device acceptance matrix.
 
 - **Repository/branch:** `majd7772233-a11y/OpenMakeup` / `feat/open-makeup-arabic-mobile-lifecycle`
-- **Latest CI-verified code-bearing HEAD:** `1fe59559ffa9d4795f23df097b3e97b5b32e47c1`; full workflow [40701117560](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560) passed on that exact revision.
-- **Latest full CI:** **91/91 tests passed**, zero failures; full and production dependency audits each reported zero vulnerabilities; TypeScript, local runtime assets, Vite bundle, Android packaging, debug and unsigned-release builds, release metadata/checksums and both artifact uploads passed.
-- **Debug artifact:** [12822525083](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12822525083), ZIP 14,969,610 bytes.
-- **Unsigned release candidate:** [12821667719](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12821667719), ZIP 13,628,657 bytes.
+- **Latest CI-verified code-bearing HEAD:** `c8a83b0dfba51b98503e4a51227c49cbffd549bc`; full workflow [40707190156](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156) passed on that exact revision.
+- **Latest full CI:** **96/96 tests passed**, zero failures; full and production dependency audits each reported zero vulnerabilities; TypeScript, local runtime assets, Vite, Android packaging, debug/unsigned-release builds, release metadata/checksums and both artifact uploads passed.
+- **Debug artifact:** [12825120606](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156/artifacts/12825120606), ZIP 14,970,002 bytes.
+- **Unsigned release candidate:** [12824960906](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156/artifacts/12824960906), ZIP 13,629,074 bytes.
 - The documentation-only checkpoint triggers its own workflow; check the live run rather than inferring its result.
-- **Roadmap:** Stages 1–9 have implementation and automated CI evidence. Stage 8 redesigned the workspace; Stage 9 adds accessible 3D Liquid Glass motion while retaining the rose/purple identity.
+- **Roadmap:** Stages 1–10 have implementation and automated CI evidence. Stage 8 redesigned the workspace, Stage 9 adds 3D Liquid Glass motion, and Stage 10 hardens face-effect materials, async layer application and soft-focus sampling.
 - **Remaining gate:** Physical Android 6/7 and broader camera/permission/lifecycle/orientation/capture/storage/share/accessibility/WebGL/thermal tests have not been performed. PR #3 remains open/unmerged; the release APK is unsigned.
 ## 1. Product Objective
 
@@ -381,3 +381,17 @@ For every stage:
 - CI log confirmed **91/91 tests passed**, both dependency audits reported 0 vulnerabilities, TypeScript/source assets/Vite/Android packaging/debug and unsigned release builds/checksums/uploads all succeeded.
 - Debug artifact [12822525083](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12822525083) (ZIP 14,969,610 bytes); unsigned release candidate [12821667719](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40701117560/artifacts/12821667719) (ZIP 13,628,657 bytes).
 - Physical-device Android/WebView rendering, assistive technology and sustained GPU/thermal behavior remain outside CI and are still unverified.
+
+
+### Stage 10 — Face Effects, Materials and Curated Looks
+
+**Status:** implementation and full CI verified on code-bearing HEAD `c8a83b0dfba51b98503e4a51227c49cbffd549bc`; workflow [40707190156](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156) passed.
+
+- **Material ownership:** all seven texture-backed material loaders now dispose partial texture allocations when a later texture or shader request fails. The original load error is preserved for honest startup failure reporting.
+- **Async selection correctness:** SDK apply requests use per-category generations. Late color-provider results cannot overwrite a newer same-layer selection; clear-one, clear-all and dispose invalidate pending work. Texture pattern application checks the current generation after its await before swapping the loaded texture into the material.
+- **Soft focus:** blur sampling resolution is synchronized with the intrinsic camera video dimensions, avoiding a window-size-dependent blur kernel. The update path runs during video-layout/metadata changes and again after material creation.
+- **Curated looks:** added an explicit assertion that every pattern index in the 12 preset looks resolves to an actual bundled manifest entry in the right category.
+- **Regression verification:** tests cover partial texture disposal, out-of-order async applies, clearing/disposal with pending requests, pattern references in presets, and blur resolution updates at 640×480 and 1280×720.
+- **CI evidence:** 96/96 tests passed, zero failures; full and production dependency audits both reported 0 vulnerabilities; TypeScript, local source/dist camera/model assets, Vite, Android asset packaging, debug and unsigned release APK builds, version/checksum verification and both artifact uploads succeeded.
+- Debug artifact [12825120606](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156/artifacts/12825120606) (ZIP 14,970,002 bytes); unsigned release candidate [12824960906](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40707190156/artifacts/12824960906) (ZIP 13,629,074 bytes).
+- **Not claimed:** physical Android/WebView face tracking, effect alignment under motion/lighting, accessibility, sustained GPU/thermal behavior, and actual camera/effect visual appearance still require target-device acceptance.
