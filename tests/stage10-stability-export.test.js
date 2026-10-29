@@ -101,9 +101,9 @@ test('Stage 10 does not publish engine readiness after a host stop during async 
   assert.ok(restoreIndex >= 0, 'startup must restore saved session state');
   assert.ok(guardIndex > restoreIndex && guardIndex < readinessIndex,
     'lifecycle must be rechecked after the last awaited restoration and before publishing readiness');
-  assert.match(startup.slice(guardIndex, readinessIndex), /mk\\.stop\\(\\)/);
-  assert.match(startup.slice(guardIndex, readinessIndex), /stopAndDetachCamera\\(\\)/);
-  assert.match(startup.slice(guardIndex, readinessIndex), /restartStartupWhenVisible = true/);
+  assert.ok(startup.slice(guardIndex, readinessIndex).includes('mk.stop()'));
+  assert.ok(startup.slice(guardIndex, readinessIndex).includes('stopAndDetachCamera()'));
+  assert.ok(startup.slice(guardIndex, readinessIndex).includes('restartStartupWhenVisible = true'));
 });
 
 test('Stage 10 clears the browser-only background flag on visibility return before retrying startup', () => {
