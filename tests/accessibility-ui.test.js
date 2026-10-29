@@ -99,7 +99,9 @@ test('stage-4 personalization, capture and history controls have accessible hook
   assert.match(html, /id="compare-toggle"[^>]*aria-pressed="false"/);
   assert.match(html, /id="layer-intensity"[^>]*type="range"[^>]*min="0"[^>]*max="1"/);
   assert.match(main, /renderSceneToPngDataUrl\(mk\.engine/);
-  assert.match(readFileSync(new URL('../src/core/capture-frame.js', import.meta.url), 'utf8'), /mirrorContext\.scale\(-1, 1\)/);
+  const capture = readFileSync(new URL('../src/core/capture-frame.js', import.meta.url), 'utf8');
+  assert.match(capture, /copyRgbaPixelsTopOriginMirrored\(pixels, width, height, imageData\.data\)/);
+  assert.doesNotMatch(capture, /const mirrored = documentRef\.createElement\('canvas'\)/);
   assert.match(main, /window\.OpenMakeupBridge/);
   assert.match(main, /navigator\.share/);
   assert.match(main, /studioHistory\.undo\(\)/);
