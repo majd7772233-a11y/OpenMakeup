@@ -94,7 +94,7 @@ test('Stage 10 Android legacy gallery writes run off the UI thread and failed sh
 });
 
 test('Stage 10 does not publish engine readiness after a host stop during async session restoration', () => {
-  const startup = main.slice(main.indexOf('async function startEngine()'), main.indexOf('\\nasync function reinitializeEngine()'));
+  const startup = main.slice(main.indexOf('async function startEngine()'), main.indexOf('\nasync function reinitializeEngine()'));
   const restoreIndex = startup.indexOf('const restoreErrors = await restoreSessionState();');
   const readinessIndex = startup.indexOf('engineReady = true;', restoreIndex);
   const guardIndex = startup.indexOf('if (startHostStopGeneration !== hostStopGeneration || document.hidden || hostBackgrounded)', restoreIndex);
