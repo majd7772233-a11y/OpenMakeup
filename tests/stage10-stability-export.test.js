@@ -130,3 +130,22 @@ test('Stage 10 invalidates camera recovery across host stop and retries when res
   assert.match(resume, /if \(resumeInProgress\) \{\s*\/\/ onResume can arrive[\s\S]*?resumeRequestedWhileRecovering = true;/);
   assert.match(recovery, /const retryAfterInterruption = recoveryCancelled[\s\S]*?resumeRequestedWhileRecovering[\s\S]*?Promise\.resolve\(\)\.then\(\(\) => recoverCamera\(\)\)/);
 });
+
+
+test('Stage 11 camera recovery invalidates on transient Android onPause as well as host stop', () => {
+  const recovery = main.slice(main.indexOf('async function recoverCamera()'), main.indexOf('function pauseCameraForBackground()'));
+  const pause = main.slice(main.indexOf('function pauseCameraForBackground()'), main.indexOf('function cancelStartupForHostStop()'));
+  assert.match(main, /let cameraPauseGeneration = 0;/);
+  assert.match(recovery, /const recoveryCameraPauseGeneration = cameraPauseGeneration/);
+  assert.match(recovery, /recoveryCameraPauseGeneration === cameraPauseGeneration/);
+  assert.match(pause, /if \(!engineReady\) return;[\s\S]*?cameraPauseGeneration \+= 1;[\s\S]*?mk\.stop\(\)/);
+  assert.ok(pause.indexOf('if (!engineReady) return;') < pause.indexOf('cameraPauseGeneration += 1;'),
+    'a transient permission prompt during initial startup must not invalidate startup');
+});
+
+test('Stage 11 share action handles capture failures before native or web share begins', () => {
+  const share = main.slice(main.indexOf('async function shareCurrentPhoto()'), main.indexOf('\nfunction t(key', main.indexOf('async function shareCurrentPhoto()')));
+  assert.ok(share.indexOf('try {') >= 0 && share.indexOf('try {') < share.indexOf('ensureCapture()'),
+    'ensureCapture must execute inside the share failure boundary');
+  assert.match(share, /catch \(error\)[\s\S]*?setStatusKey\('statusShareFailure', 'error'\)/);
+});

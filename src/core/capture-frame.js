@@ -15,9 +15,34 @@ export function rgbaPixelsTopOrigin(pixels, width, height) {
 }
 
 /**
- * Resolve export dimensions before allocating GPU/CPU pixel buffers.
- * maxPixels is optional so existing browser callers retain the dimension-only cap.
+ * Copy WebGL bottom-origin RGBA into an existing ImageData-like buffer, orienting
+ * the rows for Canvas and mirroring the final image without allocating another
+ * full-frame byte array or mirrored canvas.
  */
+export function copyRgbaPixelsTopOriginMirrored(pixels, width, height, destination) {
+  const expectedLength = width * height * 4;
+  if (!ArrayBuffer.isView(pixels) || !ArrayBuffer.isView(destination)
+      || !Number.isInteger(width) || !Number.isInteger(height)
+      || width < 1 || height < 1
+      || pixels.length !== expectedLength || destination.length !== expectedLength) {
+    throw new Error('Source and destination must contain exactly width × height × 4 RGBA values.');
+  }
+  const rowBytes = width * 4;
+  for (let y = 0; y < height; y += 1) {
+    const sourceRow = (height - 1 - y) * rowBytes;
+    const destinationRow = y * rowBytes;
+    for (let x = 0; x < width; x += 1) {
+      const sourcePixel = sourceRow + (width - 1 - x) * 4;
+      const destinationPixel = destinationRow + x * 4;
+      destination[destinationPixel] = pixels[sourcePixel];
+      destination[destinationPixel + 1] = pixels[sourcePixel + 1];
+      destination[destinationPixel + 2] = pixels[sourcePixel + 2];
+      destination[destinationPixel + 3] = pixels[sourcePixel + 3];
+    }
+  }
+  return destination;
+}
+
 export function calculateCaptureSize(rawWidth, rawHeight, maxDimension = 2560, maxPixels = Infinity) {
   if (!Number.isFinite(rawWidth) || !Number.isFinite(rawHeight) || rawWidth < 1 || rawHeight < 1) {
     throw new Error('Capture source dimensions must be positive finite numbers.');
@@ -92,24 +117,15 @@ export function renderSceneToPngDataUrl(engine, documentRef = document, maxDimen
     target.dispose();
   }
 
-  const pixelsCanvas = documentRef.createElement('canvas');
-  pixelsCanvas.width = width;
-  pixelsCanvas.height = height;
-  const pixelsContext = pixelsCanvas.getContext('2d');
-  if (!pixelsContext) throw new Error('Could not create the photo pixel canvas.');
-  const imageData = pixelsContext.createImageData(width, height);
-  imageData.data.set(rgbaPixelsTopOrigin(pixels, width, height));
-  pixelsContext.putImageData(imageData, 0, 0);
-
-  const mirrored = documentRef.createElement('canvas');
-  mirrored.width = width;
-  mirrored.height = height;
-  const mirrorContext = mirrored.getContext('2d');
-  if (!mirrorContext) throw new Error('Could not create the mirrored photo canvas.');
-  mirrorContext.translate(width, 0);
-  mirrorContext.scale(-1, 1);
-  mirrorContext.drawImage(pixelsCanvas, 0, 0);
-  const dataUrl = mirrored.toDataURL('image/png');
+  const outputCanvas = documentRef.createElement('canvas');
+  outputCanvas.width = width;
+  outputCanvas.height = height;
+  const outputContext = outputCanvas.getContext('2d');
+  if (!outputContext) throw new Error('Could not create the photo pixel canvas.');
+  const imageData = outputContext.createImageData(width, height);
+  copyRgbaPixelsTopOriginMirrored(pixels, width, height, imageData.data);
+  outputContext.putImageData(imageData, 0, 0);
+  const dataUrl = outputCanvas.toDataURL('image/png');
   if (!dataUrl || !dataUrl.startsWith('data:image/png;base64,') || dataUrl.length < 1000) {
     throw new Error('Photo capture returned an empty image.');
   }

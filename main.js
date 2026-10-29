@@ -18,6 +18,7 @@ const getActionButtons = () => [...document.querySelectorAll(actionButtonSelecto
 const sliders = [];
 let engineReady = false;
 let hostStopGeneration = 0;
+let cameraPauseGeneration = 0;
 let hostBackgrounded = false;
 let restartStartupWhenVisible = false;
 let currentLanguage = 'ar';
@@ -292,22 +293,24 @@ function saveCurrentPhoto() {
   downloadCapture(image); setStatusKey('statusDownloadSaved', 'success');
 }
 async function shareCurrentPhoto() {
-  const image = ensureCapture(), bridge = window.OpenMakeupBridge;
-  if (bridge && typeof bridge.shareImage === 'function') {
-    const result = bridge.shareImage(image, 'Open-Makeup-' + Date.now() + '.png');
-    setStatusKey(result === 'share_started' ? 'statusShareStarted' : 'statusShareFailure', result === 'share_started' ? 'info' : 'error');
-    return;
-  }
   try {
+    const image = ensureCapture(), bridge = window.OpenMakeupBridge;
+    if (bridge && typeof bridge.shareImage === 'function') {
+      const result = bridge.shareImage(image, 'Open-Makeup-' + Date.now() + '.png');
+      setStatusKey(result === 'share_started' ? 'statusShareStarted' : 'statusShareFailure', result === 'share_started' ? 'info' : 'error');
+      return;
+    }
     const blob = await (await fetch(image)).blob();
     const file = new File([blob], 'Open-Makeup.png', { type: 'image/png' });
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ title: 'Open Makeup', files: [file] }); setStatusKey('statusShareStarted', 'info'); }
       catch (error) { if (error && error.name === 'AbortError') setStatusKey('statusShareCancelled', 'info'); else throw error; }
     } else { downloadCapture(image); setStatusKey('statusShareUnsupported', 'error'); }
-  } catch (error) { console.error('Photo sharing failed:', error); setStatusKey('statusShareFailure', 'error'); }
+  } catch (error) {
+    console.error('Photo sharing failed:', error);
+    setStatusKey('statusShareFailure', 'error');
+  }
 }
-
 function t(key, values = {}) { return translate(currentLanguage, key, values); }
 
 function syncCompareControl() {
@@ -1249,6 +1252,7 @@ async function recoverCamera() {
 
   resumeInProgress = true;
   const recoveryHostStopGeneration = hostStopGeneration;
+  const recoveryCameraPauseGeneration = cameraPauseGeneration;
   let recoveryCancelled = false;
   // A new recovery owns any previously queued resume; newer races set it again.
   resumeRequestedWhileRecovering = false;
@@ -1258,7 +1262,9 @@ async function recoverCamera() {
   setStatusKey('statusCameraResume');
 
   const lifecycleStillCurrent = () =>
-    recoveryHostStopGeneration === hostStopGeneration && !document.hidden && !hostBackgrounded;
+    recoveryHostStopGeneration === hostStopGeneration
+    && recoveryCameraPauseGeneration === cameraPauseGeneration
+    && !document.hidden && !hostBackgrounded;
   const stopInterruptedRecovery = () => {
     recoveryCancelled = true;
     try { if (mk) mk.stop(); } catch (_) {}
@@ -1330,6 +1336,9 @@ function pauseCameraForBackground() {
   // onPause can be triggered by Android's camera-permission prompt. Only the
   // fully-stopped host callback below cancels startup, so permission UX remains intact.
   if (!engineReady) return;
+  // onPause can interrupt an in-flight recovery even when it is only a transient
+  // permission dialog; invalidate that attempt, then let onResume retry cleanly.
+  cameraPauseGeneration += 1;
   hiddenAt = Date.now();
   if (mk) {
     try { mk.stop(); } catch (error) { console.warn('Camera pause failed:', error); }
