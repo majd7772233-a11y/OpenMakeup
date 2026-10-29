@@ -113,3 +113,20 @@ test('Stage 10 clears the browser-only background flag on visibility return befo
   assert.ok(clearIndex >= 0 && retryIndex > clearIndex,
     'browser visibility must clear its host-background marker before deciding whether startup can retry');
 });
+
+test('Stage 10 invalidates camera recovery across host stop and retries when resume races the stale promise', () => {
+  const recovery = main.slice(main.indexOf('async function recoverCamera()'), main.indexOf('function pauseCameraForBackground()'));
+  const hostStop = main.slice(main.indexOf('function cancelStartupForHostStop()'), main.indexOf('window.handleOpenMakeupPause'));
+  const resume = main.slice(main.indexOf('window.handleOpenMakeupResume = async () =>'));
+  const startIndex = recovery.indexOf('await mk.start()');
+  const startGuard = recovery.indexOf('if (!lifecycleStillCurrent())', startIndex);
+  const framesIndex = recovery.indexOf('await waitForCameraFrames', startIndex);
+  const frameGuard = recovery.indexOf('if (!lifecycleStillCurrent())', framesIndex);
+  assert.ok(startIndex >= 0 && startGuard > startIndex && startGuard < framesIndex,
+    'recovery must validate the host generation after the asynchronous camera start');
+  assert.ok(framesIndex >= 0 && frameGuard > framesIndex,
+    'recovery must validate the host generation after frame progression too');
+  assert.match(hostStop, /hostStopGeneration \+= 1;[\s\S]*?hostBackgrounded = true/);
+  assert.match(resume, /if \(resumeInProgress\) \{\s*\/\/ onResume can arrive[\s\S]*?resumeRequestedWhileRecovering = true;/);
+  assert.match(recovery, /const retryAfterInterruption = recoveryCancelled[\s\S]*?resumeRequestedWhileRecovering[\s\S]*?Promise\.resolve\(\)\.then\(\(\) => recoverCamera\(\)\)/);
+});

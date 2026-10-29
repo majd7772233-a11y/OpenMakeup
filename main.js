@@ -31,6 +31,7 @@ let currentFontSize = DEFAULT_FONT_SIZE;
 let settingsOpener = null;
 let isFullscreenPreview = false;
 let resumeInProgress = false;
+let resumeRequestedWhileRecovering = false;
 let hiddenAt = 0;
 let lastStatusKey = 'statusLoading';
 let lastTrackingState = 'waiting';
@@ -1238,17 +1239,46 @@ function stopAndDetachCamera() {
 }
 
 async function recoverCamera() {
-  if (document.hidden || !engineReady || resumeInProgress) return false;
+  if (document.hidden || hostBackgrounded || !engineReady) return false;
+  if (resumeInProgress) {
+    // A foreground transition can race the recovery started before backgrounding.
+    // Remember it only when a pause occurred during the active recovery.
+    if (hiddenAt && !document.hidden && !hostBackgrounded) resumeRequestedWhileRecovering = true;
+    return false;
+  }
+
   resumeInProgress = true;
+  const recoveryHostStopGeneration = hostStopGeneration;
+  let recoveryCancelled = false;
+  // A new recovery owns any previously queued resume; newer races set it again.
+  resumeRequestedWhileRecovering = false;
   hiddenAt = 0;
   setTrackingState('waiting');
   getActionButtons().forEach((button) => { button.disabled = true; });
   setStatusKey('statusCameraResume');
+
+  const lifecycleStillCurrent = () =>
+    recoveryHostStopGeneration === hostStopGeneration && !document.hidden && !hostBackgrounded;
+  const stopInterruptedRecovery = () => {
+    recoveryCancelled = true;
+    try { if (mk) mk.stop(); } catch (_) {}
+    stopAndDetachCamera();
+  };
+
   try {
     try { mk.stop(); } catch (error) { console.warn('Camera pause before recovery failed:', error); }
     stopAndDetachCamera();
     await mk.start();
+    // Never let a late camera start revive a stream after onStop/backgrounding.
+    if (!lifecycleStillCurrent()) {
+      stopInterruptedRecovery();
+      return false;
+    }
     await waitForCameraFrames($('video'), { timeoutMs: 6000, pollIntervalMs: 150 });
+    if (!lifecycleStillCurrent()) {
+      stopInterruptedRecovery();
+      return false;
+    }
     getActionButtons().forEach((button) => { button.disabled = false; });
     renderCustomLooks();
     updateHistoryButtons();
@@ -1256,12 +1286,22 @@ async function recoverCamera() {
     if (mk.engine && mk.engine._sizeToVideoBox) mk.engine._sizeToVideoBox();
     return true;
   } catch (error) {
+    // Lifecycle cancellation is not a camera failure: don't rebuild an engine
+    // while the host is stopped, and don't publish an error for a hidden app.
+    if (!lifecycleStillCurrent()) {
+      stopInterruptedRecovery();
+      return false;
+    }
     console.warn('Camera recovery failed; attempting a controlled local-engine restart:', error);
     setStatusKey('statusCameraResumeError', 'error');
     stopAndDetachCamera();
     let restarted = false;
     try { restarted = await reinitializeEngine(); } catch (restartError) {
       console.error('Full camera recovery failed:', restartError);
+    }
+    if (!lifecycleStillCurrent()) {
+      stopInterruptedRecovery();
+      return false;
     }
     if (!restarted) {
       $('camera-retry').hidden = false;
@@ -1270,9 +1310,20 @@ async function recoverCamera() {
     return restarted;
   } finally {
     resumeInProgress = false;
+    const retryAfterInterruption = recoveryCancelled
+      && resumeRequestedWhileRecovering
+      && !document.hidden
+      && !hostBackgrounded
+      && engineReady;
+    if (retryAfterInterruption) {
+      resumeRequestedWhileRecovering = false;
+      // Let this recovery release ownership before starting the foreground retry.
+      Promise.resolve().then(() => recoverCamera());
+    } else if (!recoveryCancelled || (!document.hidden && !hostBackgrounded)) {
+      resumeRequestedWhileRecovering = false;
+    }
   }
 }
-
 function pauseCameraForBackground() {
   // Commit any pending slider write before WebView timers pause or the process backgrounds.
   flushSessionStatePersistence();
@@ -1287,9 +1338,10 @@ function pauseCameraForBackground() {
 }
 
 function cancelStartupForHostStop() {
+  // Every true host stop invalidates in-flight camera recovery as well as startup.
+  hostStopGeneration += 1;
   hostBackgrounded = true;
   if (!engineReady && engineStarting) {
-    hostStopGeneration += 1;
     restartStartupWhenVisible = true;
     try { if (mk) mk.stop(); } catch (error) { console.warn('Startup cancellation failed:', error); }
     stopAndDetachCamera();
@@ -1343,7 +1395,13 @@ let resumeCheckInProgress = false;
 window.handleOpenMakeupResume = async () => {
   // Only the native Activity resume callback clears the fully-stopped state.
   hostBackgrounded = false;
-  if (document.hidden || resumeInProgress || resumeCheckInProgress) return;
+  if (document.hidden) return;
+  if (resumeInProgress) {
+    // onResume can arrive before a recovery's stale async work has settled.
+    resumeRequestedWhileRecovering = true;
+    return;
+  }
+  if (resumeCheckInProgress) return;
   if (!engineReady) {
     if (engineStarting) {
       restartStartupWhenVisible = true;
