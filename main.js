@@ -40,6 +40,8 @@ let aboutOpener = null;
 let currentEditorCategory = 'lipstick';
 let isOriginalPreview = false;
 let lastCaptureDataUrl = null;
+let photoSaveInProgress = false;
+let photoShareInProgress = false;
 let isApplyingHistory = false;
 let morphHistoryBefore = null;
 let sessionStateWriteBlocked = false;
@@ -269,37 +271,83 @@ function captureCurrentFrame() {
   });
   lastCaptureDataUrl = dataUrl;
   $('capture-thumbnail').src = dataUrl; $('capture-thumbnail').hidden = false;
-  $('save-photo').disabled = false; $('share-photo').disabled = false;
+  $('save-photo').disabled = photoSaveInProgress;
+  $('share-photo').disabled = photoShareInProgress;
   return dataUrl;
 }
 function ensureCapture() { return lastCaptureDataUrl || captureCurrentFrame(); }
+function updatePhotoActionButton(operation) {
+  const button = $(operation === 'save' ? 'save-photo' : 'share-photo');
+  const pending = operation === 'save' ? photoSaveInProgress : photoShareInProgress;
+  if (button) button.disabled = pending || !lastCaptureDataUrl;
+}
 function nativeImageResult(operation, result) {
   if (operation === 'save') {
+    photoSaveInProgress = false;
+    updatePhotoActionButton('save');
     if (result === 'saved') setStatusKey('statusCaptureSaved', 'success');
     else if (result === 'permission_denied') setStatusKey('statusStoragePermissionDenied', 'error');
     else setStatusKey('statusSaveFailure', 'error');
-  } else if (operation === 'share' && result === 'failed') setStatusKey('statusShareFailure', 'error');
+  } else if (operation === 'share') {
+    if (result === 'failed' || result === 'share_opened') {
+      photoShareInProgress = false;
+      updatePhotoActionButton('share');
+    }
+    if (result === 'failed') setStatusKey('statusShareFailure', 'error');
+  }
 }
 window.onNativeImageResult = nativeImageResult;
 function saveCurrentPhoto() {
+  if (photoSaveInProgress) return;
   const image = ensureCapture(), bridge = window.OpenMakeupBridge;
   if (bridge && typeof bridge.saveImage === 'function') {
-    const result = bridge.saveImage(image, 'Open-Makeup-' + Date.now() + '.png');
-    if (result === 'saved') setStatusKey('statusCaptureSaved', 'success');
-    else if (result === 'permission_required') setStatusKey('statusStoragePermission', 'info');
-    else if (result === 'failed') setStatusKey('statusSaveFailure', 'error');
+    photoSaveInProgress = true;
+    updatePhotoActionButton('save');
+    let result;
+    try {
+      result = bridge.saveImage(image, 'Open-Makeup-' + Date.now() + '.png');
+    } catch (error) {
+      photoSaveInProgress = false;
+      updatePhotoActionButton('save');
+      throw error;
+    }
+    if (result === 'saved') {
+      photoSaveInProgress = false;
+      updatePhotoActionButton('save');
+      setStatusKey('statusCaptureSaved', 'success');
+    } else if (result === 'permission_required') {
+      setStatusKey('statusStoragePermission', 'info');
+    } else if (result === 'save_started') {
+      setStatusKey('statusSaveStarted', 'info');
+    } else {
+      photoSaveInProgress = false;
+      updatePhotoActionButton('save');
+      setStatusKey('statusSaveFailure', 'error');
+    }
     return;
   }
-  downloadCapture(image); setStatusKey('statusDownloadSaved', 'success');
+  downloadCapture(image);
+  setStatusKey('statusDownloadSaved', 'success');
 }
 async function shareCurrentPhoto() {
+  if (photoShareInProgress) return;
+  let nativeSharePending = false;
   try {
     const image = ensureCapture(), bridge = window.OpenMakeupBridge;
     if (bridge && typeof bridge.shareImage === 'function') {
+      photoShareInProgress = true;
+      updatePhotoActionButton('share');
       const result = bridge.shareImage(image, 'Open-Makeup-' + Date.now() + '.png');
-      setStatusKey(result === 'share_started' ? 'statusShareStarted' : 'statusShareFailure', result === 'share_started' ? 'info' : 'error');
+      if (result === 'share_started') {
+        nativeSharePending = true;
+        setStatusKey('statusShareStarted', 'info');
+      } else {
+        setStatusKey('statusShareFailure', 'error');
+      }
       return;
     }
+    photoShareInProgress = true;
+    updatePhotoActionButton('share');
     const blob = await (await fetch(image)).blob();
     const file = new File([blob], 'Open-Makeup.png', { type: 'image/png' });
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -309,6 +357,11 @@ async function shareCurrentPhoto() {
   } catch (error) {
     console.error('Photo sharing failed:', error);
     setStatusKey('statusShareFailure', 'error');
+  } finally {
+    if (!nativeSharePending) {
+      photoShareInProgress = false;
+      updatePhotoActionButton('share');
+    }
   }
 }
 function t(key, values = {}) { return translate(currentLanguage, key, values); }

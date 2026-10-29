@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
     private static final String APP_ORIGIN = "https://appassets.androidplatform.net";
     private WebView webView;
     private PermissionRequest pendingWebPermission;
-    private Bitmap pendingSaveBitmap;
+    private String pendingSaveDataUrl;
     private String pendingSaveName;
 
     @Override
@@ -138,16 +138,18 @@ public class MainActivity extends Activity {
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == STORAGE_REQUEST) {
-            Bitmap bitmap = pendingSaveBitmap;
-            String name = pendingSaveName;
-            pendingSaveBitmap = null;
-            pendingSaveName = null;
+            String dataUrl;
+            String name;
+            synchronized (this) {
+                dataUrl = pendingSaveDataUrl;
+                name = pendingSaveName;
+                pendingSaveDataUrl = null;
+                pendingSaveName = null;
+            }
             boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-            if (granted && bitmap != null) {
-                // PNG compression and gallery I/O must not run on Android's UI thread.
-                savePendingBitmapInBackground(bitmap, name);
+            if (granted && dataUrl != null) {
+                saveImageInBackground(dataUrl, name);
             } else {
-                if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
                 notifyWebImageResult("save", granted ? "failed" : "permission_denied");
             }
             return;
@@ -166,20 +168,33 @@ public class MainActivity extends Activity {
     }
 
 
-    private void savePendingBitmapInBackground(Bitmap bitmap, String requestedName) {
+    private void saveImageInBackground(String dataUrl, String requestedName) {
         Thread saveThread = new Thread(() -> {
+            Bitmap bitmap = null;
             boolean saved = false;
             try {
-                saved = saveBitmapToGallery(bitmap, requestedName);
+                bitmap = decodePngDataUrl(dataUrl);
+                if (bitmap != null) saved = saveBitmapToGallery(bitmap, requestedName);
             } catch (Exception exception) {
-                // A storage-provider failure should be returned to the web UI,
-                // not crash this worker or stall the Activity's permission flow.
+                // Report storage-provider and decode failures without blocking the WebView thread.
             } finally {
                 if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
             }
             notifyWebImageResult("save", saved ? "saved" : "failed");
         }, "OpenMakeup-gallery-save");
         saveThread.start();
+    }
+
+    private void shareImageInBackground(String dataUrl, String requestedName) {
+        Thread shareThread = new Thread(() -> {
+            Bitmap bitmap = decodePngDataUrl(dataUrl);
+            if (bitmap == null) {
+                notifyWebImageResult("share", "failed");
+                return;
+            }
+            beginShareImage(bitmap, requestedName);
+        }, "OpenMakeup-image-share");
+        shareThread.start();
     }
 
     private String safeImageName(String requested) {
@@ -200,9 +215,13 @@ public class MainActivity extends Activity {
         });
     }
 
+    private boolean hasValidPngDataUrlEnvelope(String dataUrl) {
+        return dataUrl != null && dataUrl.length() <= MAX_CAPTURE_DATA_URL_LENGTH
+                && dataUrl.startsWith("data:image/png;base64,");
+    }
+
     private Bitmap decodePngDataUrl(String dataUrl) {
-        if (dataUrl == null || dataUrl.length() > MAX_CAPTURE_DATA_URL_LENGTH
-                || !dataUrl.startsWith("data:image/png;base64,")) return null;
+        if (!hasValidPngDataUrlEnvelope(dataUrl)) return null;
         try {
             byte[] bytes = Base64.decode(dataUrl.substring(dataUrl.indexOf(',') + 1), Base64.DEFAULT);
             BitmapFactory.Options bounds = new BitmapFactory.Options();
@@ -351,28 +370,39 @@ public class MainActivity extends Activity {
     private final class OpenMakeupBridge {
         @JavascriptInterface
         public String saveImage(String dataUrl, String requestedName) {
-            Bitmap bitmap = decodePngDataUrl(dataUrl);
-            if (bitmap == null) return "failed";
+            if (!hasValidPngDataUrlEnvelope(dataUrl)) return "failed";
             String name = safeImageName(requestedName);
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
                     && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                if (pendingSaveBitmap != null && !pendingSaveBitmap.isRecycled()) pendingSaveBitmap.recycle();
-                pendingSaveBitmap = bitmap;
-                pendingSaveName = name;
-                runOnUiThread(() -> requestPermissions(
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_REQUEST));
+                synchronized (MainActivity.this) {
+                    // Keep at most one permission-gated export request; the UI also
+                    // disables its action until the asynchronous callback arrives.
+                    if (pendingSaveDataUrl != null) return "failed";
+                    pendingSaveDataUrl = dataUrl;
+                    pendingSaveName = name;
+                }
+                runOnUiThread(() -> {
+                    if (webView == null || isFinishing()) {
+                        synchronized (MainActivity.this) {
+                            pendingSaveDataUrl = null;
+                            pendingSaveName = null;
+                        }
+                        notifyWebImageResult("save", "failed");
+                        return;
+                    }
+                    requestPermissions(
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_REQUEST);
+                });
                 return "permission_required";
             }
-            boolean saved = saveBitmapToGallery(bitmap, name);
-            if (!bitmap.isRecycled()) bitmap.recycle();
-            return saved ? "saved" : "failed";
+            saveImageInBackground(dataUrl, name);
+            return "save_started";
         }
 
         @JavascriptInterface
         public String shareImage(String dataUrl, String requestedName) {
-            Bitmap bitmap = decodePngDataUrl(dataUrl);
-            if (bitmap == null) return "failed";
-            beginShareImage(bitmap, safeImageName(requestedName));
+            if (!hasValidPngDataUrlEnvelope(dataUrl)) return "failed";
+            shareImageInBackground(dataUrl, safeImageName(requestedName));
             return "share_started";
         }
     }
@@ -435,9 +465,9 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        if (pendingSaveBitmap != null && !pendingSaveBitmap.isRecycled()) {
-            pendingSaveBitmap.recycle();
-            pendingSaveBitmap = null;
+        synchronized (this) {
+            pendingSaveDataUrl = null;
+            pendingSaveName = null;
         }
         if (pendingWebPermission != null) {
             pendingWebPermission.deny();

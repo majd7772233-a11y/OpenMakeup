@@ -86,9 +86,14 @@ test('Stage 10 cancels in-flight camera initialization only when the native Acti
   assert.match(main, /onPause can be triggered by Android's camera-permission prompt/);
 });
 
-test('Stage 10 Android legacy gallery writes run off the UI thread and failed share writes are deleted', () => {
-  assert.match(activity, /savePendingBitmapInBackground\(bitmap, name\)/);
-  assert.match(activity, /private void savePendingBitmapInBackground\([\s\S]*?new Thread\([\s\S]*?saveBitmapToGallery\(bitmap, requestedName\)/);
+test('Stage 11 Android image save and share decode and write on worker threads', () => {
+  assert.match(activity, /saveImageInBackground\(dataUrl, name\)/);
+  assert.match(activity, /private void saveImageInBackground\(String dataUrl, String requestedName\)\s*\{\s*Thread saveThread = new Thread\(\(\) -> \{[\s\S]*?decodePngDataUrl\(dataUrl\)[\s\S]*?saveBitmapToGallery\(bitmap, requestedName\)/);
+  assert.match(activity, /private void shareImageInBackground\(String dataUrl, String requestedName\)\s*\{\s*Thread shareThread = new Thread\(\(\) -> \{[\s\S]*?decodePngDataUrl\(dataUrl\)[\s\S]*?beginShareImage\(bitmap, requestedName\)/);
+  const bridge = activity.slice(activity.indexOf('private final class OpenMakeupBridge'), activity.indexOf('protected void onPause()'));
+  assert.match(bridge, /saveImage\(String dataUrl, String requestedName\)[\s\S]*?saveImageInBackground\(dataUrl, name\);\s*return "save_started"/);
+  assert.match(bridge, /shareImage\(String dataUrl, String requestedName\)[\s\S]*?shareImageInBackground\(dataUrl, safeImageName\(requestedName\)\);\s*return "share_started"/);
+  assert.match(activity, /synchronized \(MainActivity\.this\)[\s\S]*?pendingSaveDataUrl != null/);
   assert.match(activity, /if \(!bitmap\.compress\(Bitmap\.CompressFormat\.PNG, 100, output\)\) \{\s*try \{ target\.delete\(\)/);
   assert.match(activity, /catch \(Exception exception\) \{\s*try \{ target\.delete\(\)/);
 });
