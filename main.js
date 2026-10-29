@@ -729,6 +729,15 @@ async function startEngine() {
     }
     buildMorphSliders();
     const restoreErrors = await restoreSessionState();
+    // Session restoration is asynchronous too: a host stop can race with any
+    // awaited layer apply, so do not publish readiness from a stale startup.
+    if (startHostStopGeneration !== hostStopGeneration || document.hidden || hostBackgrounded) {
+      engineReady = false;
+      try { mk.stop(); } catch (_) {}
+      stopAndDetachCamera();
+      restartStartupWhenVisible = true;
+      return false;
+    }
     engineReady = true;
     restartStartupWhenVisible = false;
     setTrackingState(mk.engine && mk.engine._reportedFaceTrackingState === false ? 'noFace' : (mk.engine && mk.engine._faceVisible ? 'detected' : 'waiting'));
@@ -1305,6 +1314,9 @@ document.addEventListener('visibilitychange', () => {
     else pauseCameraForBackground();
     return;
   }
+  // Browser tabs have no native onResume callback; visibility is their
+  // authoritative lifecycle signal. Android keeps this flag until its host resumes.
+  if (!window.OpenMakeupBridge) hostBackgrounded = false;
   if (hiddenAt && engineReady) recoverCamera();
   else if (!engineReady && restartStartupWhenVisible && !engineStarting && !hostBackgrounded) {
     restartStartupWhenVisible = false;

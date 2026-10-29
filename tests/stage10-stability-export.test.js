@@ -92,3 +92,24 @@ test('Stage 10 Android legacy gallery writes run off the UI thread and failed sh
   assert.match(activity, /if \(!bitmap\.compress\(Bitmap\.CompressFormat\.PNG, 100, output\)\) \{\s*try \{ target\.delete\(\)/);
   assert.match(activity, /catch \(Exception exception\) \{\s*try \{ target\.delete\(\)/);
 });
+
+test('Stage 10 does not publish engine readiness after a host stop during async session restoration', () => {
+  const startup = main.slice(main.indexOf('async function startEngine()'), main.indexOf('\\nasync function reinitializeEngine()'));
+  const restoreIndex = startup.indexOf('const restoreErrors = await restoreSessionState();');
+  const readinessIndex = startup.indexOf('engineReady = true;', restoreIndex);
+  const guardIndex = startup.indexOf('if (startHostStopGeneration !== hostStopGeneration || document.hidden || hostBackgrounded)', restoreIndex);
+  assert.ok(restoreIndex >= 0, 'startup must restore saved session state');
+  assert.ok(guardIndex > restoreIndex && guardIndex < readinessIndex,
+    'lifecycle must be rechecked after the last awaited restoration and before publishing readiness');
+  assert.match(startup.slice(guardIndex, readinessIndex), /mk\\.stop\\(\\)/);
+  assert.match(startup.slice(guardIndex, readinessIndex), /stopAndDetachCamera\\(\\)/);
+  assert.match(startup.slice(guardIndex, readinessIndex), /restartStartupWhenVisible = true/);
+});
+
+test('Stage 10 clears the browser-only background flag on visibility return before retrying startup', () => {
+  const visibleBranch = main.slice(main.indexOf("document.addEventListener('visibilitychange'"));
+  const clearIndex = visibleBranch.indexOf('if (!window.OpenMakeupBridge) hostBackgrounded = false;');
+  const retryIndex = visibleBranch.indexOf('else if (!engineReady && restartStartupWhenVisible && !engineStarting && !hostBackgrounded)');
+  assert.ok(clearIndex >= 0 && retryIndex > clearIndex,
+    'browser visibility must clear its host-background marker before deciding whether startup can retry');
+});
