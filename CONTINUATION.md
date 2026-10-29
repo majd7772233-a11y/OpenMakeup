@@ -1,13 +1,13 @@
 # CONTINUATION.md — Canonical Open Makeup Handoff
 
-Last reconciled with live GitHub on 2026-10-29 at workflow 40925261408. This is the authoritative restart anchor. The final “Current checkpoint” below supersedes older historical checkpoints and stale test counts. Always inspect live GitHub again because another continuation may have moved the branch.
+Last reconciled with live GitHub on 2026-10-29 at workflow 40928470179. This is the authoritative restart anchor. The final “Current checkpoint” below supersedes older historical checkpoints and stale test counts. Always inspect live GitHub again because another continuation may have moved the branch.
 
 ## 1. Immediate resume protocol
 
 When a new conversation says “continue where we stopped”:
 1. Start with GitHub reads immediately; do not ask the user to repeat context or lead with a generic status preamble.
 2. Read `CONTINUATION.md`, `GPT.md` and `ROADMAP.md`, then fetch live branch HEAD, PR #3, newest workflow run/jobs/logs and artifacts.
-3. Last verified baseline: code/test HEAD `97b6ea132e0e51f4cecf93a3707efbc93b78bdf3` passed run [40924643713](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40924643713); previous docs HEAD `94adeeff3daddd4027af15c405db908db370ceba` passed run [40925261408](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40925261408). A newer documentation-only checkpoint may be at live branch HEAD; inspect the actual SHA and newest run before asserting its status.
+3. Latest verified code/test HEAD is `757b0bb08902be78f0642f9328f941186b948eb9`; workflow [40928470179](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179) passed with 111/111 tests. Always inspect the live branch and newest workflow after later documentation syncs.
 4. If current-head CI is failing, inspect actual logs, fix the demonstrated cause on the same branch, add regression coverage, and verify a newer passing run. Never call an in-progress run green.
 5. Do not restart completed Stage 10 software work by default; the remaining milestone is physical-device acceptance. Do not claim the hardware matrix passed unless it actually ran.
 6. Keep PR #3 open and unmerged unless the user explicitly requests otherwise. Never sign/publish or commit credentials without explicit release direction and owner-controlled signing.
@@ -17,27 +17,28 @@ When a new conversation says “continue where we stopped”:
 
 - Repository: https://github.com/majd7772233-a11y/OpenMakeup
 - Working branch: `feat/open-makeup-arabic-mobile-lifecycle`
-- PR #3: https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — **OPEN, NOT MERGED**.
-- Code/test HEAD: `97b6ea132e0e51f4cecf93a3707efbc93b78bdf3`; latest production lifecycle fix: `b732b5b4e754e2268b5913f25c7ee6d592ae34aa`; last independently verified docs HEAD: `94adeeff3daddd4027af15c405db908db370ceba`. Fetch live branch for any newer checkpoint-only commit.
-- CI is green on both the exact code/test HEAD (run 40924643713) and the newer docs HEAD (run 40925261408). Both logged 110 tests, 110 pass, 0 fail; full and production audits reported zero vulnerabilities; typecheck, runtime assets, Vite, Android assets/APKs, metadata, checksums and uploads passed.
-- Debug ZIP: [12920531479](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40925261408/artifacts/12920531479) (14,972,396 bytes). Unsigned release-candidate ZIP: [12919943291](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40925261408/artifacts/12919943291) (13,630,756 bytes).
+- PR #3: https://github.com/maj## 2. Repository and exact position
+
+- Repository: https://github.com/majd7772233-a11y/OpenMakeup
+- Working branch: `feat/open-makeup-arabic-mobile-lifecycle`
+- Code/test HEAD: `757b0bb08902be78f0642f9328f941186b948eb9`; this adds a camera recovery lifecycle-race fix and regression coverage.
+- Latest code/test CI: [workflow 40928470179](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179) — **111 tests passed, 0 failed**; full and production dependency audits each reported 0 vulnerabilities; SDK type-check, source/dist runtime assets, Vite, Android asset packaging, debug + unsigned-release APK builds, metadata/checksums and uploads passed.
+- Debug APK ZIP: [artifact 12920613315](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12920613315), 14,972,460 bytes.
+- Unsigned release candidate ZIP: [artifact 12922420147](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12922420147), 13,630,845 bytes. These are ZIP sizes, not raw APK sizes; checksum manifest is inside the release ZIP.
 - App identity: version 1.5.0 / versionCode 6 / `com.magd.openmakeup` / minSdk 23. Preserve public SDK contracts.
-- Stages 1–10 have source implementation and automated CI evidence. Stage 10's **physical-device gate is not complete**.
+- PR #3 remains **OPEN, NOT MERGED**: https://github.com/majd7772233-a11y/OpenMakeup/pull/3.
+- Stage 10 software and automated CI are complete; physical Android-device acceptance is still pending. The APK is unsigned.
 
 ## Latest verified CI and live workflow state
 
-- Last independently verified docs head `94adeeff3daddd4027af15c405db908db370ceba` passed [workflow 40925261408](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40925261408) on 2026-10-29. Logs: 110/110 tests, 0 failures; full and production dependency audits each reported 0 vulnerabilities; typecheck, local runtime assets, Vite, Android packaging, debug/unsigned-release builds, release metadata/checksums and both artifact uploads passed. Any newer checkpoint-only HEAD must be verified separately.
-- Latest code/test head `97b6ea132e0e51f4cecf93a3707efbc93b78bdf3` passed [workflow 40924643713](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40924643713). The lifecycle implementation originated in `b732b5b4e754e2268b5913f25c7ee6d592ae34aa`, with later test assertion commits in the commit history.
-- Latest artifact ZIPs: debug [12920531479](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40925261408/artifacts/12920531479), 14,972,396 bytes, archive digest `ae02daf653dcf043da798e0cb5a69c65103eafa1d8d767eb7de461ce45a2ec25`; unsigned release [12919943291](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40925261408/artifacts/12919943291), 13,630,756 bytes, archive digest `b0927992450de0f57ab29c17d2e8f9f3cb013d2ae400b5e8a31cd364561ce9a4`. These hashes are artifact-ZIP digests; the APK checksum manifest is inside the artifacts.
-- Non-blocking Actions/Node deprecation notices appear in CI, but no workflow step failed. The release APK remains **unsigned**.
-- **Still not verified on physical devices:** Android 6/7 permission/resume, repeated camera switching/rollback, rotation/alignment, real gallery/save/share, screen-reader/focus behavior, WebGL restoration and sustained GPU/thermal stability.
-- This checkpoint must be refreshed whenever HEAD moves.
+- Run [40928470179](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179) completed successfully on code/test HEAD `757b0bb08902be78f0642f9328f941186b948eb9` on 2026-10-29.
+- Test log: **111/111 pass, 0 fail**. Full dependency audit summary and production dependency audit both report 0 vulnerabilities. Type-check, local camera/model asset checks, Vite build, built-asset checks, Android asset packaging, Gradle debug and unsigned release APK builds, release metadata/checksums and artifact uploads succeeded.
+- Artifacts: debug [12920613315](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12920613315), ZIP 14,972,460 bytes; unsigned release [12922420147](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12922420147), ZIP 13,630,845 bytes. The release ZIP contains `APK-SHA256SUMS.txt`.
+- Non-blocking notices remain for Vite chunk size, setup-java@v4, Actions targeting Node 20 and Node `url.parse()`. No workflow step failed.
+- No physical-device validation was performed by CI. Android 6/7 permission, resume, switching, rotation, real gallery/share, screen-reader, WebGL restoration and sustained performance/thermal checks remain the release gate.
+- When resuming, inspect the live branch head and newest workflow; a subsequent docs-only commit triggers its own check and must not be presumed green.
 
-## 4. Implemented work by stage
-
-### Stage 1 — Runtime/lifecycle reliability
-- Explicit asset/model load failures and SDK failure propagation.
-- Camera startup verifies actual live tracks and frame progression; stalled/single-frame camera states are detected.
+d frame progression; stalled/single-frame camera states are detected.
 - Safe stop/dispose, cancellation of late startup and controlled pause/resume.
 - Camera recovery preserves state and must not blindly reload the page.
 
@@ -221,43 +222,47 @@ These are the most important instructions and must survive every handoff:
 
 ### Code and verified workflow state
 - Repository: https://github.com/majd7772233-a11y/OpenMakeup
-- Branch: `feat/open-makeup-arabic-mobile-lifecycle`; PR #3 remains **OPEN, NOT MERGED**: https://github.com/majd7772233-a11y/OpenMakeup/pull/3
-- Latest code/test HEAD: `97b6ea132e0e51f4cecf93a3707efbc93b78bdf3`; lifecycle behavior fix: `b732b5b4e754e2268b5913f25c7ee6d592ae34aa`; test-boundary follow-ups: `a2fd395f23d90f295256ea170564471e798b352a` and `97b6ea132e0e51f4cecf93a3707efbc93b78bdf3`.
-- That exact code/test HEAD passed workflow [40924643713](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40924643713): 110/110 tests, 0 failures; full and production audits reported 0 vulnerabilities; typecheck, local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and uploads passed.
-- The last independently CI-verified docs HEAD was `94adeeff3daddd4027af15c405db908db370ceba`; its run [40925261408](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40925261408) also passed with 110/110 tests, both audits at zero vulnerabilities, and all build/checksum/upload steps successful.
-- Artifacts from that last completed run: [Debug ZIP 12920531479](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40925261408/artifacts/12920531479) (14,972,396 bytes, archive ZIP digest `ae02daf653dcf043da798e0cb5a69c65103eafa1d8d767eb7de461ce45a2ec25`); [unsigned release ZIP 12919943291](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40925261408/artifacts/12919943291) (13,630,756 bytes, archive ZIP digest `b0927992450de0f57ab29c17d2e8f9f3cb013d2ae400b5e8a31cd364561ce9a4`). These digests apply to the uploaded ZIP artifacts, not directly to the APK files.
-- Documentation checkpoint commits after `94adee` update only `CONTINUATION.md`, `GPT.md` and `ROADMAP.md`. The immediately preceding checkpoint commit `45f28987510b5a368d43599b79f2deeeb94ef533` had workflow [40926938409](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40926938409) **in progress** at the last observation. This newer documentation commit triggers another workflow too. On resume, fetch the live branch HEAD and latest run and verify its actual conclusion; never infer success from an older run.
-- Android identity remains version 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23. The release APK remains **unsigned**. CI emitted non-blocking Actions/Node deprecation notices; they did not fail the last completed green run.
+- Working branch: `feat/open-makeup-arabic-mobile-lifecycle`; PR #3 remains **OPEN, NOT MERGED**: https://github.com/majd7772233-a11y/OpenMakeup/pull/3
+- Latest code/test commit: [`757b0bb`](https://github.com/majd7772233-a11y/OpenMakeup/commit/757b0bb08902be78f0642f9328f941186b948eb9) — “Guard camera recovery against host lifecycle races”.
+- Full CI [run 40928470179](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179) passed on that exact commit: **111/111 tests**, 0 failures; full and production dependency audits both reported zero vulnerabilities; type-check, local camera/model assets, Vite and built asset checks, Android packaging, debug and unsigned-release APK builds, metadata/checksums and both artifact uploads all succeeded.
+- Debug ZIP [artifact 12920613315](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12920613315): 14,972,460 bytes. Unsigned release ZIP [artifact 12922420147](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12922420147): 13,630,845 bytes. The release ZIP contains the APK checksum manifest. Artifact sizes refer to ZIPs, not raw APKs.
+- Android identity remains version 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23. Release APK remains **unsigned**.
+- CI emits non-blocking Vite chunk-size and tool/runtime deprecation notices; no step failed.
 
-### Exact stopping point
-The **software implementation and automated-CI part of Stage 10** (stability, persistence, camera lifecycle, capture/export and Android performance, plus material/effect integrity) is complete and verified. Do not restart the finished work unless a fresh source review or device test demonstrates a defect.
+### Exact stopping point and latest fix
+Stage 10 software implementation and automated verification are complete, including a follow-up code review fix. A source review found that `recoverCamera()` could finish stale asynchronous recovery after the native Activity was fully stopped, because host-stop generation changes were previously limited to interrupted initial startup. A resume callback arriving while that recovery was resolving could also be discarded.
 
-Latest lifecycle follow-up prevents startup from reporting readiness after it was interrupted during asynchronous session restoration: recheck the lifecycle generation, browser visibility and native background state before marking the engine ready; clean stale SDK/camera state while retaining the retry signal. Browser-only visibility return can retry the interrupted startup. Android restart remains gated through native `onResume`; Android `onPause` alone is not definitive backgrounding because camera-permission UI can trigger it. Regression coverage is in `tests/stage10-stability-export.test.js`.
+Commit `757b0bb08902be78f0642f9328f941186b948eb9` fixes this by:
+- invalidating in-flight camera recovery on every full host stop;
+- checking lifecycle generation, DOM visibility and native background state immediately after `mk.start()` and after fresh-frame verification;
+- avoiding an engine rebuild or user-facing camera error when stale recovery was interrupted by backgrounding;
+- retaining a resume request that arrives while stale recovery settles and starting one controlled fresh recovery after the prior operation releases ownership.
 
-Other completed Stage 10 software safeguards include debounced/versioned session persistence with boundary flushes and future-schema preservation; texture disposal on partial material-load failure; stale color/pattern request invalidation; camera-frame readiness and failed-switch rollback; bounded render-target/PNG capture; legacy Android storage work off the UI thread; partial-file cleanup and bounded share cache.
+Regression coverage was added in `tests/stage10-stability-export.test.js` (“Stage 10 invalidates camera recovery across host stop and retries when resume races the stale promise”). This is source-contract automation, not physical-device simulation.
+
+Other Stage 10 safeguards remain: debounced/versioned session persistence and boundary flushes, future-schema preservation, texture disposal on partial material failure, stale effect request invalidation, actual-frame readiness and camera-switch rollback, bounded capture, background-thread legacy gallery writes, failed-file cleanup and a bounded share cache.
 
 ### Still remaining — physical-device release gate
-No physical-device acceptance run is documented as completed. Execute a consolidated matrix rather than repeatedly doing device checks after every code stage:
+No physical-device acceptance run is documented as completed. Run one consolidated hardware matrix before treating the app as release-ready:
 
-1. **Android 6/API 23 and Android 7/API 24–25:** fresh install, local/offline start, camera permission grant/deny/retry, local camera/model assets, stop/resume and legacy storage.
-2. **Camera/lifecycle:** repeat front→rear→front; prove old tracks stop and frames advance; tracking reacquisition and rollback on failed switch; permission prompt versus real background/foreground; screen-off/on.
-3. **Layout/capture:** portrait, landscape, rotation/fullscreen; face/effect alignment, mirroring/crop and output orientation; inspect actual PNG color and thumbnail.
-4. **Storage/share:** gallery visibility, Android 6–9 storage permission paths, Android 10+ MediaStore, FileProvider chooser and external share target; failure paths must leave no partial files.
-5. **Session/accessibility:** session and custom-look restore, undo/redo, corrupt/future-version data; Arabic RTL/English LTR, TalkBack, keyboard/focus, contrast, touch targets and reduced motion.
-6. **Sustained GPU run:** record device model, Android and System WebView versions, duration, frame progression, freezes/crashes/OOM, resource growth, temperature and throttling; test WebGL loss/restore if reproducible.
+1. **Android 6/API 23 and Android 7/API 24–25:** fresh install, fully local startup, camera permission grant/deny/retry, bundled assets and legacy storage.
+2. **Camera/lifecycle:** repeated front→rear→front, old-track termination, advancing frames, failed-switch rollback, permission prompt versus true background/foreground, and screen-off/on.
+3. **Layout/capture:** portrait, landscape, rotation/fullscreen, effect alignment and mirroring, plus actual PNG orientation/color and thumbnail.
+4. **Storage/share:** gallery visibility, Android 6–9 permission path, Android 10+ MediaStore, FileProvider chooser/external app and failure cleanup.
+5. **Session/accessibility:** session and named-look restoration, undo/redo, corrupt/future schema, Arabic RTL/English LTR, TalkBack, keyboard focus, contrast, touch targets and reduced motion.
+6. **WebGL/performance:** context loss/restoration if reproducible and a sustained low-memory run recording device model, Android/System WebView versions, duration, frame progression, crashes/freezes/OOM, resource growth, temperature and throttling.
 
-Record actual device/OS/WebView, steps, expected versus actual results, logs and evidence. This is a test plan, not proof. Without device access, keep the gate pending and perform only evidence-based source review—never pretend CI proves hardware behavior.
+Record device model, Android and WebView version, exact steps, expected/actual behavior and evidence. This is a plan, not proof. CI has not performed it; keep the gate pending until real devices are tested.
 
 ### Next action
-1. First read all three handoff files and fetch live GitHub branch/PR/workflow state.
-2. Verify the newest workflow on the live docs HEAD, because this synchronization itself triggers CI.
-3. If no newer code appeared, do **not** restart software Stage 10. The next milestone is the consolidated physical-device matrix. Turn any reproduced failure into a focused fix plus regression test, then rerun full CI.
-4. After device acceptance and any fixes, run final release-readiness review. Signing, publishing and merging are separate explicit decisions. Never request or commit a private signing key.
-5. `ROADMAP.md` currently defines no later software stage. Do not invent “Stage 11”; determine any next code stage only after the Stage 10 device gate/release review clarifies real remaining work.
+1. On every continuation, read this file plus `GPT.md` and `ROADMAP.md`, then check live branch head, PR #3, latest Actions run/jobs/logs/artifacts.
+2. If source/device review reveals a further defect, fix the proven cause, add regression coverage and verify a new full run.
+3. Do not invent Stage 11: the roadmap has no additional planned software stage before the physical-device acceptance/release-readiness review.
+4. Keep PR #3 open/unmerged unless explicitly asked to merge. Do not sign or publish the release candidate unless explicitly requested and owner-controlled signing is available.
 
 ### Permanent boundaries
-- Camera and face processing remain local/offline; no automatic uploads, telemetry or runtime CDN assets.
-- Preserve app ID, version contract, minSdk 23 and public SDK API; inspect callers after lifecycle/API changes.
-- No fake success, swallowed errors, blind reload-based recovery, or unsupported effects.
-- Keep PR #3 open/unmerged unless explicitly asked to merge; generated release output remains unsigned.
-- Update this file, `GPT.md` and `ROADMAP.md` together after meaningful changes. Repo docs in English; user-facing responses in Arabic.
+- Camera and face processing remain on-device and offline; no automatic frame/photo upload, telemetry or new runtime CDN dependency.
+- Preserve `com.magd.openmakeup`, version contract, minSdk 23 and public SDK contracts.
+- No fake success, swallowed failures or blind page reload for recovery.
+- Never commit tokens, passwords, private keys or signing material.
+- Repository docs remain English; user-facing response remains Arabic.
