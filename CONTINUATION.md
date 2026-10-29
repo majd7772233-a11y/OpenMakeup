@@ -17,14 +17,10 @@ When a new conversation says “continue where we stopped”:
 
 - Repository: https://github.com/majd7772233-a11y/OpenMakeup
 - Working branch: `feat/open-makeup-arabic-mobile-lifecycle`
-- PR #3: https://github.com/maj## 2. Repository and exact position
-
-- Repository: https://github.com/majd7772233-a11y/OpenMakeup
-- Working branch: `feat/open-makeup-arabic-mobile-lifecycle`
-- Code/test HEAD: `757b0bb08902be78f0642f9328f941186b948eb9`; this adds a camera recovery lifecycle-race fix and regression coverage.
+- Code/test HEAD: `757b0bb08902be78f0642f9328f941186b948eb9`; it fixes a camera-recovery lifecycle race and adds a regression test.
 - Latest code/test CI: [workflow 40928470179](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179) — **111 tests passed, 0 failed**; full and production dependency audits each reported 0 vulnerabilities; SDK type-check, source/dist runtime assets, Vite, Android asset packaging, debug + unsigned-release APK builds, metadata/checksums and uploads passed.
 - Debug APK ZIP: [artifact 12920613315](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12920613315), 14,972,460 bytes.
-- Unsigned release candidate ZIP: [artifact 12922420147](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12922420147), 13,630,845 bytes. These are ZIP sizes, not raw APK sizes; checksum manifest is inside the release ZIP.
+- Unsigned release candidate ZIP: [artifact 12922420147](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12922420147), 13,630,845 bytes. These are ZIP sizes, not raw APK sizes; the release ZIP contains the checksum manifest.
 - App identity: version 1.5.0 / versionCode 6 / `com.magd.openmakeup` / minSdk 23. Preserve public SDK contracts.
 - PR #3 remains **OPEN, NOT MERGED**: https://github.com/majd7772233-a11y/OpenMakeup/pull/3.
 - Stage 10 software and automated CI are complete; physical Android-device acceptance is still pending. The APK is unsigned.
@@ -36,9 +32,13 @@ When a new conversation says “continue where we stopped”:
 - Artifacts: debug [12920613315](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12920613315), ZIP 14,972,460 bytes; unsigned release [12922420147](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12922420147), ZIP 13,630,845 bytes. The release ZIP contains `APK-SHA256SUMS.txt`.
 - Non-blocking notices remain for Vite chunk size, setup-java@v4, Actions targeting Node 20 and Node `url.parse()`. No workflow step failed.
 - No physical-device validation was performed by CI. Android 6/7 permission, resume, switching, rotation, real gallery/share, screen-reader, WebGL restoration and sustained performance/thermal checks remain the release gate.
-- When resuming, inspect the live branch head and newest workflow; a subsequent docs-only commit triggers its own check and must not be presumed green.
+- When resuming, inspect the live branch head and newest workflow; subsequent documentation-only commits trigger their own checks and must not be presumed green.
 
-d frame progression; stalled/single-frame camera states are detected.
+## 4. Implemented work by stage
+
+### Stage 1 — Runtime/lifecycle reliability
+- Explicit asset/model load failures and SDK failure propagation.
+- Camera startup verifies actual live tracks and frame progression; stalled/single-frame camera states are detected.
 - Safe stop/dispose, cancellation of late startup and controlled pause/resume.
 - Camera recovery preserves state and must not blindly reload the page.
 
@@ -225,7 +225,7 @@ These are the most important instructions and must survive every handoff:
 - Working branch: `feat/open-makeup-arabic-mobile-lifecycle`; PR #3 remains **OPEN, NOT MERGED**: https://github.com/majd7772233-a11y/OpenMakeup/pull/3
 - Latest code/test commit: [`757b0bb`](https://github.com/majd7772233-a11y/OpenMakeup/commit/757b0bb08902be78f0642f9328f941186b948eb9) — “Guard camera recovery against host lifecycle races”.
 - Full CI [run 40928470179](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179) passed on that exact commit: **111/111 tests**, 0 failures; full and production dependency audits both reported zero vulnerabilities; type-check, local camera/model assets, Vite and built asset checks, Android packaging, debug and unsigned-release APK builds, metadata/checksums and both artifact uploads all succeeded.
-- Debug ZIP [artifact 12920613315](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12920613315): 14,972,460 bytes. Unsigned release ZIP [artifact 12922420147](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12922420147): 13,630,845 bytes. The release ZIP contains the APK checksum manifest. Artifact sizes refer to ZIPs, not raw APKs.
+- Debug ZIP [artifact 12920613315](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12920613315): 14,972,460 bytes. Unsigned release ZIP [artifact 12922420147](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12922420147): 13,630,845 bytes. The release ZIP contains the APK checksum manifest. These are artifact ZIP sizes, not raw APK sizes.
 - Android identity remains version 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23. Release APK remains **unsigned**.
 - CI emits non-blocking Vite chunk-size and tool/runtime deprecation notices; no step failed.
 
@@ -235,7 +235,7 @@ Stage 10 software implementation and automated verification are complete, includ
 Commit `757b0bb08902be78f0642f9328f941186b948eb9` fixes this by:
 - invalidating in-flight camera recovery on every full host stop;
 - checking lifecycle generation, DOM visibility and native background state immediately after `mk.start()` and after fresh-frame verification;
-- avoiding an engine rebuild or user-facing camera error when stale recovery was interrupted by backgrounding;
+- avoiding an engine rebuild or a user-facing camera error when stale recovery was interrupted by backgrounding;
 - retaining a resume request that arrives while stale recovery settles and starting one controlled fresh recovery after the prior operation releases ownership.
 
 Regression coverage was added in `tests/stage10-stability-export.test.js` (“Stage 10 invalidates camera recovery across host stop and retries when resume races the stale promise”). This is source-contract automation, not physical-device simulation.
