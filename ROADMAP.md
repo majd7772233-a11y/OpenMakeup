@@ -427,3 +427,13 @@ For every stage:
 - Latest verified documentation-only HEAD before this sync: `4ac12e0963f4a7b0a70f1403cdab7b4ffb46f8b4`, workflow [40738255041](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40738255041), 108/108 tests and successful artifact uploads.
 - Hardware release gate remains pending: physical Android 6/7 camera permission/resume, rotation, real save/share, face alignment, accessibility, sustained GPU performance and thermals. PR #3 remains open/unmerged; release APK unsigned.
 - This documentation-only refresh triggers a fresh CI run; verify its live result before claiming this revision passed.
+
+## Stage 10 acceptance follow-up — startup lifecycle races (2026-10-29)
+
+- **Resolved in code:** startup now revalidates host-stop generation, browser visibility and native background state after asynchronous session restoration and before publishing engine readiness. Stale startup is stopped and detached without discarding the retry signal.
+- **Resolved in code:** ordinary browser visibility return clears the browser-only background marker so an interrupted startup can retry. Android retains native `onResume` control to avoid confusing the camera permission prompt with a full background transition.
+- Added regression tests to `tests/stage10-stability-export.test.js`; latest code/test HEAD `97b6ea132e0e51f4cecf93a3707efbc93b78bdf3` passed [workflow 40924643713](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40924643713) with 110/110 tests, zero failures, both dependency audits at zero vulnerabilities and successful web/Android build, metadata, checksum and artifact steps.
+- Artifacts from that exact head: [debug ZIP 12919048404](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40924643713/artifacts/12919048404) (14,972,391 bytes; SHA-256 `d8e47bbf03238aa451cb1192ed2babee99c832833fdb880988797c88eccc38c8`); [unsigned release ZIP 12918728789](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40924643713/artifacts/12918728789) (13,630,754 bytes; SHA-256 `b93122fe38b7a4bb8ba7f49970c8c2c0bd806aa8fd4096660e63686f23cfd204`).
+- Device acceptance remains a release gate—not verified by automation: Android 6/7 permission/resume, front/back camera and orientation, real gallery/share outputs, face alignment, accessibility and sustained GPU/thermal behavior. PR #3 remains open/unmerged, and release APK unsigned.
+- This documentation-sync commit starts a fresh Actions run; verify its result separately.
+

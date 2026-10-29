@@ -342,3 +342,14 @@ Read [CONTINUATION.md](./CONTINUATION.md) first. It is the canonical handoff wit
 - Latest verified documentation-only head before this sync: `4ac12e0963f4a7b0a70f1403cdab7b4ffb46f8b4`, run [40738255041](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40738255041), 108/108 tests, both APK artifacts uploaded.
 - PR #3 stays open/unmerged. Physical Android 6/7 device acceptance is the remaining release gate; release APK remains unsigned.
 - This documentation refresh triggers another workflow. Check the live run for this revision before claiming its CI success.
+
+## Stage 10 continuation — lifecycle race follow-up (2026-10-29)
+
+- Latest code/test HEAD before this documentation sync: `97b6ea132e0e51f4cecf93a3707efbc93b78bdf3`, verified by [workflow 40924643713](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40924643713), **110/110 tests passed**. Both full and production npm audits reported zero vulnerabilities; typecheck, Vite, offline runtime assets, Android packaging, debug/unsigned-release APK builds, metadata/checksum validation and artifact uploads passed.
+- Fixed the race where the host could stop during asynchronous session restoration and startup would still set `engineReady`. The generation/visibility/background guard now runs immediately after restoration and cleans up the stale camera/SDK state before returning.
+- Fixed browser-only cancelled startup not retrying after visibility returns; only non-native contexts clear the flag from visibility changes. Android remains controlled by the native resume callback.
+- Regression checks were added to `tests/stage10-stability-export.test.js`. The first CI attempt exposed an over-escaped assertion in the new test, not a production failure; the test was corrected and scoped, and the exact current code/test HEAD passed.
+- Debug artifact [12919048404](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40924643713/artifacts/12919048404) (ZIP, 14,972,391 bytes, SHA-256 `d8e47bbf03238aa451cb1192ed2babee99c832833fdb880988797c88eccc38c8`); unsigned release candidate [12918728789](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40924643713/artifacts/12918728789) (ZIP, 13,630,754 bytes, SHA-256 `b93122fe38b7a4bb8ba7f49970c8c2c0bd806aa8fd4096660e63686f23cfd204`).
+- Physical Android 6/7 camera, permission/resume, rotation, save/share, accessibility, sustained-GPU and thermal acceptance remains pending. Do not call the release signed or device-verified; do not merge PR #3 unless explicitly requested.
+- The following docs-only commit triggers CI; verify its run separately from the code/test run above.
+
