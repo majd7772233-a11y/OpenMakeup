@@ -236,3 +236,11 @@ test('primary gradient text meets WCAG AA contrast across the full interpolated 
   }
   assert.ok(minimum >= 4.5, 'minimum text contrast was ' + minimum.toFixed(3) + ':1');
 });
+
+
+test('all user-operated range controls retain a 44px touch target on compact layouts', () => {
+  assert.match(html, /\.editor-field input\[type="range"\],\.slider input,\.settings-field input\[type="range"\]\{min-height:44px\}/);
+  for (const id of ['layer-intensity', 'font-size-setting']) {
+    assert.ok(html.includes(`id="${id}" type="range"`), 'Missing labelled range control ' + id);
+  }
+});
