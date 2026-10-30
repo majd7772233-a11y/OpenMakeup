@@ -51,7 +51,7 @@ test('authored HTML IDs are unique', () => {
 test('touch targets, visible focus, landscape layout and reduced-motion support exist', () => {
   assert.match(html, /\.icon-btn\{min-width:44px\}/);
   assert.match(html, /\.look,\.makeup-btn,\.quick-actions button,\.about-actions button,#camera-retry\{min-height:44px\}/);
-  assert.match(html, /button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible/);
+  assert.match(html, /button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible,\[tabindex\]:focus-visible/);
   assert.match(html, /prefers-reduced-motion:reduce/);
   assert.match(html, /orientation:landscape\) and \(max-height:520px\)/);
 });
@@ -59,7 +59,7 @@ test('touch targets, visible focus, landscape layout and reduced-motion support 
 test('About dialog traps focus, restores its opener and handles Escape/Android Back', () => {
   assert.match(main, /aboutOpener = document\.activeElement/);
   assert.match(main, /function trapAboutFocus\(event\)/);
-  assert.match(main, /event\.shiftKey/);
+  assert.match(main, /trapDialogFocus\(event, modal\)/);
   assert.match(main, /function closeAbout\(\)[\s\S]*?target\.focus\(\)/);
   assert.match(main, /window\.handleAndroidBack = \(\) =>/);
   assert.match(main, /if \(event\.key === 'Escape'\)/);
@@ -200,4 +200,39 @@ test('stage-eight workspace redesign keeps the rose-purple brand and adds access
   assert.match(main, /trapDialogFocus\(event, modal\)/);
   assert.match(html, /id="daily-controls"[^>]*tabindex="-1"/);
   assert.match(html, /prefers-reduced-motion:reduce/);
+});
+
+
+test('skip navigation moves focus to the actual keyboard-focusable main destination', () => {
+  assert.match(html, /class="skip-link" href="#daily-controls"/);
+  assert.match(html, /id="daily-controls"[^>]*tabindex="-1"/);
+  assert.match(html, /\.skip-link:focus\{transform:translateY\(0\)\}/);
+});
+
+test('primary gradient text meets WCAG AA contrast across the full interpolated gradient', () => {
+  const rule = html.match(/\.primary\{([^}]+)\}/)?.[1] || '';
+  const color = rule.match(/(?:^|;)color:#([0-9a-f]{6})(?:;|$)/i)?.[1];
+  const background = rule.match(/background:linear-gradient\(120deg,#([0-9a-f]{6}),#([0-9a-f]{6})\)/i);
+  assert.ok(color && background, 'primary button must declare a foreground and a two-stop gradient');
+  const channel = (hex, offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255;
+  const linear = (value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  const luminance = (hex) => 0.2126 * linear(channel(hex, 0))
+    + 0.7152 * linear(channel(hex, 2))
+    + 0.0722 * linear(channel(hex, 4));
+  const foreground = luminance(color);
+  const stops = [background[1], background[2]];
+  let minimum = Infinity;
+  for (let sample = 0; sample <= 10000; sample += 1) {
+    const ratio = sample / 10000;
+    const hex = Array.from({ length: 3 }, (_, index) => {
+      const start = channel(stops[0], index * 2);
+      const end = channel(stops[1], index * 2);
+      return Math.round((start + (end - start) * ratio) * 255).toString(16).padStart(2, '0');
+    }).join('');
+    const backgroundLuminance = luminance(hex);
+    const lighter = Math.max(foreground, backgroundLuminance);
+    const darker = Math.min(foreground, backgroundLuminance);
+    minimum = Math.min(minimum, (lighter + 0.05) / (darker + 0.05));
+  }
+  assert.ok(minimum >= 4.5, 'minimum text contrast was ' + minimum.toFixed(3) + ':1');
 });
