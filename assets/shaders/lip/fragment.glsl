@@ -23,6 +23,7 @@ uniform vec4 _brightTexture_ST;
 
 uniform float _shine;
 uniform float _bright;
+uniform float uIntensity;
 
 uniform sampler2D _lipReflection;
 uniform vec4 _lipReflection_ST;
@@ -119,7 +120,7 @@ void main(){
     float a0 = texture(_lipReflection,      uvLip ).r;
     float a1 = texture(_lipReflectionClose, uvLipC).r;
     float alpha = mix(a0, a1, _lipOpen);
-    fragColor = vec4(emission,alpha*0.4);
+    fragColor = vec4(emission,alpha*0.4*uIntensity);
     //fragColor = vec4(_lipOpen, 0.0, 1.0 - _lipOpen, 1.0);
 //
 //    float alpha = texture(_lipReflection,      vUv0).r;

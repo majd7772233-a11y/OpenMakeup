@@ -17,14 +17,59 @@ const texLoader = new TextureLoader();
 
 export async function loadShaderSource(url) {
     const response = await fetch(url);
-    return await response.text();
+    if (!response.ok) throw new Error(`Could not load shader "${url}" (HTTP ${response.status}).`);
+    return response.text();
+}
+
+function loadTexture(url, configure = null) {
+    return new Promise((resolve, reject) => {
+        texLoader.load(
+            url,
+            (texture) => {
+                try {
+                    if (configure) configure(texture);
+                    resolve(texture);
+                } catch (error) {
+                    texture.dispose();
+                    reject(error);
+                }
+            },
+            undefined,
+            (error) => {
+                const detail = error && error.message ? error.message : String(error || 'unknown texture loader error');
+                reject(new Error(`Could not load texture "${url}": ${detail}`));
+            },
+        );
+    });
+}
+
+/**
+ * Keep track of textures until their material has been created successfully.
+ * A failed later texture/shader request must not leak earlier GPU allocations.
+ */
+async function withMaterialTextureCleanup(createMaterial) {
+    const ownedTextures = new Set();
+    const loadOwnedTexture = async (url, configure = null) => {
+        const texture = await loadTexture(url, configure);
+        ownedTextures.add(texture);
+        return texture;
+    };
+    try {
+        return await createMaterial(loadOwnedTexture);
+    } catch (error) {
+        for (const texture of ownedTextures) {
+            try { texture.dispose(); } catch (_) { /* keep original error */ }
+        }
+        throw error;
+    }
 }
 
 export async function loadBlurMat(assets, refractUniforms) {
+    return withMaterialTextureCleanup(async (loadOwnedTexture) => {
     const vertexShaderSource = await loadShaderSource(assets.shader('bluremask', 'vertex.glsl') + '?a1');
     const fragmentShaderSource = await loadShaderSource(assets.shader('bluremask', 'fragment.glsl') + '?a2');
 
-    const faceMask = texLoader.load(assets.shaderRoot('foundation_mask3.PNG'));
+    const faceMask = await loadOwnedTexture(assets.shaderRoot('foundation_mask3.PNG'));
     faceMask.wrapS = ClampToEdgeWrapping;
     faceMask.wrapT = ClampToEdgeWrapping;
     faceMask.flipY = false;
@@ -39,13 +84,15 @@ export async function loadBlurMat(assets, refractUniforms) {
         tMask: faceMask,
         transparent: true,
     });
+    });
 }
 
 export async function loadLipMats(assets) {
+    return withMaterialTextureCleanup(async (loadOwnedTexture) => {
     const vertexShaderSource = await loadShaderSource(assets.shader('lip', 'vertex.glsl'));
     const fragmentShaderSource = await loadShaderSource(assets.shader('lip', 'fragment.glsl') + '?aa');
 
-    const lipOpenTexture = texLoader.load(assets.shader('lip', 'Lips-open.PNG'));
+    const lipOpenTexture = await loadOwnedTexture(assets.shader('lip', 'Lips-open.PNG'));
     lipOpenTexture.wrapS = ClampToEdgeWrapping;
     lipOpenTexture.wrapT = ClampToEdgeWrapping;
     lipOpenTexture.minFilter = LinearFilter;
@@ -54,7 +101,7 @@ export async function loadLipMats(assets) {
     lipOpenTexture.needsUpdate = true;
     lipOpenTexture.flipY = false;
 
-    const lipCloseTexture = texLoader.load(assets.shader('lip', 'Lips-close.PNG'));
+    const lipCloseTexture = await loadOwnedTexture(assets.shader('lip', 'Lips-close.PNG'));
     lipCloseTexture.wrapS = ClampToEdgeWrapping;
     lipCloseTexture.wrapT = ClampToEdgeWrapping;
     lipCloseTexture.minFilter = LinearFilter;
@@ -63,7 +110,8 @@ export async function loadLipMats(assets) {
     lipCloseTexture.needsUpdate = true;
     lipCloseTexture.flipY = false;
 
-    const lipGlossy = texLoader.load(assets.shader('lip', 'lip-gloss.PNG'));
+    const lipGlossy = await loadOwnedTexture(assets.shader('lip', 'lip-gloss.PNG'));
+    const lipNoise = await loadOwnedTexture(assets.shader('lip', 'noize.PNG'));
     lipGlossy.wrapS = ClampToEdgeWrapping;
     lipGlossy.wrapT = ClampToEdgeWrapping;
     lipGlossy.minFilter = LinearFilter;
@@ -87,8 +135,10 @@ export async function loadLipMats(assets) {
         _gradientSize:         { value: 2.6 },
         _lipOpen:              { value: 0.7074125 },
         _opacity:              { value: 0.81 },
+        uIntensity:            { value: 1.0 },
         _shine:                { value: 0.81 },
         _bright:               { value: 0.0 },
+        cameraPosition:        { value: new Vector3() },
 
         // Colors (vec4)
         _Color:         { value: new Vector4(1.0, 1.0, 1.0, 1.0) },
@@ -116,7 +166,7 @@ export async function loadLipMats(assets) {
         _reflec:         { value: null },
 
         // textures
-        _brightTexture:      { value: texLoader.load(assets.shader('lip', 'noize.PNG')) },
+        _brightTexture:      { value: lipNoise },
         _lipReflection:      { value: lipCloseTexture },
         _lipReflectionClose: { value: lipOpenTexture },
         _TextureSample1:     { value: lipGlossy },
@@ -132,13 +182,15 @@ export async function loadLipMats(assets) {
         depthTest: true,
         transparent: true,
     });
+    });
 }
 
 export async function loadEyeShadowMat(assets) {
+    return withMaterialTextureCleanup(async (loadOwnedTexture) => {
     const vertexShaderSource = await loadShaderSource(assets.shader('eyeshadow', 'vertex.glsl'));
     const fragmentShaderSource = await loadShaderSource(assets.shader('eyeshadow', 'fragment.glsl'));
 
-    const eyeShadowTexture = texLoader.load(assets.shader('eyeshadow', 'i6333.png'));
+    const eyeShadowTexture = await loadOwnedTexture(assets.shader('eyeshadow', 'i6333.png'));
     eyeShadowTexture.format = RGBAFormat;
     eyeShadowTexture.minFilter = LinearFilter;
     eyeShadowTexture.magFilter = LinearFilter;
@@ -146,7 +198,7 @@ export async function loadEyeShadowMat(assets) {
     eyeShadowTexture.needsUpdate = true;
     eyeShadowTexture.flipY = false;
 
-    const faceMask = texLoader.load(assets.shaderRoot('foundation_mask2.PNG'));
+    const faceMask = await loadOwnedTexture(assets.shaderRoot('foundation_mask2.PNG'));
     faceMask.wrapS = ClampToEdgeWrapping;
     faceMask.wrapT = ClampToEdgeWrapping;
     faceMask.minFilter = LinearFilter;
@@ -168,20 +220,23 @@ export async function loadEyeShadowMat(assets) {
             _FaceMaskE: { value: faceMask },
             _noise: { value: 0.0 },
             _transparency: { value: 1.0 },
+            uIntensity: { value: 1.0 },
         },
+    });
     });
 }
 
 export async function loadBlushMat(assets) {
+    return withMaterialTextureCleanup(async (loadOwnedTexture) => {
     const vertexShaderSource = await loadShaderSource(assets.shader('blush', 'vertex.glsl'));
     const fragmentShaderSource = await loadShaderSource(assets.shader('blush', 'fragment.glsl'));
 
-    const blushTexture = texLoader.load(assets.shader('blush', 'i6417.png'));
+    const blushTexture = await loadOwnedTexture(assets.shader('blush', 'i6417.png'));
     blushTexture.wrapS = ClampToEdgeWrapping;
     blushTexture.wrapT = ClampToEdgeWrapping;
     blushTexture.flipY = false;
 
-    const faceMask = texLoader.load(assets.shaderRoot('foundation_mask.PNG'));
+    const faceMask = await loadOwnedTexture(assets.shaderRoot('foundation_mask.PNG'));
     faceMask.wrapS = ClampToEdgeWrapping;
     faceMask.wrapT = ClampToEdgeWrapping;
     faceMask.flipY = false;
@@ -201,15 +256,18 @@ export async function loadBlushMat(assets) {
             _FaceMaskE: { value: faceMask },
             _noise: { value: 0.0 },
             _transparency: { value: 1.0 },
+            uIntensity: { value: 1.0 },
         },
+    });
     });
 }
 
 export async function loadFoundationMat(assets) {
+    return withMaterialTextureCleanup(async (loadOwnedTexture) => {
     const vertexShaderSource = await loadShaderSource(assets.shader('foundation', 'vertex.glsl'));
     const fragmentShaderSource = await loadShaderSource(assets.shader('foundation', 'fragment.glsl'));
 
-    const maskTexture = texLoader.load(assets.shaderRoot('foundation_mask3.PNG'));
+    const maskTexture = await loadOwnedTexture(assets.shaderRoot('foundation_mask3.PNG'));
     maskTexture.wrapS = ClampToEdgeWrapping;
     maskTexture.wrapT = ClampToEdgeWrapping;
     maskTexture.flipY = false;
@@ -228,12 +286,16 @@ export async function loadFoundationMat(assets) {
             _Mask: { value: maskTexture },
             _Mask_ST: { value: new Vector4(1.0, 1.0, 0.0, 0.0) },
             _shedat: { value: 0.2 },
+            _noise: { value: 0.0 },
+            uIntensity: { value: 1.0 },
         },
+    });
     });
 }
 
 export async function loadMascaraMat(assets) {
-    const texture = texLoader.load(assets.shader('mascara', 'i9144.png'));
+    return withMaterialTextureCleanup(async (loadOwnedTexture) => {
+    const texture = await loadOwnedTexture(assets.shader('mascara', 'i9144.png'));
     texture.wrapS = ClampToEdgeWrapping;
     texture.wrapT = ClampToEdgeWrapping;
     texture.minFilter = LinearFilter;
@@ -251,16 +313,19 @@ export async function loadMascaraMat(assets) {
             color: { value: new Color(0x000000) },
             map: { value: texture || null },
             useMap: { value: !!texture },
+            uIntensity: { value: 1.0 },
         },
         transparent: true,
         depthTest: true,
         depthWrite: false,
         side: DoubleSide,
     });
+    });
 }
 
 export async function loadEyeLineMat(assets) {
-    const texture = texLoader.load(assets.shader('eyeline', 'i10246.png'));
+    return withMaterialTextureCleanup(async (loadOwnedTexture) => {
+    const texture = await loadOwnedTexture(assets.shader('eyeline', 'i10246.png'));
     texture.wrapS = RepeatWrapping;
     texture.wrapT = RepeatWrapping;
     texture.minFilter = LinearFilter;
@@ -277,10 +342,12 @@ export async function loadEyeLineMat(assets) {
         uniforms: {
             color: { value: new Vector4(0, 0, 0, 1) },
             map: { value: texture || null },
+            uIntensity: { value: 1.0 },
         },
         transparent: true,
         depthTest: true,
         depthWrite: false,
         side: DoubleSide,
+    });
     });
 }

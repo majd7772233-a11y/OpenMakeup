@@ -26,11 +26,32 @@ jobs:
       - name: Install web dependencies and synchronize the existing lockfile
         run: npm install
 
+      - name: Report full dependency audit (including development tooling)
+        run: |
+          npm audit --json > npm-audit-full.json || true
+          node --input-type=commonjs -e "const fs=require('node:fs'); try { const r=JSON.parse(fs.readFileSync('npm-audit-full.json','utf8')); const v=r.metadata?.vulnerabilities || {}; console.log('Full dependency audit summary:', JSON.stringify(v)); for (const [name,item] of Object.entries(r.vulnerabilities || {})) if (['high','critical'].includes(item.severity)) console.log('HIGH/CRITICAL AUDIT:', name, JSON.stringify({severity:item.severity,range:item.range,fixAvailable:item.fixAvailable,via:item.via})); } catch (e) { console.log('Full dependency audit report unavailable or unreadable:', e.message); }"
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Type-check SDK
         run: npm run typecheck
 
+      - name: Verify local camera and model runtime assets
+        run: |
+          test -s public/mediapipe/camera_utils/camera_utils.js
+          test -s public/mediapipe/face_mesh/face_mesh.js
+
+      - name: Test runtime reliability and SDK error propagation
+        run: npm test
+
       - name: Bundle web engine and local runtime assets
         run: npm run build
+
+      - name: Verify built local runtime assets
+        run: |
+          test -s dist/mediapipe/camera_utils/camera_utils.js
+          test -s dist/mediapipe/face_mesh/face_mesh.js
 
       - name: Package web app into Android assets
         run: |
@@ -48,13 +69,34 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
-        run: gradle --no-daemon -p android assembleDebug
+      - name: Build debug and unsigned release APKs
+        run: gradle --no-daemon -p android assembleDebug assembleRelease
+
+      - name: Verify release metadata and checksum APKs
+        run: |
+          grep -q "versionCode 6" android/app/build.gradle
+          grep -q "versionName '1.5.0'" android/app/build.gradle
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          test -s android/app/build/outputs/apk/release/app-release-unsigned.apk
+          sha256sum android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/release/app-release-unsigned.apk > android/app/build/outputs/apk/APK-SHA256SUMS.txt
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: Open-Makeup-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload unsigned release candidate and checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: Open-Makeup-release-candidate
+          path: |
+            android/app/build/outputs/apk/release/app-release-unsigned.apk
+            android/app/build/outputs/apk/APK-SHA256SUMS.txt
+            RELEASE_NOTES.md
+            npm-audit-full.json
+            package-lock.json
           if-no-files-found: error
           retention-days: 14

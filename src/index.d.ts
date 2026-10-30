@@ -20,14 +20,14 @@ export type Category =
   | 'eyeline'
   | 'mascara';
 
-/** A pattern entry as returned by {@link OpenMakeup.getPatterns}. */
+/** A bundled pattern entry as returned by {@link OpenMakeup.getPatterns}. */
 export interface PatternInfo {
   /** 1-based index into the category's pattern list (pass this to `apply`). */
   number: number;
   /** The underlying asset id. */
   id: string | number;
-  /** Whether the texture ships bundled with the package. */
-  bundled: boolean;
+  /** True because the SDK only returns textures included in the package. */
+  bundled: true;
 }
 
 /** Options for {@link OpenMakeup.apply}. */
@@ -36,8 +36,12 @@ export interface ApplyOptions {
   color?: string;
   /** Finish (only honoured by categories that support one). */
   finish?: Finish;
-  /** Pattern: a 1-based `number` from `getPatterns`, or a raw pattern id. */
+  /** Shader-backed effect opacity multiplier from 0 to 1 (defaults to 1). */
+  intensity?: number;
+  /** Pattern: a 1-based `number` from `getPatterns`, or a listed pattern id. */
   pattern?: number | string | null;
+  /** Explicit listed pattern id (must exist in the bundled manifest). */
+  patternId?: number | string | null;
 }
 
 /** Resolved result returned by {@link OpenMakeup.apply}. */
@@ -46,6 +50,7 @@ export interface AppliedLook {
   color: string;
   finish: Finish | null;
   pattern: number | string | null;
+  intensity: number;
 }
 
 /** Provider that resolves a color for categories whose default color is AI-driven. */
@@ -71,7 +76,19 @@ export interface OpenMakeupOptions {
   defaults?: Partial<Record<Category, ApplyOptions>>;
   /** Resolves the color for AI-defaulted categories (lipstick by default). */
   aiColor?: AiColorProvider;
+  /** Notified when the tracker stably detects a face or loses it. */
+  onFaceTrackingChange?: (detected: boolean) => void;
+  /** Notified when the WebGL context is lost, restored, or cannot be restored. */
+  onWebGLContextChange?: (state: 'lost' | 'restored' | 'restore-failed') => void;
 }
+
+/** Lowest allowed face-morph influence weight for SDK and UI controls. */
+export const MORPH_WEIGHT_MIN: -1;
+/** Highest allowed face-morph influence weight for SDK and UI controls. */
+export const MORPH_WEIGHT_MAX: 1.5;
+export const MORPH_CONTROLS: Record<string, { target: string; about: string }>;
+export const MORPH_TARGETS_EXTRA: string[];
+export function resolveMorphTarget(name: string): string;
 
 /**
  * High-level entry point: an AR makeup mirror plus a face-reshape engine.
@@ -110,10 +127,10 @@ export class OpenMakeup {
   /** Hide every makeup layer. */
   clearAll(): void;
 
-  /** Reshape the face. Weights are typically 0..1 (negative or >1 exaggerate). */
+  /** Reshape the face using finite weights within MORPH_WEIGHT_MIN..MORPH_WEIGHT_MAX. */
   morph(map?: Record<string, number>): void;
 
-  /** Set a single reshape control by friendly name or raw target name. */
+  /** Set a single reshape control by friendly name or raw target name, within the documented weight range. */
   setMorph(name: string, value: number): void;
 
   /** Reset every reshape control to zero. */
@@ -128,8 +145,17 @@ export class OpenMakeup {
   /** Toggle the background blur layer. */
   setBlur(on: boolean): void;
 
-  /** Start the render loop / camera. */
-  start(): void;
+  /** Current camera direction requested by the engine. */
+  readonly cameraFacingMode: 'user' | 'environment';
+  /** True only when the browser reports the actual camera direction. */
+  readonly cameraFacingModeVerified: boolean;
+  /** Whether media APIs expose camera-facing constraints in this runtime. */
+  canSwitchCamera(): boolean;
+  /** Switch between front/user and rear/environment cameras, restoring the old camera if the switch fails. */
+  switchCamera(facingMode: 'user' | 'environment'): Promise<OpenMakeup>;
+
+  /** Start the render loop / camera and resolve when the camera start operation completes. */
+  start(): Promise<OpenMakeup>;
 
   /** Stop the render loop / camera. */
   stop(): void;
@@ -182,11 +208,17 @@ export class MakeupEngine {
   constructor(options: Record<string, unknown>);
   /** Global multiplier for reshape strength (default 1). */
   morphGain: number;
+  readonly cameraFacingMode: 'user' | 'environment';
+  readonly cameraFacingModeVerified: boolean;
+  canSwitchCamera(): boolean;
+  switchCamera(facingMode: 'user' | 'environment'): Promise<'user' | 'environment'>;
   init(): Promise<void>;
-  start(): void;
+  start(): Promise<MakeupEngine>;
   stop(): void;
   dispose(): void;
   setAR(arType: string, color: string, colorMode: string | number): void;
+  /** Set a layer's shader-backed opacity multiplier (0..1). */
+  setIntensity(arType: string, intensity: number): number;
   setPattern(arType: string, patternId: number | string): Promise<void>;
   clearAll(): void;
   clearPart(arType: string): void;

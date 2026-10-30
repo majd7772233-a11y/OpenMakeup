@@ -52,13 +52,25 @@ It's a real-time AR makeup mirror **and** a beauty face-reshape engine, built on
 ### 💋 Virtual makeup
 - **Real-time face tracking** — 468-point MediaPipe FaceMesh, live on a webcam.
 - **6 makeup categories** — `foundation`, `blush`, `lipstick`, `eyeliner`, `mascara`, `eyeshadow`.
-- **73 ready-to-use pattern textures** out of the box.
+- **69 bundled pattern masks** for blush, eyeliner, mascara, and eyeshadow. Foundation/lipstick pattern placeholders are not advertised until real mapped assets exist.
 - **Material finishes** — `matte`, `shimmer`, `glossy`, `glitter` (where supported).
 - **Custom GLSL shaders** for believable blending, gloss, and glitter — not flat overlays.
+- **Per-layer personalization** — choose a color and shader-backed intensity (0–1) for all six layers; finish options remain category-specific.
+- **Named local looks** — save, load and delete looks on this device; undo/redo up to 50 recent studio states.
+- **Capture and sharing** — capture a mirrored PNG through a temporary WebGL render target, save locally or explicitly open the system share sheet. No image is uploaded automatically.
+- **12 curated looks** grouped into everyday, romantic, bold-color and evening collections, defined as data and checked by tests.
+- **Mobile resilience** — a bundled first-party camera adapter (no CDN/package dependency at runtime), front/rear camera switching where supported, dismissible first-run guidance, adaptive camera/render profiles and WebGL context-loss recovery.
 - **Smart defaults** — every parameter has one; plug in your own AI color provider for lipstick.
 
 ### 🧬 Face reshape (morph / blend shapes)
 Project the live camera image onto a morphable 3D mesh so the user's **actual face** reshapes in real time — brow, lips, nose, cheeks, and jaw. The editable Blender rig is included.
+
+### 📱 Android studio experience
+- Arabic-first phone interface with a persistent English switch and RTL/LTR direction.
+- Quick looks and makeup tools stay in the main flow; sculpting, wireframe and blur are grouped under expandable advanced controls.
+- Localized camera/tracking status, clear retry/error guidance, keyboard skip navigation, visible focus, 44px touch targets and reduced-motion support.
+- About dialog handles keyboard focus and Escape/Android Back.
+- Version 1.5.0 adds front/rear camera switching with previous-camera rollback, one-time first-run guidance, twelve localized looks, conservative camera/render profiles and WebGL context recovery. Still-photo capture uses a temporary offscreen render target so the live renderer can keep `preserveDrawingBuffer` disabled. Real Android/WebView/GPU behavior still requires device verification.
 
 ### 🧰 Developer experience
 - **Drop-in, framework-agnostic** — plain ES modules, works with any stack.
@@ -124,7 +136,10 @@ const mk = new OpenMakeup(options);
 | Method | Description |
 |---|---|
 | `await mk.init(onReady?)` | Boot the engine, load assets, start the camera. |
-| `await mk.apply(category, opts)` | Apply/update a layer: `{ color, finish, pattern }`. |
+| `mk.canSwitchCamera()` | Report whether camera-facing constraints appear available in this runtime. The actual switch is still verified at runtime. |
+| `await mk.switchCamera('user' \| 'environment')` | Switch front/rear camera, wait for fresh frames and attempt to restore the prior camera if switching fails. Call after `init()`. |
+| `mk.cameraFacingMode` | Read the current/requested facing mode (`user` or `environment`). |
+| `await mk.apply(category, opts)` | Apply/update a layer: `{ color, finish, pattern, intensity }`; intensity is 0–1 and defaults to 1. |
 | `mk.clear(category)` | Remove one makeup layer. |
 | `mk.clearAll()` | Remove all makeup. |
 | `mk.morph(map)` | Reshape: `{ noseSlim: 0.6, cheeks: 0.3, ... }`. |
@@ -135,7 +150,13 @@ const mk = new OpenMakeup(options);
 | `mk.setWireframe(on)` | Toggle the debug face mesh. |
 | `mk.start()` / `mk.stop()` / `mk.dispose()` | Control / release the engine. |
 
-**Constructor options:** `video`, `renderCanvas`, `assetsBaseUrl`, `mediapipeBaseUrl`, `defaults`, `aiColor`.
+**Camera lifecycle:** `await mk.start()` resolves after the camera start operation completes; the app additionally checks that video frames advance. A missing/invalid bundled pattern manifest fails initialization rather than enabling an incomplete studio.
+
+**Pattern support note:** `getPatterns('lipstick')` and `getPatterns('foundation')` intentionally return no options until real renderer mappings and bundled mask files exist for those categories. Pattern choices are constrained to entries returned by `getPatterns(category)`; use `pattern` for a 1-based list position or `patternId` for a specific listed ID. Unknown IDs and non-bundled manifest entries are rejected rather than silently choosing a fallback.
+
+**Face-morph weight range:** The SDK exports `MORPH_WEIGHT_MIN = -1` and `MORPH_WEIGHT_MAX = 1.5`. UI controls and session restoration use the same limits; out-of-range SDK requests are rejected.
+
+**Constructor options:** `video`, `renderCanvas`, `assetsBaseUrl`, `mediapipeBaseUrl`, `defaults`, `aiColor`, `onFaceTrackingChange`, `onWebGLContextChange`. The graphics callback receives `lost`, `restored` or `restore-failed`; a consumer callback error is isolated from rendering.
 
 ---
 
@@ -143,9 +164,9 @@ const mk = new OpenMakeup(options);
 
 | Category | Color | Finish | Patterns |
 |---|:---:|:---:|:---:|
-| `foundation` | ✅ | matte · shimmer · glossy · glitter | ✅ |
+| `foundation` | ✅ | matte · shimmer · glossy · glitter | — (pattern support pending) |
 | `blush` | ✅ | matte · shimmer · glossy · glitter | ✅ |
-| `lipstick` | ✅ | matte · shimmer · glossy · glitter | ✅ |
+| `lipstick` | ✅ | matte · shimmer · glossy · glitter | — (pattern support pending) |
 | `eyeshadow` | ✅ | matte · shimmer · glossy · glitter | ✅ |
 | `eyeliner` | ✅ | — | ✅ |
 | `mascara` | ✅ | — | ✅ |
@@ -183,14 +204,14 @@ Weights are typically `0..1`; negative values and values above 1 exaggerate the 
 
 ## 🗺️ Roadmap
 
-- [x] Real-time makeup engine (6 categories, finishes, 73 patterns)
+- [x] Real-time makeup engine (6 categories; 69 bundled masks in four supported pattern categories)
 - [x] Public `OpenMakeup` API with smart defaults
 - [x] Face reshape via blend shapes
 - [x] Interactive playground + hosted live demo
 - [x] TypeScript types
 - [x] **Published to npm** 🎉
 
-> v1 is live. Next up: more patterns, demo recipes, and community-contributed looks.
+> Version 1.5.0 introduces camera switching, one-time onboarding, 12 curated looks, adaptive rendering and explicit WebGL context recovery. The CI release-candidate APK is unsigned and requires the project's release key before distribution. The consolidated physical Android 6/7 camera, permissions, save/share, orientation/alignment, accessibility and sustained performance matrix remains pending; CI is not physical-device evidence.
 
 ---
 
