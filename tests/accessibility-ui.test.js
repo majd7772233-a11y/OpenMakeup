@@ -196,7 +196,8 @@ test('stage-eight workspace redesign keeps the rose-purple brand and adds access
     assert.ok(dictionaries.ar[key] && dictionaries.en[key], 'Missing bilingual workspace label ' + key);
   }
   assert.match(main, /function activateWorkspaceTab\(name, options = \{\}\)/);
-  assert.match(main, /event\.key === 'ArrowLeft'/);
-  assert.match(main, /event\.key === 'ArrowRight'/);
+  assert.match(main, /getWorkspaceTabTargetIndex\(current, event\.key, document\.documentElement\.dir, workspaceTabButtons\.length\)/);
+  assert.match(main, /trapDialogFocus\(event, modal\)/);
+  assert.match(html, /id="daily-controls"[^>]*tabindex="-1"/);
   assert.match(html, /prefers-reduced-motion:reduce/);
 });

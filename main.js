@@ -8,6 +8,7 @@ import { normalizeStudioState, StudioHistory, createCustomLook, parseCustomLooks
 import { scaleFontDeclarations } from './src/ui/font-scaling.js';
 import { initializeLiquidGlassMotion } from './src/ui/liquid-glass-motion.js';
 import { createDebouncedCall } from './src/ui/session-persistence.js';
+import { getWorkspaceTabTargetIndex, trapDialogFocus } from './src/ui/accessibility.js';
 
 const $ = (id) => document.getElementById(id);
 const statusText = $('status-text');
@@ -417,13 +418,8 @@ function closeSettings() {
 
 function trapSettingsFocus(event) {
   const modal = $('settings-modal');
-  if (!modal.classList.contains('open') || event.key !== 'Tab') return;
-  const focusable = [...modal.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
-    .filter((element) => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
-  if (!focusable.length) { event.preventDefault(); modal.focus(); return; }
-  const first = focusable[0], last = focusable[focusable.length - 1];
-  if (event.shiftKey && (document.activeElement === first || document.activeElement === modal)) { event.preventDefault(); last.focus(); }
-  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  if (!modal.classList.contains('open')) return;
+  trapDialogFocus(event, modal);
 }
 
 $('open-settings').addEventListener('click', openSettings);
@@ -544,12 +540,8 @@ workspaceTabButtons.forEach((button) => {
   button.addEventListener('click', () => activateWorkspaceTab(button.dataset.workspaceTab, { scroll: true }));
   button.addEventListener('keydown', (event) => {
     const current = workspaceTabButtons.indexOf(button);
-    let next = current;
-    if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = workspaceTabButtons.length - 1;
-    else if (event.key === 'ArrowLeft') next = (current + (document.documentElement.dir === 'rtl' ? 1 : -1) + workspaceTabButtons.length) % workspaceTabButtons.length;
-    else if (event.key === 'ArrowRight') next = (current + (document.documentElement.dir === 'rtl' ? -1 : 1) + workspaceTabButtons.length) % workspaceTabButtons.length;
-    else return;
+    const next = getWorkspaceTabTargetIndex(current, event.key, document.documentElement.dir, workspaceTabButtons.length);
+    if (next === null || next < 0) return;
     event.preventDefault();
     activateWorkspaceTab(workspaceTabButtons[next].dataset.workspaceTab, { focus: true, scroll: true });
   });
@@ -640,16 +632,8 @@ function dismissOnboardingAndStart() {
 
 function trapOnboardingFocus(event) {
   const modal = $('onboarding-modal');
-  if (!modal || !modal.classList.contains('open') || event.key !== 'Tab') return;
-  const focusable = [...modal.querySelectorAll('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')]
-    .filter((element) => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
-  if (!focusable.length) { event.preventDefault(); modal.focus(); return; }
-  const first = focusable[0], last = focusable[focusable.length - 1];
-  if (event.shiftKey && (document.activeElement === first || document.activeElement === modal)) {
-    event.preventDefault(); last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault(); first.focus();
-  }
+  if (!modal || !modal.classList.contains('open')) return;
+  trapDialogFocus(event, modal);
 }
 $('onboarding-start').addEventListener('click', dismissOnboardingAndStart);
 $('onboarding-skip').addEventListener('click', dismissOnboardingAndStart);
@@ -675,16 +659,8 @@ function closeAbout() {
 }
 function trapAboutFocus(event) {
   const modal = $('about-modal');
-  if (!modal.classList.contains('open') || event.key !== 'Tab') return;
-  const focusable = [...modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
-    .filter((element) => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
-  if (!focusable.length) { event.preventDefault(); modal.focus(); return; }
-  const first = focusable[0], last = focusable[focusable.length - 1];
-  if (event.shiftKey && (document.activeElement === first || document.activeElement === modal)) {
-    event.preventDefault(); last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault(); first.focus();
-  }
+  if (!modal.classList.contains('open')) return;
+  trapDialogFocus(event, modal);
 }
 $('open-about').addEventListener('click', openAbout);
 $('close-about').addEventListener('click', closeAbout);

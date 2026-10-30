@@ -19,7 +19,7 @@
     .top-actions{display:flex;align-items:center;gap:7px}.icon-btn,.lang-btn,.secondary,.primary,.look,.makeup-btn{border:1px solid var(--line);background:#ffffff0d;transition:transform .18s ease,background .18s ease,border-color .18s ease}
     .icon-btn{width:42px;height:42px;border-radius:15px;font-size:19px;display:grid;place-items:center}.lang-btn{min-height:40px;padding:0 12px;border-radius:14px;font-size:12px;font-weight:750}
     .icon-btn:active,.lang-btn:active,.secondary:active,.primary:active,.look:active,.makeup-btn:active{transform:scale(.96)}.icon-btn:hover,.lang-btn:hover,.secondary:hover,.makeup-btn:hover{background:#ffffff1a}
-    .primary{border:0;background:linear-gradient(120deg,#e85d9c,#8863ef);box-shadow:0 7px 20px #b24caa26}.secondary{border-radius:14px;padding:10px 13px;font-size:12px}
+    .primary{border:0;background:linear-gradient(120deg,#e85d9c,#8863ef);color:#100d18;font-weight:800;box-shadow:0 7px 20px #b24caa26}.secondary{border-radius:14px;padding:10px 13px;font-size:12px}
     .studio{display:grid;gap:12px}.preview-card{padding:8px;border-radius:25px;border:1px solid #ffffff20;background:linear-gradient(145deg,#ffffff12,#ffffff04);box-shadow:0 20px 55px #0005;animation:float-in .65s ease both}
     .preview-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 4px 9px}.preview-title{font-size:13px;font-weight:750;display:flex;align-items:center;gap:7px}.live-dot{width:7px;height:7px;border-radius:50%;background:#ff689f;box-shadow:0 0 0 4px #ff689f20;animation:pulse 1.8s infinite}.preview-tools{display:flex;gap:6px}
     #stage{position:relative;width:100%;aspect-ratio:4/3;max-height:58vh;min-height:210px;overflow:hidden;background:#09070e;border-radius:19px;border:1px solid #ffffff18;isolation:isolate}
@@ -56,7 +56,7 @@
     @keyframes page-in{from{opacity:0}to{opacity:1}}@keyframes float-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes fade-in{from{opacity:0}to{opacity:1}}@keyframes about-in{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes tile-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%,100%{box-shadow:0 0 0 4px #ff689f20}50%{box-shadow:0 0 0 7px #ff689f0b}}@keyframes logo-glow{0%,100%{box-shadow:0 7px 24px #d94c8540}50%{box-shadow:0 8px 34px #b078ff7a}}
     .skip-link{position:absolute;z-index:200;top:8px;inset-inline-start:8px;transform:translateY(-160%);padding:12px 16px;border-radius:12px;background:#fff0f6;color:#23101b;font-weight:800;text-decoration:none;box-shadow:0 8px 24px #0008}
     .skip-link:focus{transform:translateY(0)}
-    button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #ffd1e4;outline-offset:3px}
+    button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid #ffd1e4;outline-offset:3px}
     .icon-btn,.lang-btn,.secondary,.primary,.close-btn{min-height:44px}
     .icon-btn{min-width:44px}
     .lang-btn,.secondary,.primary{padding-block:10px}
@@ -262,7 +262,7 @@
       </section>
 
       <div class="controls-column">
-        <section class="panel workspace-panel" id="daily-controls" aria-labelledby="looks-title" data-workspace-panel="looks">
+        <section class="panel workspace-panel" id="daily-controls" aria-labelledby="looks-title" tabindex="-1" data-workspace-panel="looks">
           <div class="panel-head"><div><h2 class="panel-title" id="looks-title" data-i18n="looksTitle">إطلالات سريعة</h2><div class="panel-subtitle" data-i18n="looksSubtitle">اختاري ألوانك بلمسة واحدة</div></div><span aria-hidden="true">✧</span></div>
           <div id="preset-library" class="preset-library" aria-labelledby="looks-title"></div>
           <h3 class="section-label" id="makeup-title" data-i18n="makeupTitle">مستحضرات التجميل</h3>
@@ -341,7 +341,7 @@
       </div>
     </div>
 
-    <nav class="workspace-navigation" id="workspace-navigation" role="group" data-i18n-aria="workspaceNavigation" aria-label="التنقل بين أدوات الاستوديو">
+    <nav class="workspace-navigation" id="workspace-navigation" data-i18n-aria="workspaceNavigation" aria-label="التنقل بين أدوات الاستوديو">
       <button class="workspace-tab active" id="workspace-tab-looks" type="button" data-workspace-tab="looks" aria-controls="daily-controls" aria-pressed="true">
         <span class="workspace-tab-icon" aria-hidden="true">✧</span><span data-i18n="workspaceLooks">الإطلالات</span>
       </button>
