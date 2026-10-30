@@ -4,10 +4,10 @@
 
 - **Repository:** https://github.com/majd7772233-a11y/OpenMakeup
 - **Working branch:** `feat/open-makeup-arabic-mobile-lifecycle`
-- **Latest CI-verified code/test HEAD:** [`757b0bb`](https://github.com/majd7772233-a11y/OpenMakeup/commit/757b0bb08902be78f0642f9328f941186b948eb9) — [workflow 40928470179](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179) passed on that exact revision.
-- **Latest full CI:** **111 tests passed, 0 failed**; full and production dependency audits each reported 0 vulnerabilities; type-check, local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and both artifact uploads passed.
-- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12920613315), ZIP 14,972,460 bytes.
-- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/40928470179/artifacts/12922420147), ZIP 13,630,845 bytes. The release ZIP includes `APK-SHA256SUMS.txt`.
+- **Latest CI-verified code/test HEAD:** [`b3ee9d7`](https://github.com/majd7772233-a11y/OpenMakeup/commit/b3ee9d701cebc3caf241655989040950bcb33903) — [workflow 41045980672](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/41045980672) passed on that exact revision.
+- **Latest full CI:** **132 tests passed, 0 failed**; full and production dependency audits each reported 0 vulnerabilities; type-check, local assets, Vite, Android packaging, debug/unsigned-release builds, metadata/checksums and both artifact uploads passed.
+- **Debug artifact:** [Open-Makeup-debug-apk](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/41045980672/artifacts/12971749685), ZIP 14,973,258 bytes.
+- **Unsigned release candidate:** [Open-Makeup-release-candidate](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/41045980672/artifacts/12972228387), ZIP 13,631,885 bytes. The release ZIP includes `APK-SHA256SUMS.txt`.
 - **Stage 10 review follow-up:** the code/test commit adds checks for stale camera recovery across native host-stop/resume races.
 - **Android identity:** 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23.
 - **PR #3:** https://github.com/majd7772233-a11y/OpenMakeup/pull/3 — open and unmerged.
@@ -362,7 +362,73 @@ Read `CONTINUATION.md` first; its final “Current checkpoint” is the canonica
 - This is automated/source verification only. Physical Android 6/7 device testing, real chooser/gallery behavior, WebView-specific camera permission/lifecycle races, observed memory use and sustained GPU/thermal behavior remain **not performed** and are still required before release acceptance.
 
 
-## Current checkpoint — 2026-10-29 (authoritative; supersedes older checkpoint snapshots)
+## Stage 12 — UX behavior and accessibility regression (CI verified)
+
+**Code/test HEAD:** [`b3ee9d7`](https://github.com/majd7772233-a11y/OpenMakeup/commit/b3ee9d701cebc3caf241655989040950bcb33903)  
+**Full CI:** [run 41045980672](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/41045980672) — **132/132 tests passed**, 0 failures. Full and production dependency audits both reported **0 vulnerabilities**. Type-check, local runtime assets, Vite, Android asset packaging, debug and unsigned-release APK builds, release metadata/checksums and both artifact uploads all passed.
+
+### Delivered
+- **Contrast:** corrected primary gradient-button text from white to dark `#100d18`; a regression test samples 10,001 points across the declared two-stop CSS gradient and verifies a minimum contrast ratio of approximately **4.647:1** against the text.
+- **Touch targets:** all user-operated range inputs (layer intensity, face morph controls and font-size setting) now have a minimum 44 CSS-pixel block size, including compact mobile layouts.
+- **Skip navigation:** the skip link now targets a focusable `#daily-controls` section (`tabindex="-1"`) so keyboard users can move to the primary controls.
+- **Landmark semantics:** removed the redundant `role="group"` from the native `<nav>`; its localized accessible name and native navigation landmark remain.
+- **Shared dialog keyboard handling:** added `src/ui/accessibility.js` and moved About, Settings and Onboarding focus trapping to one tested helper. It filters disabled, hidden, inert, `aria-hidden`, CSS-hidden and negative-tabindex descendants; wraps Tab/Shift+Tab at dialog boundaries; redirects focus back inside if it escapes; and falls back to the dialog when no focusable child exists.
+- **RTL/LTR workspace keys:** extracted the four-section navigation index logic; arrow direction reverses with document direction, wraps at either end, and Home/End select the first/last workspace controls.
+
+### Regression coverage and limits
+- Added 17 tests, bringing the suite from 115 to **132 passing tests**. Fourteen behavior tests exercise the shared focus and direction helpers; UI checks cover visible focus selectors, skip destination, range-control touch size and gradient contrast.
+- These are Node-level behavior tests against the shared helper with a controlled DOM-like fixture, plus source/markup contracts. They are **not** a full browser end-to-end run and do not represent a TalkBack, screen-reader or physical-device test.
+- Latest CI built and uploaded [Debug archive 12971749685](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/41045980672/artifacts/12971749685) (ZIP, 14,973,258 bytes) and [unsigned release archive 12972228387](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/41045980672/artifacts/12972228387) (ZIP, 13,631,885 bytes). The release archive contains the APK checksum manifest and is not signed.
+- Android identity remains version 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23. PR #3 remains open and unmerged.
+
+### Remaining acceptance
+The consolidated Android 6/API 23 and Android 7/API 24–25 matrix remains unperformed. In particular, verify TalkBack announcements, real Tab/Shift+Tab behavior in the Android WebView, touch operation on device, Arabic/English reading order, zoom/text scaling, portrait/landscape navigation, and reduced-motion behavior on actual supported devices. CI proves the automated code/build contracts only.
+
+
+## Current checkpoint — 2026-10-30 (authoritative; supersedes older checkpoint snapshots)
+
+### Code and verified workflow state
+- Repository: https://github.com/majd7772233-a11y/OpenMakeup
+- Working branch: `feat/open-makeup-arabic-mobile-lifecycle`; PR #3 remains **OPEN, NOT MERGED**: https://github.com/majd7772233-a11y/OpenMakeup/pull/3
+- Latest CI-verified code/test commit: [`b3ee9d7`](https://github.com/majd7772233-a11y/OpenMakeup/commit/b3ee9d701cebc3caf241655989040950bcb33903) — “Increase touch height for accessible range controls”. It includes the Stage 12 implementation and the preceding accessibility regression-test commits.
+- Full CI [run 41045980672](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/41045980672) completed successfully on that exact HEAD: **132/132 tests**, 0 failures; full and production dependency audits reported 0 vulnerabilities; type-check, local runtime assets, Vite, Android packaging, Debug and unsigned-Release APK builds, metadata/checksums and both artifact uploads all succeeded.
+- Debug ZIP [artifact 12971749685](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/41045980672/artifacts/12971749685): 14,973,258 bytes. Unsigned release ZIP [artifact 12972228387](https://github.com/majd7772233-a11y/OpenMakeup/actions/runs/41045980672/artifacts/12972228387): 13,631,885 bytes. These are archive sizes, not raw APK sizes; the release archive contains `APK-SHA256SUMS.txt`.
+- Android identity remains version 1.5.0 / versionCode 6 / applicationId `com.magd.openmakeup` / minSdk 23. The release APK remains **unsigned**.
+- Non-blocking Vite chunk-size and GitHub Actions/Node deprecation notices remain; no CI step failed.
+- PR #3 is still **open and unmerged**.
+
+### Exact stopping point — Stage 12
+Stage 12 UX/accessibility software work is implemented and CI-verified:
+- Primary gradient buttons use dark text and the regression suite verifies at least 4.5:1 contrast across 10,001 interpolated gradient samples (measured minimum approximately 4.647:1).
+- All range controls used by the editor, face sculpting and settings have a 44 CSS-pixel minimum touch height.
+- The skip link can focus its destination; the bottom mobile workspace navigation is represented by a correctly named native navigation landmark.
+- About, Settings and Onboarding share a single focus-trapping implementation that handles hidden/disabled/inert candidates, wrapping at both ends, escaped focus, the empty-dialog case and browser-native movement within the dialog.
+- Workspace arrow-key navigation follows RTL/LTR direction, wraps correctly and supports Home/End.
+- The suite contains 132 passing tests. The new behavior tests run against a controlled DOM-like fixture in Node; they are not a full browser E2E test or assistive-technology run.
+
+### Still remaining — physical-device and assistive-technology acceptance
+No physical-device or real screen-reader acceptance run is documented as completed. Do not mark the following as passed until actually exercised:
+1. **Android 6/API 23 and Android 7/API 24–25:** fresh install, local startup, permission prompts, camera switching, background/foreground and screen rotation.
+2. **TalkBack and WebView:** announcements/labels, dialog entry/exit and focus restoration, swipe order, keyboard Tab/Shift+Tab, arrows, Enter/Space, Escape/Android Back, hidden content and focus visibility.
+3. **Mobile usability:** touch range controls at 44 px, fixed bottom navigation, narrow/landscape layouts, zoom and font scaling without overlap or obscured controls.
+4. **Localization:** Arabic RTL and English LTR reading/focus order, translated names for dynamic controls, dialogs and error/status announcements.
+5. **Visual accessibility:** contrast on actual displays, reduced-motion preference, focus-ring visibility and readability at increased font sizes.
+6. **Existing release matrix:** camera permission/resume, gallery/share, orientation and capture alignment, WebGL recovery and sustained low-memory/GPU/thermal behavior.
+
+Record device model, Android and System WebView versions, assistive-technology version, steps, expected/actual results and evidence. This list is a test plan, not a claim of completion.
+
+### Next action
+1. Perform the consolidated physical Android/TalkBack acceptance matrix when target devices are available.
+2. Fix only reproduced defects and add regression coverage, then rerun full CI.
+3. Do not invent another development stage until device acceptance/release-readiness review identifies a real remaining need.
+4. Keep PR #3 open/unmerged unless explicitly requested; do not sign or publish the release candidate without explicit release direction and owner-controlled signing.
+
+### Permanent boundaries
+- Camera and face processing stay local/offline. No frame/photo uploads, telemetry or new runtime CDN dependency.
+- Preserve applicationId `com.magd.openmakeup`, minSdk 23, existing version contract and public SDK API.
+- No fake success, swallowed errors or blind page reload for camera recovery.
+- Never commit tokens, passwords, private keys or release signing material.
+- Repository docs remain English; answer the user in Arabic.
 
 ### Code and verified workflow state
 - Repository: https://github.com/majd7772233-a11y/OpenMakeup
